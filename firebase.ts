@@ -1,4 +1,4 @@
-import { createAsyncStorage } from '@react-native-async-storage/async-storage';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { initializeApp } from 'firebase/app';
 import { getReactNativePersistence, initializeAuth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
@@ -15,8 +15,7 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 
-const appStorage = createAsyncStorage("socio-app");
-const persistence = getReactNativePersistence(appStorage);
+const persistence = getReactNativePersistence(AsyncStorage);
 
 export const auth = initializeAuth(app, {
   persistence,

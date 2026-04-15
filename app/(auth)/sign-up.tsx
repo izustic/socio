@@ -1,9 +1,9 @@
 import { colors } from '@/src/constants/colors';
 import { signInWithEmail, signUpWithEmail, signUpWithFacebook, signUpWithGoogle } from '@/src/services/auth';
-import * as AuthSession from 'expo-auth-session';
+import { makeRedirectUri } from 'expo-auth-session';
 import * as Facebook from 'expo-auth-session/providers/facebook';
 import * as Google from 'expo-auth-session/providers/google';
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Alert,
   Modal,
@@ -23,11 +23,14 @@ export default function SignUp() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
 
+  const redirectUri = makeRedirectUri({ scheme: 'demoapp' });
+
   // Google Auth
   const [googleRequest, googleResponse, promptGoogleAsync] = Google.useAuthRequest({
     clientId: process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID,
     scopes: ['profile', 'email'],
     responseType: 'id_token',
+    redirectUri,
   });
 
   // Facebook Auth
@@ -35,7 +38,7 @@ export default function SignUp() {
     clientId: process.env.EXPO_PUBLIC_FACEBOOK_APP_ID,
     responseType: 'token',
     scopes: ['public_profile', 'email'],
-    redirectUri: AuthSession.makeRedirectUri(),
+    redirectUri,
   });
 
   useEffect(() => {

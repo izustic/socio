@@ -1,8 +1,10 @@
 import { colors } from '@/src/constants/colors';
+import { useAuth } from '@/src/context/AuthContext';
 import { signInWithEmail, signUpWithEmail, signUpWithFacebook, signUpWithGoogle } from '@/src/services/auth';
 import { makeRedirectUri } from 'expo-auth-session';
 import * as Facebook from 'expo-auth-session/providers/facebook';
 import * as Google from 'expo-auth-session/providers/google';
+import { Redirect } from 'expo-router';
 import { useEffect, useState } from 'react';
 import {
   Alert,
@@ -16,6 +18,7 @@ import {
 } from 'react-native';
 
 export default function SignUp() {
+  const { user, profile, loading: authLoading } = useAuth();
   const [showEmailModal, setShowEmailModal] = useState(false);
   const [isSignUp, setIsSignUp] = useState(true);
   const [email, setEmail] = useState('');
@@ -132,6 +135,10 @@ export default function SignUp() {
       Alert.alert('Error', 'Unable to open Facebook sign in.');
     }
   };
+
+  if (!authLoading && user && !profile?.profileComplete) {
+    return <Redirect href="/(auth)/create-profile" />;
+  }
 
   return (
     <View style={styles.container}>

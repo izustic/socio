@@ -1,4 +1,6 @@
-import { colors } from '@/src/constants/colors';
+import Button from '@/src/components/ui/Button';
+import Input from '@/src/components/ui/Input';
+import { Colors, Radius, Spacing, Typography } from '@/src/constants/theme';
 import { useAuth } from '@/src/context/AuthContext';
 import { signInWithEmail, signUpWithEmail, signUpWithFacebook, signUpWithGoogle } from '@/src/services/auth';
 import { makeRedirectUri } from 'expo-auth-session';
@@ -8,11 +10,14 @@ import { Redirect } from 'expo-router';
 import { useEffect, useState } from 'react';
 import {
   Alert,
+  KeyboardAvoidingView,
+  Platform,
   Modal,
+  SafeAreaView,
   ScrollView,
+  StatusBar,
   StyleSheet,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
@@ -141,161 +146,199 @@ export default function SignUp() {
   }
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
+      <StatusBar barStyle="light-content" />
       <View style={styles.topSection}>
+        <View style={styles.logoMark} />
         <Text style={styles.logo}>socio</Text>
         <Text style={styles.tagline}>Your circle starts here.</Text>
       </View>
       <View style={styles.bottomSection}>
         <TouchableOpacity
-          style={[styles.button, (loading || !googleRequest) && styles.disabled]}
+          activeOpacity={0.7}
+          style={[styles.socialButton, (loading || !googleRequest) && styles.disabled]}
           onPress={handleGoogleSignIn}
           disabled={loading || !googleRequest}
         >
-          <Text style={styles.buttonText}>Continue with Google</Text>
+          <Text style={styles.socialIcon}>G</Text>
+          <Text style={styles.socialText}>Continue with Google</Text>
+          <View style={styles.iconSpacer} />
         </TouchableOpacity>
         <TouchableOpacity
-          style={[styles.button, (loading || !facebookRequest) && styles.disabled]}
+          activeOpacity={0.7}
+          style={[styles.socialButton, (loading || !facebookRequest) && styles.disabled]}
           onPress={handleFacebookSignIn}
           disabled={loading || !facebookRequest}
         >
-          <Text style={styles.buttonText}>Continue with Facebook</Text>
+          <Text style={[styles.socialIcon, styles.facebookIcon]}>f</Text>
+          <Text style={styles.socialText}>Continue with Facebook</Text>
+          <View style={styles.iconSpacer} />
         </TouchableOpacity>
-        <Text style={styles.divider}>or</Text>
-        <TouchableOpacity
-          style={styles.link}
+        <View style={styles.dividerRow}>
+          <View style={styles.dividerLine} />
+          <Text style={styles.dividerText}>or</Text>
+          <View style={styles.dividerLine} />
+        </View>
+        <Button
+          title="Sign up with Email"
+          variant="ghost"
           onPress={() => {
             setIsSignUp(true);
             setShowEmailModal(true);
           }}
-        >
-          <Text style={styles.linkText}>Sign up with Email</Text>
-        </TouchableOpacity>
+        />
         <TouchableOpacity
-          style={styles.link}
+          activeOpacity={0.7}
+          style={styles.loginRow}
           onPress={() => {
             setIsSignUp(false);
             setShowEmailModal(true);
           }}
         >
-          <Text style={styles.linkText}>Already have an account? Login</Text>
+          <Text style={styles.loginText}>Already have an account? </Text>
+          <Text style={styles.loginHighlight}>Log in</Text>
         </TouchableOpacity>
       </View>
 
       <Modal visible={showEmailModal} animationType="slide" transparent>
-        <View style={styles.modalOverlay}>
+        <KeyboardAvoidingView
+          style={styles.modalOverlay}
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        >
           <View style={styles.modalContent}>
-            <TouchableOpacity
-              onPress={() => setShowEmailModal(false)}
-              style={styles.closeButton}
-            >
+            <TouchableOpacity activeOpacity={0.7} onPress={() => setShowEmailModal(false)} style={styles.closeButton}>
               <Text style={styles.closeButtonText}>✕</Text>
             </TouchableOpacity>
-            <ScrollView style={styles.formContainer}>
-              <Text style={styles.modalTitle}>
-                {isSignUp ? 'Create Account' : 'Login'}
-              </Text>
-              <TextInput
-                style={styles.input}
+            <ScrollView style={styles.formContainer} contentContainerStyle={styles.formContent}>
+              <Text style={styles.modalTitle}>{isSignUp ? 'Create Account' : 'Login'}</Text>
+              <Input
                 placeholder="Email"
                 value={email}
                 onChangeText={setEmail}
                 keyboardType="email-address"
-                placeholderTextColor={colors.textSecondary}
+                autoCapitalize="none"
               />
-              <View style={styles.passwordContainer}>
-                <TextInput
-                  style={styles.passwordInput}
+              <View>
+                <Input
                   placeholder="Password"
                   value={password}
                   onChangeText={setPassword}
                   secureTextEntry={!showPassword}
-                  placeholderTextColor={colors.textSecondary}
                 />
                 <TouchableOpacity
+                  activeOpacity={0.7}
                   style={styles.passwordToggle}
                   onPress={() => setShowPassword(!showPassword)}
                 >
-                  <Text style={styles.eyeIcon}>{showPassword ? '👁️' : '👁️‍🗨️'}</Text>
+                  <Text style={styles.eyeIcon}>{showPassword ? 'Hide' : 'Show'}</Text>
                 </TouchableOpacity>
               </View>
-              <TouchableOpacity
-                style={[styles.submitButton, loading && styles.disabled]}
+              <Button
+                title={loading ? 'Loading...' : isSignUp ? 'Sign Up' : 'Login'}
                 onPress={handleEmailAuth}
                 disabled={loading}
-              >
-                <Text style={styles.submitButtonText}>
-                  {loading ? 'Loading...' : isSignUp ? 'Sign Up' : 'Login'}
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
+              />
+              <Button
+                title={isSignUp ? 'Already have an account? Login' : "Don't have an account? Sign Up"}
+                variant="ghost"
                 onPress={() => setIsSignUp(!isSignUp)}
-                style={styles.toggleButton}
-              >
-                <Text style={styles.toggleText}>
-                  {isSignUp
-                    ? 'Already have an account? Login'
-                    : "Don't have an account? Sign Up"}
-                </Text>
-              </TouchableOpacity>
+              />
             </ScrollView>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
-    </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.backgroundLight,
+    backgroundColor: Colors.primary,
   },
   topSection: {
-    flex: 1,
-    backgroundColor: colors.primary,
+    flex: 0.45,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  logoMark: {
+    width: 80,
+    height: 80,
+    borderRadius: Radius.full,
+    backgroundColor: 'rgba(26,26,26,0.08)',
+    marginBottom: Spacing.md,
   },
   logo: {
-    fontSize: 40,
-    fontWeight: 'bold',
-    color: colors.textPrimary,
+    ...Typography.display,
   },
   tagline: {
-    fontSize: 14,
-    color: colors.textSecondary,
-    marginTop: 10,
+    ...Typography.body,
+    color: 'rgba(26,26,26,0.6)',
+    marginTop: Spacing.sm,
   },
   bottomSection: {
-    flex: 2,
-    padding: 20,
-    justifyContent: 'center',
+    flex: 0.55,
+    backgroundColor: Colors.background,
+    borderTopLeftRadius: 32,
+    borderTopRightRadius: 32,
+    paddingHorizontal: Spacing.screenPadding,
+    paddingTop: Spacing.xl,
+    paddingBottom: Spacing.lg,
+    gap: Spacing.sm,
   },
-  button: {
-    backgroundColor: colors.primary,
-    padding: 15,
-    borderRadius: 25,
-    marginBottom: 10,
+  socialButton: {
+    backgroundColor: Colors.inputBg,
+    borderRadius: Radius.pill,
+    paddingVertical: 14,
+    paddingHorizontal: Spacing.md,
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
   },
-  buttonText: {
-    color: colors.textPrimary,
+  socialText: {
+    ...Typography.button,
+    color: Colors.textPrimary,
+  },
+  socialIcon: {
     fontSize: 16,
-    fontWeight: '600',
-  },
-  divider: {
+    fontWeight: '700',
+    color: Colors.textSecondary,
+    width: 20,
     textAlign: 'center',
-    marginVertical: 20,
-    color: colors.textSecondary,
   },
-  link: {
+  facebookIcon: {
+    color: '#1877F2',
+  },
+  iconSpacer: {
+    width: 20,
+  },
+  dividerRow: {
+    flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 10,
+    marginVertical: Spacing.sm,
   },
-  linkText: {
-    color: colors.primary,
-    fontSize: 16,
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: Colors.divider,
+  },
+  dividerText: {
+    ...Typography.bodySmall,
+    marginHorizontal: Spacing.md,
+  },
+  loginRow: {
+    marginTop: 'auto',
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loginText: {
+    ...Typography.bodySmall,
+  },
+  loginHighlight: {
+    ...Typography.bodySmall,
+    color: Colors.primary,
+    fontWeight: '700',
   },
   modalOverlay: {
     flex: 1,
@@ -303,80 +346,41 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   modalContent: {
-    backgroundColor: colors.backgroundLight,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
+    backgroundColor: Colors.background,
+    borderTopLeftRadius: Radius.xl,
+    borderTopRightRadius: Radius.xl,
     maxHeight: '80%',
   },
   closeButton: {
     alignSelf: 'flex-end',
-    padding: 15,
+    padding: Spacing.md,
   },
   closeButtonText: {
     fontSize: 24,
-    color: colors.textPrimary,
+    color: Colors.textPrimary,
   },
   formContainer: {
-    padding: 20,
+    paddingHorizontal: Spacing.screenPadding,
+  },
+  formContent: {
+    gap: Spacing.md,
+    paddingBottom: Spacing.xl,
   },
   modalTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: colors.textPrimary,
-    marginBottom: 20,
+    ...Typography.h2,
     textAlign: 'center',
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: colors.textSecondary,
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 15,
-    fontSize: 16,
-    color: colors.textPrimary,
-  },
-  passwordContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: colors.textSecondary,
-    borderRadius: 8,
-    marginBottom: 15,
-    paddingRight: 10,
-  },
-  passwordInput: {
-    flex: 1,
-    padding: 12,
-    fontSize: 16,
-    color: colors.textPrimary,
+    marginBottom: Spacing.sm,
   },
   passwordToggle: {
-    padding: 8,
+    position: 'absolute',
+    right: 14,
+    top: 14,
   },
   eyeIcon: {
-    fontSize: 20,
-  },
-  submitButton: {
-    backgroundColor: colors.primary,
-    padding: 15,
-    borderRadius: 25,
-    alignItems: 'center',
-    marginTop: 20,
+    ...Typography.bodySmall,
+    fontWeight: '700',
   },
   disabled: {
     opacity: 0.5,
-  },
-  submitButtonText: {
-    color: colors.textPrimary,
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  toggleButton: {
-    marginTop: 20,
-    alignItems: 'center',
-  },
-  toggleText: {
-    color: colors.primary,
-    fontSize: 14,
   },
 });

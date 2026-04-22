@@ -1,11 +1,26 @@
-import { colors } from '@/src/constants/colors';
+import Avatar from '@/src/components/ui/Avatar';
+import Button from '@/src/components/ui/Button';
+import Chip from '@/src/components/ui/Chip';
+import Input from '@/src/components/ui/Input';
+import { Colors, Radius, Spacing, Typography } from '@/src/constants/theme';
 import { useAuth } from '@/src/context/AuthContext';
 import { getLocationWithCity, requestLocationPermission } from '@/src/services/location';
 import { createUserProfile } from '@/src/services/user';
 import { Interest } from '@/src/types';
 import { router } from 'expo-router';
 import React, { useState } from 'react';
-import { Alert, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import {
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  SafeAreaView,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 
 const interests: Interest[] = ['Music', 'Travel', 'Books', 'Gaming', 'Fitness', 'Art', 'Food', 'Film'];
 
@@ -71,140 +86,194 @@ export default function CreateProfile() {
   };
 
   return (
-    <ScrollView style={styles.container}>
-      <Text style={styles.title}>Create Your Profile</Text>
-      <TextInput
-        style={styles.input}
-        placeholder="Name"
-        value={name}
-        onChangeText={setName}
-      />
-      <TextInput
-        style={styles.input}
-        placeholder="Age"
-        value={age}
-        onChangeText={setAge}
-        keyboardType="numeric"
-      />
-      <TextInput
-        style={styles.input}
-        placeholder="Gender"
-        value={gender}
-        onChangeText={setGender}
-      />
-      <Text style={styles.label}>Interests</Text>
-      <View style={styles.interests}>
-        {interests.map(interest => (
-          <TouchableOpacity
-            key={interest}
-            style={[
-              styles.interestChip,
-              selectedInterests.includes(interest) && styles.selectedChip,
-            ]}
-            onPress={() => toggleInterest(interest)}
-          >
-            <Text style={styles.chipText}>{interest}</Text>
-          </TouchableOpacity>
-        ))}
-      </View>
-      <TextInput
-        style={styles.input}
-        placeholder="Education"
-        value={education}
-        onChangeText={setEducation}
-      />
-      <TextInput
-        style={[styles.input, styles.bio]}
-        placeholder="Bio"
-        value={bio}
-        onChangeText={setBio}
-        multiline
-      />
-      <TouchableOpacity style={styles.locationButton} onPress={handleGetLocation}>
-        <Text style={styles.locationButtonText}>
-          {location ? `Location: ${location.city || 'Unknown'}` : 'Get My Location'}
-        </Text>
-      </TouchableOpacity>
-      <TouchableOpacity style={[styles.button, loading && styles.disabled]} onPress={handleSubmit} disabled={loading}>
-        <Text style={styles.buttonText}>{loading ? 'Creating...' : 'Continue'}</Text>
-      </TouchableOpacity>
-    </ScrollView>
+    <SafeAreaView style={styles.safeArea}>
+      <StatusBar barStyle="dark-content" />
+      <KeyboardAvoidingView
+        style={styles.keyboardContainer}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
+        <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+          <Text style={styles.title}>Create Your Profile</Text>
+          <Text style={styles.subtitle}>Tell us about yourself</Text>
+
+          <View style={styles.avatarSection}>
+            <Avatar size="xl" placeholder />
+            <View style={styles.cameraOverlay}>
+              <Text style={styles.cameraIcon}>📷</Text>
+            </View>
+            <Text style={styles.avatarLabel}>Add photo</Text>
+          </View>
+
+          <Text style={styles.fieldLabel}>NAME</Text>
+          <Input placeholder="Name" value={name} onChangeText={setName} />
+
+          <Text style={styles.fieldLabel}>AGE</Text>
+          <Input placeholder="Age" value={age} onChangeText={setAge} keyboardType="numeric" />
+
+          <Text style={styles.fieldLabel}>GENDER</Text>
+          <View style={styles.genderRow}>
+            {['Male', 'Female', 'Other'].map((option) => (
+              <TouchableOpacity
+                key={option}
+                activeOpacity={0.7}
+                style={[
+                  styles.genderOption,
+                  gender === option && styles.genderOptionSelected,
+                ]}
+                onPress={() => setGender(option)}
+              >
+                <Text
+                  style={[
+                    styles.genderText,
+                    gender === option && styles.genderTextSelected,
+                  ]}
+                >
+                  {option}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+
+          <Text style={styles.fieldLabel}>YOUR INTERESTS</Text>
+          <View style={styles.interests}>
+            {interests.map((interest) => (
+              <Chip
+                key={interest}
+                label={interest}
+                selected={selectedInterests.includes(interest)}
+                onPress={() => toggleInterest(interest)}
+              />
+            ))}
+          </View>
+
+          <Text style={styles.fieldLabel}>EDUCATION</Text>
+          <Input placeholder="Education" value={education} onChangeText={setEducation} />
+
+          <Text style={styles.fieldLabel}>BIO</Text>
+          <Input
+            placeholder="Tell us about yourself"
+            value={bio}
+            onChangeText={setBio}
+            multiline
+            style={styles.bio}
+          />
+
+          <Button
+            title={location ? `Location: ${location.city || 'Unknown'}` : 'Get My Location'}
+            variant="outline"
+            onPress={handleGetLocation}
+            style={styles.locationButton}
+          />
+
+          <View style={styles.bottomSpace} />
+        </ScrollView>
+        <View style={styles.footer}>
+          <Button
+            title={loading ? 'Creating...' : 'Continue'}
+            onPress={handleSubmit}
+            disabled={loading}
+          />
+        </View>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: Colors.background,
+  },
+  keyboardContainer: {
+    flex: 1,
+  },
   container: {
     flex: 1,
-    backgroundColor: colors.backgroundLight,
-    padding: 20,
+    backgroundColor: Colors.background,
+  },
+  content: {
+    padding: Spacing.screenPadding,
+    paddingBottom: Spacing.xl,
   },
   title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: colors.textPrimary,
-    textAlign: 'center',
-    marginBottom: 30,
+    ...Typography.h1,
   },
-  input: {
-    borderWidth: 1,
-    borderColor: colors.textSecondary,
-    borderRadius: 8,
-    padding: 10,
-    marginBottom: 15,
+  subtitle: {
+    ...Typography.bodySmall,
+    marginTop: Spacing.xs,
+    marginBottom: Spacing.lg,
+  },
+  avatarSection: {
+    alignItems: 'center',
+    marginBottom: Spacing.lg,
+  },
+  cameraOverlay: {
+    position: 'absolute',
+    bottom: 24,
+    right: '33%',
+    width: 32,
+    height: 32,
+    borderRadius: Radius.full,
+    backgroundColor: Colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  cameraIcon: {
     fontSize: 16,
   },
-  bio: {
-    height: 80,
+  avatarLabel: {
+    ...Typography.bodySmall,
+    marginTop: Spacing.sm,
   },
-  label: {
-    fontSize: 16,
+  fieldLabel: {
+    ...Typography.label,
+    marginBottom: Spacing.sm,
+    marginTop: Spacing.md,
+  },
+  genderRow: {
+    flexDirection: 'row',
+    gap: Spacing.sm,
+  },
+  genderOption: {
+    flex: 1,
+    backgroundColor: Colors.inputBg,
+    borderRadius: Radius.pill,
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  genderOptionSelected: {
+    backgroundColor: Colors.primary,
+  },
+  genderText: {
+    ...Typography.bodySmall,
+    color: Colors.textSecondary,
     fontWeight: '600',
-    color: colors.textPrimary,
-    marginBottom: 10,
+  },
+  genderTextSelected: {
+    color: Colors.textPrimary,
   },
   interests: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    marginBottom: 15,
-  },
-  interestChip: {
-    backgroundColor: colors.backgroundCard,
-    padding: 10,
-    borderRadius: 20,
-    margin: 5,
-  },
-  selectedChip: {
-    backgroundColor: colors.primary,
-  },
-  chipText: {
-    color: colors.textPrimary,
-  },
-  button: {
-    backgroundColor: colors.primary,
-    padding: 15,
-    borderRadius: 25,
-    alignItems: 'center',
-    marginTop: 20,
+    gap: Spacing.sm,
   },
   disabled: {
     opacity: 0.5,
   },
-  buttonText: {
-    color: colors.textPrimary,
-    fontSize: 16,
-    fontWeight: '600',
+  bio: {
+    minHeight: 80,
+    textAlignVertical: 'top',
   },
   locationButton: {
-    backgroundColor: colors.backgroundCard,
-    padding: 15,
-    borderRadius: 8,
-    alignItems: 'center',
-    marginBottom: 20,
-    borderWidth: 1,
-    borderColor: colors.textSecondary,
+    marginTop: Spacing.lg,
+    backgroundColor: Colors.inputBg,
   },
-  locationButtonText: {
-    color: colors.textPrimary,
-    fontSize: 16,
+  footer: {
+    paddingHorizontal: Spacing.screenPadding,
+    paddingBottom: Spacing.lg,
+    backgroundColor: Colors.background,
+  },
+  bottomSpace: {
+    height: Spacing.lg,
   },
 });

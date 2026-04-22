@@ -1,6 +1,7 @@
-import { colors } from '@/src/constants/colors';
+import Button from '@/src/components/ui/Button';
+import { Colors, Radius, Spacing, Typography } from '@/src/constants/theme';
 import React, { useState } from 'react';
-import { StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { SafeAreaView, StatusBar, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
 export default function OTP() {
   const [otp, setOtp] = useState(['', '', '', '']);
@@ -16,13 +17,18 @@ export default function OTP() {
   };
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
+      <StatusBar barStyle="dark-content" />
+      <TouchableOpacity activeOpacity={0.7} style={styles.backButton}>
+        <Text style={styles.backText}>←</Text>
+      </TouchableOpacity>
       <Text style={styles.title}>Verify Your Account</Text>
+      <Text style={styles.subtitle}>Enter the 4-digit code we sent you</Text>
       <View style={styles.otpContainer}>
         {otp.map((digit, index) => (
           <TextInput
             key={index}
-            style={styles.otpInput}
+            style={[styles.otpInput, digit ? styles.activeInput : null]}
             value={digit}
             onChangeText={(value) => handleChange(value, index)}
             keyboardType="numeric"
@@ -30,61 +36,77 @@ export default function OTP() {
           />
         ))}
       </View>
-      <TouchableOpacity style={styles.button}>
-        <Text style={styles.buttonText}>Continue</Text>
-      </TouchableOpacity>
-      <TouchableOpacity style={styles.resend}>
-        <Text style={styles.resendText}>Resend OTP</Text>
-      </TouchableOpacity>
-    </View>
+      <View style={styles.resendRow}>
+        <Text style={styles.resendCopy}>Didn&apos;t receive a code? </Text>
+        <TouchableOpacity activeOpacity={0.7}>
+          <Text style={styles.resendText}>Resend</Text>
+        </TouchableOpacity>
+      </View>
+      <View style={styles.bottomCta}>
+        <Button title="Continue" />
+      </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.backgroundLight,
-    padding: 20,
-    justifyContent: 'center',
+    backgroundColor: Colors.background,
+    padding: Spacing.screenPadding,
+  },
+  backButton: {
+    alignSelf: 'flex-start',
+    marginTop: Spacing.sm,
+    marginBottom: Spacing.lg,
+  },
+  backText: {
+    ...Typography.h3,
   },
   title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: colors.textPrimary,
-    textAlign: 'center',
-    marginBottom: 30,
+    ...Typography.h1,
+    marginBottom: Spacing.sm,
+  },
+  subtitle: {
+    ...Typography.bodySmall,
+    marginBottom: Spacing.xl,
   },
   otpContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 30,
+    gap: 12,
+    marginBottom: Spacing.lg,
   },
   otpInput: {
-    width: 50,
-    height: 50,
-    borderWidth: 1,
-    borderColor: colors.textSecondary,
-    borderRadius: 8,
+    width: 64,
+    height: 64,
+    backgroundColor: Colors.inputBg,
+    borderRadius: Radius.md,
     textAlign: 'center',
-    fontSize: 18,
+    fontSize: 28,
+    fontWeight: '700',
+    color: Colors.textPrimary,
   },
-  button: {
-    backgroundColor: colors.primary,
-    padding: 15,
-    borderRadius: 25,
+  activeInput: {
+    borderBottomWidth: 2,
+    borderBottomColor: Colors.primary,
+  },
+  resendRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 20,
+    marginTop: Spacing.sm,
   },
-  buttonText: {
-    color: colors.textPrimary,
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  resend: {
-    alignItems: 'center',
+  resendCopy: {
+    ...Typography.bodySmall,
   },
   resendText: {
-    color: colors.primary,
-    fontSize: 16,
+    ...Typography.bodySmall,
+    color: Colors.primary,
+    fontWeight: '700',
+  },
+  bottomCta: {
+    marginTop: 'auto',
+    paddingBottom: Spacing.md,
   },
 });

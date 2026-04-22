@@ -1,26 +1,55 @@
-import { colors } from '@/src/constants/colors';
+import Button from '@/src/components/ui/Button';
+import { Colors, Radius, Spacing, Typography } from '@/src/constants/theme';
 import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { SafeAreaView, StatusBar, StyleSheet, Text, View } from 'react-native';
 
 export default function Home() {
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Home Screen</Text>
-      {/* TODO: Add active circles summary, recent activity */}
-    </View>
+    <SafeAreaView style={styles.container}>
+      <StatusBar barStyle="dark-content" />
+      <View style={styles.content}>
+        <View style={styles.illustration} />
+        <Text style={styles.title}>No circle yet</Text>
+        <Text style={styles.subtitle}>
+          Create your first Circle and start meeting people
+        </Text>
+      </View>
+      <View style={styles.footer}>
+        <Button title="Create your Circle" />
+      </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.backgroundLight,
+    backgroundColor: Colors.background,
+  },
+  content: {
+    flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    paddingHorizontal: Spacing.screenPadding,
+  },
+  illustration: {
+    width: 200,
+    height: 200,
+    borderRadius: Radius.full,
+    backgroundColor: Colors.primaryLight,
   },
   title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: colors.textPrimary,
+    ...Typography.h2,
+    marginTop: Spacing.lg,
+  },
+  subtitle: {
+    ...Typography.bodySmall,
+    textAlign: 'center',
+    marginTop: Spacing.sm,
+    maxWidth: 280,
+  },
+  footer: {
+    paddingHorizontal: Spacing.screenPadding,
+    paddingBottom: Spacing.lg,
   },
 });

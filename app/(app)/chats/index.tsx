@@ -1,47 +1,137 @@
 import Avatar from '@/src/components/ui/Avatar';
-import Input from '@/src/components/ui/Input';
+import Button from '@/src/components/ui/Button';
 import { Colors, Radius, Spacing, Typography } from '@/src/constants/theme';
-import React from 'react';
-import { SafeAreaView, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useAuth } from '@/src/context/AuthContext';
+import {
+  getCircleById,
+  getLatestCircleForUser,
+  getUsersByIds,
+  SwipeCandidate,
+} from '@/src/services/swipe';
+import { Circle } from '@/src/types';
+import { router, useLocalSearchParams } from 'expo-router';
+import React, { useEffect, useMemo, useState } from 'react';
+import { ActivityIndicator, SafeAreaView, StatusBar, StyleSheet, Text, View } from 'react-native';
 
 export default function Chats() {
+  const { user } = useAuth();
+  const params = useLocalSearchParams<{ circleId?: string }>();
+  const [circle, setCircle] = useState<(Circle & { id: string }) | null>(null);
+  const [members, setMembers] = useState<SwipeCandidate[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const load = async () => {
+      if (!user) return;
+      setLoading(true);
+      const targetCircle = params.circleId
+        ? await getCircleById(String(params.circleId))
+        : await getLatestCircleForUser(user.uid);
+      setCircle(targetCircle);
+      if (targetCircle) {
+        const memberProfiles = await getUsersByIds(targetCircle.members || []);
+        setMembers(memberProfiles);
+      } else {
+        setMembers([]);
+      }
+      setLoading(false);
+    };
+    load();
+  }, [user?.uid, params.circleId]);
+
+  const membersCount = (circle?.members || []).length;
+  const size = circle?.size || 0;
+  const progressWidth = useMemo(() => {
+    if (!size) return '0%';
+    return `${Math.min(1, membersCount / size) * 100}%`;
+  }, [membersCount, size]);
+  const isComplete = Boolean(circle && (circle.status === 'complete' || membersCount >= size));
+
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <StatusBar barStyle="dark-content" />
+        <View style={styles.centered}>
+          <ActivityIndicator size="large" color={Colors.primaryDark} />
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (!circle) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <StatusBar barStyle="dark-content" />
+        <View style={styles.centered}>
+          <Text style={styles.title}>Your Circle</Text>
+          <Text style={styles.subtitle}>No active circle yet.</Text>
+          <View style={styles.ctaWrap}>
+            <Button title="Create Circle" onPress={() => router.push('/(app)/create-circle')} />
+          </View>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" />
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Circle Chat</Text>
-        <View style={styles.avatars}>
-          <Avatar size="sm" placeholder />
-          <Avatar size="sm" placeholder style={styles.avatarOverlap} />
-          <Avatar size="sm" placeholder style={styles.avatarOverlap} />
+
+      <View style={styles.headerRow}>
+        <Text style={styles.title}>{circle.name}</Text>
+        <View style={[styles.stageBadge, isComplete && styles.stageBadgeComplete]}>
+          <Text style={styles.stageBadgeText}>{isComplete ? 'COMPLETE' : 'FORMING'}</Text>
         </View>
       </View>
+      <Text style={styles.subtitle}>
+        {isComplete ? 'Your Circle is ready to meet' : 'Your circle is forming'}
+      </Text>
 
-      <View style={styles.messages}>
-        <View style={styles.leftMessageRow}>
-          <Avatar size="sm" placeholder />
-          <View>
-            <Text style={styles.senderName}>Alex</Text>
-            <View style={styles.leftBubble}>
-              <Text style={styles.leftBubbleText}>Hey everyone!</Text>
+      <View style={styles.membersRow}>
+        {Array.from({ length: size }).map((_, index) => {
+          const member = members[index];
+          return (
+            <View key={`${member?.uid || `empty-${index}`}`} style={styles.memberItem}>
+              <Avatar
+                size="md"
+                uri={member?.photoURL || undefined}
+                placeholder={!member?.photoURL}
+              />
+              <Text style={styles.memberName}>{member?.name || 'Open'}</Text>
             </View>
-          </View>
-        </View>
-        <View style={styles.rightBubble}>
-          <Text style={styles.rightBubbleText}>Excited for the meetup.</Text>
-        </View>
+          );
+        })}
       </View>
 
-      <View style={styles.inputRow}>
-        <TouchableOpacity activeOpacity={0.7} style={styles.attachButton}>
-          <Text>＋</Text>
-        </TouchableOpacity>
-        <View style={styles.inputWrap}>
-          <Input placeholder="Type a message" />
+      <View style={styles.progressCard}>
+        <View style={styles.progressHeader}>
+          <Text style={styles.progressLabel}>Progress</Text>
+          <Text style={styles.progressCount}>{membersCount} / {size}</Text>
         </View>
-        <TouchableOpacity activeOpacity={0.7} style={styles.sendButton}>
-          <Text style={styles.sendIcon}>➤</Text>
-        </TouchableOpacity>
+        <View style={styles.progressTrack}>
+          <View style={[styles.progressFill, { width: progressWidth }]} />
+        </View>
+        <Text style={styles.progressText}>
+          {isComplete
+            ? 'All members accepted. Your Circle is complete.'
+            : `Waiting for ${Math.max(0, size - membersCount)} more to accept your invite`}
+        </Text>
+      </View>
+
+      <View style={styles.goalCard}>
+        <Text style={styles.goalLabel}>MEETUP GOAL</Text>
+        <Text style={styles.goalValue}>{(circle as any).meetupGoal || 'Coffee · Within 3 days'}</Text>
+      </View>
+
+      <View style={styles.footer}>
+        {isComplete ? (
+          <>
+            <Button title="Enter Circle" onPress={() => router.push('/(app)/chats/room')} />
+            <Button title="View details" variant="ghost" onPress={() => router.push('/(app)/circle-dashboard')} />
+          </>
+        ) : (
+          <Button title="Continue swiping" onPress={() => router.push('/(app)/swipe')} />
+        )}
       </View>
     </SafeAreaView>
   );
@@ -51,89 +141,103 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: Colors.background,
+    padding: Spacing.screenPadding,
   },
-  header: {
-    paddingHorizontal: Spacing.screenPadding,
-    paddingVertical: Spacing.md,
+  centered: {
+    flex: 1,
+    justifyContent: 'center',
     alignItems: 'center',
   },
-  headerTitle: {
+  ctaWrap: {
+    marginTop: Spacing.lg,
+    width: '100%',
+  },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  title: {
+    ...Typography.h2,
+  },
+  stageBadge: {
+    backgroundColor: Colors.primaryLight,
+    borderRadius: Radius.pill,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  stageBadgeComplete: {
+    backgroundColor: Colors.primary,
+  },
+  stageBadgeText: {
+    ...Typography.bodySmall,
+    fontWeight: '700',
+  },
+  subtitle: {
+    ...Typography.bodySmall,
+    marginTop: Spacing.xs,
+  },
+  membersRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.sm,
+    marginTop: Spacing.lg,
+  },
+  memberItem: {
+    alignItems: 'center',
+    width: 58,
+  },
+  memberName: {
+    ...Typography.bodySmall,
+    marginTop: 4,
+  },
+  progressCard: {
+    backgroundColor: '#F7F1DD',
+    borderRadius: Radius.lg,
+    padding: Spacing.md,
+    marginTop: Spacing.lg,
+  },
+  progressHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  progressLabel: {
     ...Typography.h3,
   },
-  avatars: {
-    flexDirection: 'row',
+  progressCount: {
+    ...Typography.h3,
+  },
+  progressTrack: {
+    marginTop: Spacing.sm,
+    height: 8,
+    borderRadius: Radius.pill,
+    backgroundColor: Colors.white,
+    overflow: 'hidden',
+  },
+  progressFill: {
+    height: '100%',
+    backgroundColor: Colors.primary,
+    borderRadius: Radius.pill,
+  },
+  progressText: {
+    ...Typography.bodySmall,
     marginTop: Spacing.sm,
   },
-  avatarOverlap: {
-    marginLeft: -8,
-  },
-  messages: {
-    flex: 1,
-    paddingHorizontal: Spacing.screenPadding,
-    paddingTop: Spacing.md,
-    gap: Spacing.md,
-  },
-  leftMessageRow: {
-    flexDirection: 'row',
-    gap: Spacing.sm,
-    alignItems: 'flex-end',
-  },
-  senderName: {
-    fontSize: 11,
-    color: Colors.textSecondary,
-    marginBottom: 4,
-  },
-  leftBubble: {
+  goalCard: {
+    marginTop: Spacing.md,
     backgroundColor: Colors.inputBg,
-    borderRadius: 18,
-    borderBottomLeftRadius: 4,
-    paddingVertical: 10,
-    paddingHorizontal: 14,
-    maxWidth: '75%',
+    borderRadius: Radius.md,
+    padding: Spacing.md,
   },
-  leftBubbleText: {
-    ...Typography.body,
+  goalLabel: {
+    ...Typography.label,
   },
-  rightBubble: {
-    alignSelf: 'flex-end',
-    backgroundColor: Colors.primary,
-    borderRadius: 18,
-    borderBottomRightRadius: 4,
-    paddingVertical: 10,
-    paddingHorizontal: 14,
-    maxWidth: '75%',
+  goalValue: {
+    ...Typography.h3,
+    marginTop: Spacing.xs,
   },
-  rightBubbleText: {
-    ...Typography.body,
-    color: Colors.textPrimary,
-  },
-  inputRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  footer: {
+    marginTop: 'auto',
     gap: Spacing.sm,
-    paddingHorizontal: Spacing.screenPadding,
-    paddingVertical: Spacing.md,
-  },
-  attachButton: {
-    width: 36,
-    height: 36,
-    borderRadius: Radius.full,
-    backgroundColor: Colors.inputBg,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  inputWrap: {
-    flex: 1,
-  },
-  sendButton: {
-    width: 36,
-    height: 36,
-    borderRadius: Radius.full,
-    backgroundColor: Colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  sendIcon: {
-    color: Colors.textPrimary,
   },
 });

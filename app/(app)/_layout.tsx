@@ -21,10 +21,11 @@ export default function AppLayout() {
       }}
     >
       <Tabs.Screen name="index" options={{ title: 'Home' }} />
-      <Tabs.Screen name="chats/index" options={{ title: 'Chats' }} />
+      <Tabs.Screen name="chats/index" options={{ title: 'Circle' }} />
       <Tabs.Screen name="create-circle" options={{ href: null }} />
       <Tabs.Screen name="swipe" options={{ href: null }} />
       <Tabs.Screen name="circle-dashboard" options={{ href: null }} />
+      <Tabs.Screen name="chats/room" options={{ href: null }} />
     </Tabs>
   );
 }

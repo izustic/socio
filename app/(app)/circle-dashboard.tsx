@@ -119,7 +119,7 @@ export default function CircleDashboardScreen() {
 
       <View style={styles.footer}>
         {isComplete ? (
-          <Button title="Open Circle Chat" onPress={() => router.push('/(app)/chats/index')} />
+          <Button title="Open Circle Chat" onPress={() => router.push('/(app)/chats/room')} />
         ) : (
           <Button title="Continue Swiping" onPress={() => router.push('/(app)/swipe')} />
         )}

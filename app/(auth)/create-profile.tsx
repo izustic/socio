@@ -52,6 +52,12 @@ export default function CreateProfile() {
     const loc = await getLocationWithCity();
     if (loc) {
       setLocation(loc);
+      if (!loc.city) {
+        Alert.alert(
+          'Location captured',
+          'We got your location, but could not determine your city name right now.'
+        );
+      }
     } else {
       Alert.alert('Error', 'Unable to get your location. Please try again.');
     }

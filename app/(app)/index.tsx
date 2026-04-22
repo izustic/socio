@@ -1,9 +1,24 @@
 import Button from '@/src/components/ui/Button';
 import { Colors, Radius, Spacing, Typography } from '@/src/constants/theme';
-import React from 'react';
+import { useAuth } from '@/src/context/AuthContext';
+import { getLatestCircleForUser } from '@/src/services/swipe';
+import { router } from 'expo-router';
+import React, { useEffect, useState } from 'react';
 import { SafeAreaView, StatusBar, StyleSheet, Text, View } from 'react-native';
 
 export default function Home() {
+  const { user } = useAuth();
+  const [hasCircle, setHasCircle] = useState(false);
+
+  useEffect(() => {
+    const load = async () => {
+      if (!user) return;
+      const circle = await getLatestCircleForUser(user.uid);
+      setHasCircle(Boolean(circle));
+    };
+    load();
+  }, [user?.uid]);
+
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" />
@@ -15,7 +30,12 @@ export default function Home() {
         </Text>
       </View>
       <View style={styles.footer}>
-        <Button title="Create your Circle" />
+        <Button
+          title={hasCircle ? 'Open My Circle' : 'Create your Circle'}
+          onPress={() =>
+            router.push(hasCircle ? '/(app)/circle-dashboard' : '/(app)/create-circle')
+          }
+        />
       </View>
     </SafeAreaView>
   );

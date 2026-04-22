@@ -1,14 +1,36 @@
 import { Colors, Typography } from '@/src/constants/theme';
 import { router } from 'expo-router';
 import LottieView from 'lottie-react-native';
-import React, { useRef } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { StatusBar, StyleSheet, Text, View } from 'react-native';
+
+const MIN_SPLASH_DURATION_MS = 3500;
 
 export default function LottieSplashScreen() {
   const animationRef = useRef<LottieView>(null);
+  const mountedAtRef = useRef(Date.now());
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
+  }, []);
 
   const handleAnimationFinish = () => {
-    router.replace('/(auth)/sign-up');
+    const elapsed = Date.now() - mountedAtRef.current;
+    const remaining = Math.max(0, MIN_SPLASH_DURATION_MS - elapsed);
+
+    if (remaining === 0) {
+      router.replace('/(auth)/sign-up');
+      return;
+    }
+
+    timeoutRef.current = setTimeout(() => {
+      router.replace('/(auth)/sign-up');
+    }, remaining);
   };
 
   return (

@@ -61,7 +61,37 @@ export default function CircleChatRoom() {
           </View>
         </View>
         <View style={styles.rightBubble}>
-          <Text style={styles.rightBubbleText}>I&apos;ll start a poll ✅</Text>
+          <Text style={styles.rightBubbleText}>I&apos;ll start a poll 👇</Text>
+        </View>
+
+        <View style={styles.pollCard}>
+          <View style={styles.pollHeader}>
+            <Text style={styles.pollIcon}>📊</Text>
+            <Text style={styles.pollQuestion}>Where should we meet?</Text>
+          </View>
+          
+          <View style={styles.pollOption}>
+            <View style={[styles.pollFill, { width: '60%', backgroundColor: Colors.primaryLight }]} />
+            <View style={styles.pollOptionContent}>
+              <Text style={styles.pollOptionText}>Blue Bottle, Mission</Text>
+              <Text style={styles.pollVoteCount}>3</Text>
+            </View>
+          </View>
+
+          <View style={styles.pollOption}>
+            <View style={[styles.pollFill, { width: '40%', backgroundColor: '#FFF8EA' }]} />
+            <View style={styles.pollOptionContent}>
+              <Text style={styles.pollOptionText}>Sightglass Coffee</Text>
+              <Text style={styles.pollVoteCount}>2</Text>
+            </View>
+          </View>
+
+          <View style={styles.pollOption}>
+            <View style={styles.pollOptionContent}>
+              <Text style={styles.pollOptionText}>Ritual Coffee Roasters</Text>
+              <Text style={styles.pollVoteCount}>0</Text>
+            </View>
+          </View>
         </View>
       </View>
 
@@ -139,6 +169,55 @@ const styles = StyleSheet.create({
   rightBubbleText: {
     ...Typography.body,
     color: Colors.textPrimary,
+  },
+  pollCard: {
+    backgroundColor: '#FFF8EA',
+    borderRadius: Radius.lg,
+    padding: Spacing.md,
+    marginTop: Spacing.sm,
+  },
+  pollHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: Spacing.md,
+    gap: Spacing.sm,
+  },
+  pollIcon: {
+    fontSize: 16,
+  },
+  pollQuestion: {
+    ...Typography.body,
+    fontWeight: '700',
+  },
+  pollOption: {
+    height: 40,
+    backgroundColor: Colors.white,
+    borderRadius: Radius.sm,
+    marginBottom: Spacing.sm,
+    overflow: 'hidden',
+    justifyContent: 'center',
+  },
+  pollFill: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    bottom: 0,
+  },
+  pollOptionContent: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingHorizontal: Spacing.md,
+    width: '100%',
+    alignItems: 'center',
+  },
+  pollOptionText: {
+    ...Typography.bodySmall,
+    fontWeight: '600',
+    color: Colors.textPrimary,
+  },
+  pollVoteCount: {
+    ...Typography.bodySmall,
+    color: Colors.textSecondary,
   },
   inputRow: {
     flexDirection: 'row',

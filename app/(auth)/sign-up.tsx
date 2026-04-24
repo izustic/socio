@@ -3,6 +3,7 @@ import Input from '@/src/components/ui/Input';
 import { Colors, Radius, Spacing, Typography } from '@/src/constants/theme';
 import { useAuth } from '@/src/context/AuthContext';
 import { signInWithEmail, signUpWithEmail, signUpWithFacebook, signUpWithGoogle } from '@/src/services/auth';
+import { Image } from 'expo-image';
 import { makeRedirectUri } from 'expo-auth-session';
 import * as Facebook from 'expo-auth-session/providers/facebook';
 import * as Google from 'expo-auth-session/providers/google';
@@ -147,11 +148,18 @@ export default function SignUp() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="light-content" />
+      <StatusBar barStyle="dark-content" />
       <View style={styles.topSection}>
-        <View style={styles.logoMark} />
-        <Text style={styles.logo}>socio</Text>
-        <Text style={styles.tagline}>Your circle starts here.</Text>
+        <Image
+          source={require('../../assets/images/logo.png')}
+          contentFit="contain"
+          style={styles.logoImage}
+        />
+        <View style={styles.wordmarkRow}>
+          <Text style={styles.logo}>Socio</Text>
+          <View style={styles.logoDot} />
+        </View>
+        <Text style={styles.tagline}>The real social network</Text>
       </View>
       <View style={styles.bottomSection}>
         <TouchableOpacity
@@ -254,22 +262,35 @@ export default function SignUp() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.primary,
+    backgroundColor: Colors.white,
   },
   topSection: {
     flex: 0.45,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  logoMark: {
-    width: 80,
-    height: 80,
-    borderRadius: Radius.full,
-    backgroundColor: 'rgba(26,26,26,0.08)',
-    marginBottom: Spacing.md,
+  logoImage: {
+    width: 132,
+    height: 132,
+    marginBottom: Spacing.lg,
+  },
+  wordmarkRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   logo: {
     ...Typography.display,
+    fontSize: 52,
+    lineHeight: 56,
+    letterSpacing: -1.5,
+  },
+  logoDot: {
+    width: 12,
+    height: 12,
+    borderRadius: Radius.full,
+    backgroundColor: '#FFB81C',
+    marginLeft: 5,
+    marginTop: 20,
   },
   tagline: {
     ...Typography.body,

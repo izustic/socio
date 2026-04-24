@@ -1,49 +1,55 @@
 import { Colors, Typography } from '@/src/constants/theme';
-import { router } from 'expo-router';
+import { Image } from 'expo-image';
 import LottieView from 'lottie-react-native';
 import React, { useEffect, useRef } from 'react';
 import { StatusBar, StyleSheet, Text, View } from 'react-native';
+import animationData from '../../assets/animations/logo_coalescence_animation.json';
 
-const MIN_SPLASH_DURATION_MS = 3500;
+interface LottieSplashScreenProps {
+  minDurationMs?: number;
+  onComplete?: () => void;
+}
 
-export default function LottieSplashScreen() {
+export default function LottieSplashScreen({
+  minDurationMs = 3500,
+  onComplete,
+}: LottieSplashScreenProps) {
   const animationRef = useRef<LottieView>(null);
-  const mountedAtRef = useRef(Date.now());
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const hasRenderableAnimation =
+    Array.isArray((animationData as { layers?: unknown[] }).layers) &&
+    (animationData as { layers?: unknown[] }).layers!.length > 0;
 
   useEffect(() => {
+    timeoutRef.current = setTimeout(() => {
+      onComplete?.();
+    }, minDurationMs);
+
     return () => {
       if (timeoutRef.current) {
         clearTimeout(timeoutRef.current);
       }
     };
-  }, []);
-
-  const handleAnimationFinish = () => {
-    const elapsed = Date.now() - mountedAtRef.current;
-    const remaining = Math.max(0, MIN_SPLASH_DURATION_MS - elapsed);
-
-    if (remaining === 0) {
-      router.replace('/(auth)/sign-up');
-      return;
-    }
-
-    timeoutRef.current = setTimeout(() => {
-      router.replace('/(auth)/sign-up');
-    }, remaining);
-  };
+  }, [minDurationMs, onComplete]);
 
   return (
     <View style={styles.container}>
       <StatusBar barStyle="light-content" />
-      <LottieView
-        ref={animationRef}
-        source={require('../../assets/animations/logo_coalescence_animation.json')}
-        autoPlay
-        loop={false}
-        onAnimationFinish={handleAnimationFinish}
-        style={styles.animation}
-      />
+      {hasRenderableAnimation ? (
+        <LottieView
+          ref={animationRef}
+          source={animationData}
+          autoPlay
+          loop={false}
+          style={styles.animation}
+        />
+      ) : (
+        <Image
+          source={require('../../assets/images/logo.png')}
+          contentFit="contain"
+          style={styles.animationFallback}
+        />
+      )}
       <Text style={styles.logoText}>socio</Text>
       <Text style={styles.tagline}>Your circle starts here.</Text>
     </View>
@@ -55,9 +61,13 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: Colors.primary,
+    backgroundColor: Colors.white,
   },
   animation: {
+    width: 160,
+    height: 160,
+  },
+  animationFallback: {
     width: 160,
     height: 160,
   },

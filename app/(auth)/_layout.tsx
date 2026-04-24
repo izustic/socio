@@ -5,7 +5,7 @@ import { Redirect, Stack } from 'expo-router';
 export default function AuthLayout() {
   const { user, profile, loading } = useAuth();
 
-  if (loading) return <LottieSplashScreen />;
+  if (loading) return <LottieSplashScreen minDurationMs={0} />;
   if (user && profile?.profileComplete) return <Redirect href="/(app)" />;
 
   return <Stack />;

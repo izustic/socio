@@ -1,5 +1,6 @@
 import { Tabs } from 'expo-router';
 import { Colors } from '@/src/constants/theme';
+import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function TabLayout() {
@@ -24,14 +25,14 @@ export default function TabLayout() {
         name="index"
         options={{
           title: 'Home',
-          tabBarIcon: () => null,
+          tabBarIcon: ({ color, size }) => <Ionicons name="home" size={size} color={color} />,
         }}
       />
       <Tabs.Screen
         name="explore"
         options={{
-          title: 'Explore',
-          tabBarIcon: () => null,
+          title: 'Circle',
+          tabBarIcon: ({ color, size }) => <Ionicons name="radio-button-off" size={size} color={color} />,
         }}
       />
     </Tabs>

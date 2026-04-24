@@ -51,7 +51,7 @@ export default function LottieSplashScreen({
         />
       )}
       <Text style={styles.logoText}>socio</Text>
-      <Text style={styles.tagline}>Your circle starts here.</Text>
+      <Text style={styles.tagline}>The real social network</Text>
     </View>
   );
 }

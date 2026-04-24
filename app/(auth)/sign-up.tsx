@@ -1,19 +1,20 @@
 import Button from '@/src/components/ui/Button';
 import Input from '@/src/components/ui/Input';
 import { Colors, Radius, Spacing, Typography } from '@/src/constants/theme';
-import { useAuth } from '@/src/context/AuthContext';
+import { useOnboarding } from '@/src/context/OnboardingContext';
 import { signInWithEmail, signUpWithEmail, signUpWithFacebook, signUpWithGoogle } from '@/src/services/auth';
+import { getUserProfile } from '@/src/services/user';
 import { Image } from 'expo-image';
 import { makeRedirectUri } from 'expo-auth-session';
 import * as Facebook from 'expo-auth-session/providers/facebook';
 import * as Google from 'expo-auth-session/providers/google';
-import { Redirect } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { router } from 'expo-router';
+import { useCallback, useEffect, useState } from 'react';
 import {
   Alert,
   KeyboardAvoidingView,
-  Platform,
   Modal,
+  Platform,
   SafeAreaView,
   ScrollView,
   StatusBar,
@@ -24,7 +25,7 @@ import {
 } from 'react-native';
 
 export default function SignUp() {
-  const { user, profile, loading: authLoading } = useAuth();
+  const { beginOnboarding } = useOnboarding();
   const [showEmailModal, setShowEmailModal] = useState(false);
   const [isSignUp, setIsSignUp] = useState(true);
   const [email, setEmail] = useState('');
@@ -34,7 +35,6 @@ export default function SignUp() {
 
   const redirectUri = makeRedirectUri({ scheme: 'demoapp' });
 
-  // Google Auth
   const [googleRequest, googleResponse, promptGoogleAsync] = Google.useAuthRequest({
     clientId: process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID,
     scopes: ['profile', 'email'],
@@ -42,7 +42,6 @@ export default function SignUp() {
     redirectUri,
   });
 
-  // Facebook Auth
   const [facebookRequest, facebookResponse, promptFacebookAsync] = Facebook.useAuthRequest({
     clientId: process.env.EXPO_PUBLIC_FACEBOOK_APP_ID,
     responseType: 'token',
@@ -50,13 +49,48 @@ export default function SignUp() {
     redirectUri,
   });
 
+  const continueIntoOnboarding = useCallback(async (
+    uid: string,
+    contactHint: string,
+    seed?: { name?: string; photoURL?: string }
+  ) => {
+    const existingProfile = await getUserProfile(uid);
+    if (existingProfile?.profileComplete) {
+      router.replace('/(app)');
+      return;
+    }
+
+    if (!existingProfile) {
+      beginOnboarding(
+        {
+          contactHint,
+          name: seed?.name || '',
+          photoURL: seed?.photoURL || '',
+        },
+        'otp'
+      );
+      router.replace('/otp');
+      return;
+    }
+
+    router.replace('/create-profile');
+  }, [beginOnboarding]);
+
   useEffect(() => {
     const processGoogleResponse = async () => {
       if (googleResponse?.type === 'success' && googleResponse.authentication) {
         try {
           setLoading(true);
           const { idToken, accessToken } = googleResponse.authentication;
-          await signUpWithGoogle(idToken, accessToken);
+          const user = await signUpWithGoogle(idToken, accessToken);
+          await continueIntoOnboarding(
+            user.uid,
+            user.email || 'your Google account',
+            {
+              name: user.displayName || '',
+              photoURL: user.photoURL || '',
+            }
+          );
         } catch (error: any) {
           console.error('Google sign in error:', error);
           Alert.alert('Google sign in failed', error.message || 'Please try again.');
@@ -66,7 +100,7 @@ export default function SignUp() {
       }
     };
     processGoogleResponse();
-  }, [googleResponse]);
+  }, [googleResponse, continueIntoOnboarding]);
 
   useEffect(() => {
     const processFacebookResponse = async () => {
@@ -74,7 +108,15 @@ export default function SignUp() {
         try {
           setLoading(true);
           const { accessToken } = facebookResponse.authentication;
-          await signUpWithFacebook(accessToken);
+          const user = await signUpWithFacebook(accessToken);
+          await continueIntoOnboarding(
+            user.uid,
+            user.email || 'your Facebook account',
+            {
+              name: user.displayName || '',
+              photoURL: user.photoURL || '',
+            }
+          );
         } catch (error: any) {
           console.error('Facebook sign in error:', error);
           Alert.alert('Facebook sign in failed', error.message || 'Please try again.');
@@ -84,109 +126,77 @@ export default function SignUp() {
       }
     };
     processFacebookResponse();
-  }, [facebookResponse]);
+  }, [facebookResponse, continueIntoOnboarding]);
 
   const handleEmailAuth = async () => {
     if (!email || !password) {
-      Alert.alert('Error', 'Please fill in all fields');
+      Alert.alert('Missing details', 'Please fill in both your email and password.');
       return;
     }
 
     setLoading(true);
     try {
-      if (isSignUp) {
-        await signUpWithEmail(email, password);
-      } else {
-        await signInWithEmail(email, password);
-      }
+      const user = isSignUp
+        ? await signUpWithEmail(email, password)
+        : await signInWithEmail(email, password);
+
       setShowEmailModal(false);
-      setEmail('');
       setPassword('');
-      // Auth state will handle navigation
+      await continueIntoOnboarding(user.uid, email, { name: user.displayName || '' });
     } catch (error: any) {
       console.error('Email auth error:', error);
-      Alert.alert(
-        'Error',
-        error.message || 'Authentication failed. Please try again.'
-      );
+      Alert.alert('Authentication failed', error.message || 'Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleGoogleSignIn = async () => {
-    if (!googleRequest) {
-      Alert.alert('Google Auth', 'Google auth is not configured yet.');
-      return;
-    }
-
-    try {
-      await promptGoogleAsync();
-    } catch (error: any) {
-      console.error('Google prompt error:', error);
-      Alert.alert('Error', 'Unable to open Google sign in.');
-    }
-  };
-
-  const handleFacebookSignIn = async () => {
-    if (!facebookRequest) {
-      Alert.alert('Facebook Auth', 'Facebook auth is not configured yet.');
-      return;
-    }
-
-    try {
-      await promptFacebookAsync();
-    } catch (error: any) {
-      console.error('Facebook prompt error:', error);
-      Alert.alert('Error', 'Unable to open Facebook sign in.');
-    }
-  };
-
-  if (!authLoading && user && !profile?.profileComplete) {
-    return <Redirect href="/(auth)/create-profile" />;
-  }
-
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" />
-      <View style={styles.topSection}>
-        <Image
-          source={require('../../assets/images/logo.png')}
-          contentFit="contain"
-          style={styles.logoImage}
-        />
-        <View style={styles.wordmarkRow}>
-          <Text style={styles.logo}>Socio</Text>
-          <View style={styles.logoDot} />
+      <View style={styles.hero}>
+        <View style={styles.logoBadge}>
+          <Image
+            source={require('../../assets/images/logo.png')}
+            contentFit="contain"
+            style={styles.logo}
+          />
         </View>
-        <Text style={styles.tagline}>The real social network</Text>
+        <Text style={styles.title}>One Circle. Real friendships.</Text>
+        <Text style={styles.subtitle}>
+          Form one meaningful friend group through shared interests and real-life meetups.
+        </Text>
       </View>
-      <View style={styles.bottomSection}>
+
+      <View style={styles.actions}>
         <TouchableOpacity
-          activeOpacity={0.7}
-          style={[styles.socialButton, (loading || !googleRequest) && styles.disabled]}
-          onPress={handleGoogleSignIn}
-          disabled={loading || !googleRequest}
+          activeOpacity={0.8}
+          style={[styles.socialButton, (!googleRequest || loading) && styles.disabled]}
+          disabled={!googleRequest || loading}
+          onPress={() => promptGoogleAsync()}
         >
           <Text style={styles.socialIcon}>G</Text>
           <Text style={styles.socialText}>Continue with Google</Text>
           <View style={styles.iconSpacer} />
         </TouchableOpacity>
+
         <TouchableOpacity
-          activeOpacity={0.7}
-          style={[styles.socialButton, (loading || !facebookRequest) && styles.disabled]}
-          onPress={handleFacebookSignIn}
-          disabled={loading || !facebookRequest}
+          activeOpacity={0.8}
+          style={[styles.socialButton, (!facebookRequest || loading) && styles.disabled]}
+          disabled={!facebookRequest || loading}
+          onPress={() => promptFacebookAsync()}
         >
           <Text style={[styles.socialIcon, styles.facebookIcon]}>f</Text>
           <Text style={styles.socialText}>Continue with Facebook</Text>
           <View style={styles.iconSpacer} />
         </TouchableOpacity>
+
         <View style={styles.dividerRow}>
           <View style={styles.dividerLine} />
           <Text style={styles.dividerText}>or</Text>
           <View style={styles.dividerLine} />
         </View>
+
         <Button
           title="Sign up with Email"
           variant="ghost"
@@ -195,8 +205,9 @@ export default function SignUp() {
             setShowEmailModal(true);
           }}
         />
+
         <TouchableOpacity
-          activeOpacity={0.7}
+          activeOpacity={0.8}
           style={styles.loginRow}
           onPress={() => {
             setIsSignUp(false);
@@ -204,8 +215,12 @@ export default function SignUp() {
           }}
         >
           <Text style={styles.loginText}>Already have an account? </Text>
-          <Text style={styles.loginHighlight}>Log in</Text>
+          <Text style={styles.loginAccent}>Log in</Text>
         </TouchableOpacity>
+
+        <Text style={styles.terms}>
+          By continuing you agree to our Terms & Privacy.
+        </Text>
       </View>
 
       <Modal visible={showEmailModal} animationType="slide" transparent>
@@ -213,12 +228,29 @@ export default function SignUp() {
           style={styles.modalOverlay}
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         >
-          <View style={styles.modalContent}>
-            <TouchableOpacity activeOpacity={0.7} onPress={() => setShowEmailModal(false)} style={styles.closeButton}>
-              <Text style={styles.closeButtonText}>✕</Text>
+          <View style={styles.modal}>
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={() => setShowEmailModal(false)}
+              style={styles.closeButton}
+            >
+              <Text style={styles.closeText}>✕</Text>
             </TouchableOpacity>
-            <ScrollView style={styles.formContainer} contentContainerStyle={styles.formContent}>
-              <Text style={styles.modalTitle}>{isSignUp ? 'Create Account' : 'Login'}</Text>
+
+            <ScrollView
+              style={styles.modalScroll}
+              contentContainerStyle={styles.modalContent}
+              keyboardShouldPersistTaps="handled"
+            >
+              <Text style={styles.modalTitle}>
+                {isSignUp ? 'Create your account' : 'Welcome back'}
+              </Text>
+              <Text style={styles.modalSubtitle}>
+                {isSignUp
+                  ? 'We will use this to set up your Circle.'
+                  : 'Pick up where you left off.'}
+              </Text>
+
               <Input
                 placeholder="Email"
                 value={email}
@@ -226,6 +258,7 @@ export default function SignUp() {
                 keyboardType="email-address"
                 autoCapitalize="none"
               />
+
               <View>
                 <Input
                   placeholder="Password"
@@ -234,22 +267,26 @@ export default function SignUp() {
                   secureTextEntry={!showPassword}
                 />
                 <TouchableOpacity
-                  activeOpacity={0.7}
+                  activeOpacity={0.8}
                   style={styles.passwordToggle}
-                  onPress={() => setShowPassword(!showPassword)}
+                  onPress={() => setShowPassword((prev) => !prev)}
                 >
-                  <Text style={styles.eyeIcon}>{showPassword ? 'Hide' : 'Show'}</Text>
+                  <Text style={styles.passwordToggleText}>
+                    {showPassword ? 'Hide' : 'Show'}
+                  </Text>
                 </TouchableOpacity>
               </View>
+
               <Button
-                title={loading ? 'Loading...' : isSignUp ? 'Sign Up' : 'Login'}
+                title={loading ? 'Please wait...' : isSignUp ? 'Continue' : 'Log in'}
                 onPress={handleEmailAuth}
                 disabled={loading}
               />
+
               <Button
-                title={isSignUp ? 'Already have an account? Login' : "Don't have an account? Sign Up"}
+                title={isSignUp ? 'Already have an account? Log in' : "Don't have an account? Sign up"}
                 variant="ghost"
-                onPress={() => setIsSignUp(!isSignUp)}
+                onPress={() => setIsSignUp((prev) => !prev)}
               />
             </ScrollView>
           </View>
@@ -262,73 +299,71 @@ export default function SignUp() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.background,
+    paddingHorizontal: Spacing.screenPadding,
+    paddingBottom: Spacing.xl,
   },
-  topSection: {
-    flex: 0.45,
+  hero: {
+    marginTop: Spacing.md,
+    backgroundColor: Colors.primary,
+    borderRadius: 36,
+    paddingHorizontal: 28,
+    paddingVertical: 36,
+    minHeight: 320,
+    justifyContent: 'flex-end',
+  },
+  logoBadge: {
+    width: 56,
+    height: 56,
+    borderRadius: Radius.full,
+    backgroundColor: 'rgba(255,255,255,0.32)',
+    alignItems: 'center',
     justifyContent: 'center',
-    alignItems: 'center',
-  },
-  logoImage: {
-    width: 132,
-    height: 132,
-    marginBottom: Spacing.lg,
-  },
-  wordmarkRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    marginBottom: Spacing.xl,
   },
   logo: {
-    ...Typography.display,
-    fontSize: 52,
-    lineHeight: 56,
-    letterSpacing: -1.5,
+    width: 28,
+    height: 28,
   },
-  logoDot: {
-    width: 12,
-    height: 12,
-    borderRadius: Radius.full,
-    backgroundColor: '#FFB81C',
-    marginLeft: 5,
-    marginTop: 20,
+  title: {
+    ...Typography.h1,
+    fontSize: 40,
+    lineHeight: 42,
+    maxWidth: 260,
   },
-  tagline: {
+  subtitle: {
     ...Typography.body,
-    color: 'rgba(26,26,26,0.6)',
-    marginTop: Spacing.sm,
+    marginTop: Spacing.md,
+    maxWidth: 250,
   },
-  bottomSection: {
-    flex: 0.55,
-    backgroundColor: Colors.background,
-    borderTopLeftRadius: 32,
-    borderTopRightRadius: 32,
-    paddingHorizontal: Spacing.screenPadding,
-    paddingTop: Spacing.xl,
-    paddingBottom: Spacing.lg,
-    gap: Spacing.sm,
+  actions: {
+    flex: 1,
+    justifyContent: 'center',
+    gap: Spacing.md,
   },
   socialButton: {
-    backgroundColor: Colors.inputBg,
+    backgroundColor: '#F6F3EC',
     borderRadius: Radius.pill,
-    paddingVertical: 14,
-    paddingHorizontal: Spacing.md,
+    paddingVertical: 16,
+    paddingHorizontal: 18,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  socialText: {
-    ...Typography.button,
-    color: Colors.textPrimary,
   },
   socialIcon: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: Colors.textSecondary,
     width: 20,
     textAlign: 'center',
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#DB4437',
   },
   facebookIcon: {
     color: '#1877F2',
+    fontSize: 18,
+  },
+  socialText: {
+    ...Typography.button,
+    flex: 1,
+    textAlign: 'center',
   },
   iconSpacer: {
     width: 20,
@@ -336,7 +371,7 @@ const styles = StyleSheet.create({
   dividerRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginVertical: Spacing.sm,
+    gap: Spacing.sm,
   },
   dividerLine: {
     flex: 1,
@@ -345,10 +380,9 @@ const styles = StyleSheet.create({
   },
   dividerText: {
     ...Typography.bodySmall,
-    marginHorizontal: Spacing.md,
+    color: Colors.textSecondary,
   },
   loginRow: {
-    marginTop: 'auto',
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
@@ -356,50 +390,63 @@ const styles = StyleSheet.create({
   loginText: {
     ...Typography.bodySmall,
   },
-  loginHighlight: {
+  loginAccent: {
     ...Typography.bodySmall,
-    color: Colors.primary,
+    color: Colors.primaryDark,
     fontWeight: '700',
+  },
+  terms: {
+    ...Typography.bodySmall,
+    textAlign: 'center',
+    marginTop: Spacing.sm,
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'flex-end',
+    backgroundColor: 'rgba(17,17,17,0.24)',
   },
-  modalContent: {
-    backgroundColor: Colors.background,
-    borderTopLeftRadius: Radius.xl,
-    borderTopRightRadius: Radius.xl,
+  modal: {
+    backgroundColor: Colors.white,
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
     maxHeight: '80%',
   },
   closeButton: {
     alignSelf: 'flex-end',
-    padding: Spacing.md,
+    width: 40,
+    height: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: Spacing.md,
+    marginRight: Spacing.md,
   },
-  closeButtonText: {
-    fontSize: 24,
-    color: Colors.textPrimary,
+  closeText: {
+    ...Typography.h3,
   },
-  formContainer: {
+  modalScroll: {
+    flexGrow: 0,
+  },
+  modalContent: {
     paddingHorizontal: Spacing.screenPadding,
-  },
-  formContent: {
-    gap: Spacing.md,
     paddingBottom: Spacing.xl,
+    gap: Spacing.md,
   },
   modalTitle: {
     ...Typography.h2,
-    textAlign: 'center',
-    marginBottom: Spacing.sm,
+  },
+  modalSubtitle: {
+    ...Typography.body,
+    color: Colors.textSecondary,
   },
   passwordToggle: {
     position: 'absolute',
-    right: 14,
+    right: 16,
     top: 14,
   },
-  eyeIcon: {
+  passwordToggleText: {
     ...Typography.bodySmall,
     fontWeight: '700',
+    color: Colors.textSecondary,
   },
   disabled: {
     opacity: 0.5,

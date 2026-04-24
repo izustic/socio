@@ -1,9 +1,19 @@
 import { Colors } from '@/src/constants/theme';
-import { Tabs } from 'expo-router';
+import { getOnboardingRoute } from '@/src/constants/onboarding';
+import LottieSplashScreen from '@/src/components/LottieSplashScreen';
+import { useAuth } from '@/src/context/AuthContext';
+import { useOnboarding } from '@/src/context/OnboardingContext';
+import { Redirect, Tabs } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function AppLayout() {
   const insets = useSafeAreaInsets();
+  const { user, profile, loading } = useAuth();
+  const { currentStep, loading: onboardingLoading } = useOnboarding();
+
+  if (loading || onboardingLoading) return <LottieSplashScreen minDurationMs={0} />;
+  if (!user) return <Redirect href="/sign-up" />;
+  if (!profile?.profileComplete) return <Redirect href={getOnboardingRoute(currentStep)} />;
 
   return (
     <Tabs

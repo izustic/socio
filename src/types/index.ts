@@ -4,17 +4,39 @@ export interface User {
   age: number;
   gender: 'Male' | 'Female' | 'Non-binary' | 'Prefer not to say';
   interests: Interest[];
+  traits?: ProfileTrait[];
   education: string;
-  location: { lat: number; lng: number };
+  location?: { lat: number; lng: number; city?: string };
   photoURL: string;
   bio?: string;
+  notificationsEnabled?: boolean;
+  locationEnabled?: boolean;
   profileComplete: boolean;
   createdAt: Date;
 }
 
 export type Interest =
   | 'Music' | 'Travel' | 'Books' | 'Gaming'
-  | 'Fitness' | 'Art' | 'Food' | 'Film';
+  | 'Fitness' | 'Art' | 'Food' | 'Film'
+  | 'Photo' | 'Outdoors' | 'Tech' | 'Sports'
+  | 'Coffee' | 'Nature' | 'Pets' | 'Wellness'
+  | 'Theatre';
+
+export type ProfileTrait =
+  | 'Introverted'
+  | 'Extroverted'
+  | 'Adventurous'
+  | 'Laid-back'
+  | 'Intellectual'
+  | 'Funny'
+  | 'Ambitious'
+  | 'Creative'
+  | 'Loyal'
+  | 'Open-minded'
+  | 'Active'
+  | 'Artsy'
+  | 'Deep thinker'
+  | 'Spontaneous';
 
 export type CircleStatus = 'forming' | 'complete';
 

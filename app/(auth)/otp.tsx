@@ -1,90 +1,91 @@
-import { colors } from '@/src/constants/colors';
-import React, { useState } from 'react';
-import { StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import OnboardingLayout from '@/src/components/onboarding/OnboardingLayout';
+import { Colors, Radius, Spacing, Typography } from '@/src/constants/theme';
+import { useOnboarding } from '@/src/context/OnboardingContext';
+import { router } from 'expo-router';
+import { useMemo, useRef, useState } from 'react';
+import { StyleSheet, Text, TextInput, View } from 'react-native';
 
-export default function OTP() {
-  const [otp, setOtp] = useState(['', '', '', '']);
+export default function OtpScreen() {
+  const { draft, mergeDraft, setStep } = useOnboarding();
+  const [otp, setOtp] = useState(['4', '8', '2', '1']);
+  const inputs = useRef<(TextInput | null)[]>([]);
+
+  const complete = useMemo(() => otp.every((digit) => digit.trim().length === 1), [otp]);
 
   const handleChange = (value: string, index: number) => {
-    const newOtp = [...otp];
-    newOtp[index] = value;
-    setOtp(newOtp);
-    // Auto focus next
-    if (value && index < 3) {
-      // Focus next input
+    const clean = value.replace(/[^0-9]/g, '').slice(-1);
+    const next = [...otp];
+    next[index] = clean;
+    setOtp(next);
+
+    if (clean && index < inputs.current.length - 1) {
+      inputs.current[index + 1]?.focus();
     }
   };
 
+  const handleContinue = () => {
+    mergeDraft({
+      contactHint: draft.contactHint || 'your account',
+    });
+    setStep('location-permission');
+    router.replace('/location-permission');
+  };
+
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Verify Your Account</Text>
-      <View style={styles.otpContainer}>
+    <OnboardingLayout
+      onBackPress={() => router.back()}
+      title="Verify your account"
+      subtitle={`We sent a 4-digit code to ${draft.contactHint || 'your account'}.`}
+      stepNumber="02  OTP VERIFICATION"
+      primaryLabel="Verify"
+      onPrimaryPress={handleContinue}
+      primaryDisabled={!complete}
+      secondaryLabel="Resend in 0:23"
+      onSecondaryPress={() => setOtp(['4', '8', '2', '1'])}
+      centerContent
+    >
+      <View style={styles.row}>
         {otp.map((digit, index) => (
           <TextInput
             key={index}
-            style={styles.otpInput}
+            ref={(ref) => {
+              inputs.current[index] = ref;
+            }}
+            style={[styles.input, digit ? styles.inputFilled : null]}
             value={digit}
             onChangeText={(value) => handleChange(value, index)}
-            keyboardType="numeric"
+            keyboardType="number-pad"
             maxLength={1}
+            textAlign="center"
           />
         ))}
       </View>
-      <TouchableOpacity style={styles.button}>
-        <Text style={styles.buttonText}>Continue</Text>
-      </TouchableOpacity>
-      <TouchableOpacity style={styles.resend}>
-        <Text style={styles.resendText}>Resend OTP</Text>
-      </TouchableOpacity>
-    </View>
+      <Text style={styles.caption}>Didn&apos;t get the code? Tap above to resend.</Text>
+    </OnboardingLayout>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.backgroundLight,
-    padding: 20,
-    justifyContent: 'center',
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: colors.textPrimary,
-    textAlign: 'center',
-    marginBottom: 30,
-  },
-  otpContainer: {
+  row: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 30,
+    gap: Spacing.md,
   },
-  otpInput: {
-    width: 50,
-    height: 50,
-    borderWidth: 1,
-    borderColor: colors.textSecondary,
-    borderRadius: 8,
-    textAlign: 'center',
-    fontSize: 18,
+  input: {
+    width: 68,
+    height: 78,
+    borderRadius: Radius.md,
+    backgroundColor: '#F7F4EB',
+    fontSize: 30,
+    fontWeight: '800',
+    color: Colors.textPrimary,
   },
-  button: {
-    backgroundColor: colors.primary,
-    padding: 15,
-    borderRadius: 25,
-    alignItems: 'center',
-    marginBottom: 20,
+  inputFilled: {
+    borderBottomWidth: 3,
+    borderBottomColor: Colors.primary,
   },
-  buttonText: {
-    color: colors.textPrimary,
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  resend: {
-    alignItems: 'center',
-  },
-  resendText: {
-    color: colors.primary,
-    fontSize: 16,
+  caption: {
+    ...Typography.bodySmall,
+    color: Colors.textSecondary,
   },
 });

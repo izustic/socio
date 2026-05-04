@@ -13,7 +13,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, SafeAreaView, StatusBar, StyleSheet, Text, View } from 'react-native';
 
-export default function Chats() {
+export default function ChatScreen() {
   const { user } = useAuth();
   const params = useLocalSearchParams<{ circleId?: string }>();
   const [circle, setCircle] = useState<(Circle & { id: string }) | null>(null);
@@ -66,7 +66,7 @@ export default function Chats() {
           <Text style={styles.title}>Your Circle</Text>
           <Text style={styles.subtitle}>No active circle yet.</Text>
           <View style={styles.ctaWrap}>
-            <Button title="Create Circle" onPress={() => router.push('/(app)/create-circle')} />
+            <Button title="Create Circle" onPress={() => router.push('/circle/create')} />
           </View>
         </View>
       </SafeAreaView>
@@ -126,11 +126,11 @@ export default function Chats() {
       <View style={styles.footer}>
         {isComplete ? (
           <>
-            <Button title="Enter Circle" onPress={() => router.push('/(app)/chats/room')} />
-            <Button title="View details" variant="ghost" onPress={() => router.push('/(app)/circle-dashboard')} />
+            <Button title="Enter Circle" onPress={() => router.push('/circle/call')} />
+            <Button title="View details" variant="ghost" onPress={() => router.push('/circle/progress')} />
           </>
         ) : (
-          <Button title="Continue swiping" onPress={() => router.push('/(app)/swipe')} />
+          <Button title="Continue swiping" onPress={() => router.push('/circle/swipe-users')} />
         )}
       </View>
     </SafeAreaView>

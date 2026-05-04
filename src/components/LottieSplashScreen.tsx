@@ -16,13 +16,22 @@ export default function LottieSplashScreen({
 }: LottieSplashScreenProps) {
   const animationRef = useRef<LottieView>(null);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const hasCompleted = useRef(false); 
+  const onCompleteRef = useRef(onComplete);
+
+  useEffect(() => {
+    onCompleteRef.current = onComplete;
+  }, [onComplete]);
+
   const hasRenderableAnimation =
     Array.isArray((animationData as { layers?: unknown[] }).layers) &&
     (animationData as { layers?: unknown[] }).layers!.length > 0;
 
   useEffect(() => {
     timeoutRef.current = setTimeout(() => {
-      onComplete?.();
+      if (hasCompleted.current) return;
+      hasCompleted.current = true;
+      onCompleteRef.current?.(); 
     }, minDurationMs);
 
     return () => {
@@ -30,7 +39,23 @@ export default function LottieSplashScreen({
         clearTimeout(timeoutRef.current);
       }
     };
-  }, [minDurationMs, onComplete]);
+  }, [minDurationMs]);
+
+  // const hasRenderableAnimation =
+  //   Array.isArray((animationData as { layers?: unknown[] }).layers) &&
+  //   (animationData as { layers?: unknown[] }).layers!.length > 0;
+
+  // useEffect(() => {
+  //   timeoutRef.current = setTimeout(() => {
+  //     onComplete?.();
+  //   }, minDurationMs);
+
+  //   return () => {
+  //     if (timeoutRef.current) {
+  //       clearTimeout(timeoutRef.current);
+  //     }
+  //   };
+  // }, [minDurationMs, onComplete]);
 
   return (
     <View style={styles.container}>

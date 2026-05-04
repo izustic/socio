@@ -1,19 +1,24 @@
 import {
-    createUserWithEmailAndPassword,
-    FacebookAuthProvider,
-    signOut as firebaseSignOut,
-    GoogleAuthProvider,
-    signInWithCredential,
-    signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  FacebookAuthProvider,
+  signOut as firebaseSignOut,
+  GoogleAuthProvider,
+  signInWithCredential,
+  signInWithEmailAndPassword,
 } from 'firebase/auth';
-import { auth } from '../../firebase';
+import { getAuthErrorMessage } from '../utils/errorHandling';
+import { auth } from './firebase';
 
 export const signUpWithEmail = async (email: string, password: string) => {
   if (!email || !password) {
-    throw new Error('Email and password are required');
+    const error = new Error('Email and password are required');
+    (error as any).code = 'auth/missing-fields';
+    throw error;
   }
   if (password.length < 6) {
-    throw new Error('Password must be at least 6 characters');
+    const error = new Error('Password must be at least 6 characters');
+    (error as any).code = 'auth/password-too-short';
+    throw error;
   }
   try {
     console.log('Creating user with email:', email);
@@ -22,13 +27,17 @@ export const signUpWithEmail = async (email: string, password: string) => {
     return userCredential.user;
   } catch (error: any) {
     console.error('Sign up error:', error.code, error.message);
-    throw error;
+    // Re-throw with enhanced error info
+    const authError = getAuthErrorMessage(error);
+    throw new Error(authError.userMessage);
   }
 };
 
 export const signInWithEmail = async (email: string, password: string) => {
   if (!email || !password) {
-    throw new Error('Email and password are required');
+    const error = new Error('Email and password are required');
+    (error as any).code = 'auth/missing-fields';
+    throw error;
   }
   try {
     console.log('Signing in with email:', email);
@@ -37,7 +46,8 @@ export const signInWithEmail = async (email: string, password: string) => {
     return userCredential.user;
   } catch (error: any) {
     console.error('Sign in error:', error.code, error.message);
-    throw error;
+    const authError = getAuthErrorMessage(error);
+    throw new Error(authError.userMessage);
   }
 };
 
@@ -60,7 +70,8 @@ export const signUpWithGoogle = async (
     return userCredential.user;
   } catch (error: any) {
     console.error('Google sign in error:', error.code, error.message);
-    throw error;
+    const authError = getAuthErrorMessage(error);
+    throw new Error(authError.userMessage);
   }
 };
 
@@ -73,7 +84,8 @@ export const signUpWithFacebook = async (facebookToken: string) => {
     return userCredential.user;
   } catch (error: any) {
     console.error('Facebook sign in error:', error.code, error.message);
-    throw error;
+    const authError = getAuthErrorMessage(error);
+    throw new Error(authError.userMessage);
   }
 };
 

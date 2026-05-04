@@ -3,26 +3,26 @@ import Chip from '@/src/components/ui/Chip';
 import { Colors, Radius, Spacing, Typography } from '@/src/constants/theme';
 import { useAuth } from '@/src/context/AuthContext';
 import {
-  getActiveCircleForUser,
-  getSwipeCandidates,
-  submitSwipe,
-  SwipeCandidate,
+    getActiveCircleForUser,
+    getSwipeCandidates,
+    submitSwipe,
+    SwipeCandidate,
 } from '@/src/services/swipe';
 import { Circle } from '@/src/types';
 import { router } from 'expo-router';
 import React, { useEffect, useMemo, useState } from 'react';
 import {
-  ActivityIndicator,
-  Alert,
-  SafeAreaView,
-  StatusBar,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    Alert,
+    SafeAreaView,
+    StatusBar,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from 'react-native';
 
-export default function SwipeExperience() {
+export default function SwipeUsersScreen() {
   const { user, profile } = useAuth();
   const [circle, setCircle] = useState<(Circle & { id: string }) | null>(null);
   const [candidates, setCandidates] = useState<SwipeCandidate[]>([]);
@@ -51,9 +51,8 @@ export default function SwipeExperience() {
     try {
       const activeCircle = await getActiveCircleForUser(user.uid);
       if (!activeCircle) {
-        setCircle(null);
-        setCandidates([]);
-        return;
+        router.replace('/(tabs)/home');
+        return null;
       }
 
       const nextCandidates = await getSwipeCandidates({
@@ -87,10 +86,7 @@ export default function SwipeExperience() {
 
       if (result.circleComplete) {
         Alert.alert('Circle complete!', 'Your circle is now full. Opening your Circle tab.');
-        router.replace({
-          pathname: '/(app)/chats/index',
-          params: { circleId: circle.id },
-        });
+        router.replace('/circle/chat');
         return;
       }
 
@@ -125,7 +121,7 @@ export default function SwipeExperience() {
             Create a circle first, then come back to start swiping.
           </Text>
           <View style={styles.emptyCtaWrap}>
-            <Button title="Create Circle" onPress={() => router.push('/(app)/create-circle')} />
+            <Button title="Create Circle" onPress={() => router.push('/circle/create')} />
           </View>
         </View>
       </SafeAreaView>
@@ -157,8 +153,8 @@ export default function SwipeExperience() {
             interests to see more.
           </Text>
           <View style={styles.caughtUpButtons}>
-            <Button title="Adjust filters" onPress={() => router.push('/(app)/create-circle')} />
-            <Button title="Check back later" variant="outline" onPress={() => router.push('/(app)/chats/index')} />
+            <Button title="Adjust filters" onPress={() => router.push('/circle/create-preferences')} />
+            <Button title="Check back later" variant="outline" onPress={() => router.push('/circle/chat')} />
           </View>
         </View>
         <Text style={styles.footerHint}>We&apos;ll notify you when new people join near you</Text>

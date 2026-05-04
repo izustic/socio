@@ -1,3 +1,14 @@
+export interface ProfileMedia {
+  id: string;
+  uri: string;
+  remoteUrl: string;
+  type: 'image' | 'video';
+  fileName?: string;
+  mimeType?: string;
+  fileSize?: number;
+  durationMs?: number | null;
+}
+
 export interface User {
   uid: string;
   name: string;
@@ -5,6 +16,7 @@ export interface User {
   gender: 'Male' | 'Female' | 'Non-binary' | 'Prefer not to say';
   interests: Interest[];
   traits?: ProfileTrait[];
+  media?: ProfileMedia[];
   education: string;
   location?: { lat: number; lng: number; city?: string };
   photoURL: string;

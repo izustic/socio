@@ -1,9 +1,3 @@
-import { db } from '../../firebase';
-import {
-  Circle,
-  Interest,
-  User,
-} from '../types';
 import {
   collection,
   doc,
@@ -13,6 +7,12 @@ import {
   runTransaction,
   where,
 } from 'firebase/firestore';
+import {
+  Circle,
+  Interest,
+  User,
+} from '../types';
+import { db } from './firebase';
 
 export interface SwipeCandidate extends User {
   uid: string;

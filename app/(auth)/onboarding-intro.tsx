@@ -2,7 +2,6 @@ import OnboardingLayout from '@/src/components/onboarding/OnboardingLayout';
 import Chip from '@/src/components/ui/Chip';
 import { Spacing, Typography } from '@/src/constants/theme';
 import { useOnboarding } from '@/src/context/OnboardingContext';
-import { router } from 'expo-router';
 import { StyleSheet, Text, View } from 'react-native';
 
 export default function OnboardingIntroScreen() {
@@ -16,20 +15,19 @@ export default function OnboardingIntroScreen() {
       primaryLabel={"Let's do it"}
       onPrimaryPress={() => {
         setStep('profile-photo-name');
-        router.replace('/profile-photo-name');
       }}
-      onBackPress={() => router.back()}
+      onBackPress={() => setStep('notifications-permission')}
       centerContent
     >
       <View style={styles.hero}>
         <Text style={styles.wordmark}>socio</Text>
       </View>
-      <View style={styles.chips}>
+      {/* <View style={styles.chips}>
         <Chip label="📸 Photo" selected />
         <Chip label="🏷️ Name" selected />
         <Chip label="💛 Interests" selected />
         <Chip label="✨ Traits" selected />
-      </View>
+      </View> */}
     </OnboardingLayout>
   );
 }

@@ -4,24 +4,25 @@ import { Colors, Radius, Spacing, Typography } from '@/src/constants/theme';
 import { useOnboarding } from '@/src/context/OnboardingContext';
 import { signInWithEmail, signUpWithEmail, signUpWithFacebook, signUpWithGoogle } from '@/src/services/auth';
 import { getUserProfile } from '@/src/services/user';
-import { Image } from 'expo-image';
+import { showErrorAlert } from '@/src/utils/errorHandling';
 import { makeRedirectUri } from 'expo-auth-session';
 import * as Facebook from 'expo-auth-session/providers/facebook';
 import * as Google from 'expo-auth-session/providers/google';
+import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import {
-  Alert,
-  KeyboardAvoidingView,
-  Modal,
-  Platform,
-  SafeAreaView,
-  ScrollView,
-  StatusBar,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    Alert,
+    KeyboardAvoidingView,
+    Modal,
+    Platform,
+    SafeAreaView,
+    ScrollView,
+    StatusBar,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from 'react-native';
 
 export default function SignUp() {
@@ -32,6 +33,8 @@ export default function SignUp() {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [emailError, setEmailError] = useState('');
+  const [passwordError, setPasswordError] = useState('');
 
   const redirectUri = makeRedirectUri({ scheme: 'demoapp' });
 
@@ -49,6 +52,39 @@ export default function SignUp() {
     redirectUri,
   });
 
+  // Validation functions
+  const validateEmail = (email: string) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!email) {
+      setEmailError('Email is required');
+      return false;
+    }
+    if (!emailRegex.test(email)) {
+      setEmailError('Please enter a valid email');
+      return false;
+    }
+    setEmailError('');
+    return true;
+  };
+
+  const validatePassword = (password: string) => {
+    if (!password) {
+      setPasswordError('Password is required');
+      return false;
+    }
+    if (password.length < 6) {
+      setPasswordError('Password must be at least 6 characters');
+      return false;
+    }
+    setPasswordError('');
+    return true;
+  };
+
+  const clearErrors = () => {
+    setEmailError('');
+    setPasswordError('');
+  };
+
   const continueIntoOnboarding = useCallback(async (
     uid: string,
     contactHint: string,
@@ -56,7 +92,7 @@ export default function SignUp() {
   ) => {
     const existingProfile = await getUserProfile(uid);
     if (existingProfile?.profileComplete) {
-      router.replace('/(app)');
+      router.replace('/(tabs)/home');
       return;
     }
 
@@ -69,11 +105,8 @@ export default function SignUp() {
         },
         'otp'
       );
-      router.replace('/otp');
       return;
     }
-
-    router.replace('/create-profile');
   }, [beginOnboarding]);
 
   useEffect(() => {
@@ -93,7 +126,8 @@ export default function SignUp() {
           );
         } catch (error: any) {
           console.error('Google sign in error:', error);
-          Alert.alert('Google sign in failed', error.message || 'Please try again.');
+          const errorInfo = showErrorAlert(error, 'Google Sign In');
+          Alert.alert(errorInfo.title, errorInfo.message);
         } finally {
           setLoading(false);
         }
@@ -119,7 +153,8 @@ export default function SignUp() {
           );
         } catch (error: any) {
           console.error('Facebook sign in error:', error);
-          Alert.alert('Facebook sign in failed', error.message || 'Please try again.');
+          const errorInfo = showErrorAlert(error, 'Facebook Sign In');
+          Alert.alert(errorInfo.title, errorInfo.message);
         } finally {
           setLoading(false);
         }
@@ -129,8 +164,13 @@ export default function SignUp() {
   }, [facebookResponse, continueIntoOnboarding]);
 
   const handleEmailAuth = async () => {
-    if (!email || !password) {
-      Alert.alert('Missing details', 'Please fill in both your email and password.');
+    clearErrors();
+    
+    // Validate inputs first
+    const isEmailValid = validateEmail(email);
+    const isPasswordValid = validatePassword(password);
+    
+    if (!isEmailValid || !isPasswordValid) {
       return;
     }
 
@@ -145,7 +185,8 @@ export default function SignUp() {
       await continueIntoOnboarding(user.uid, email, { name: user.displayName || '' });
     } catch (error: any) {
       console.error('Email auth error:', error);
-      Alert.alert('Authentication failed', error.message || 'Please try again.');
+      const errorAlert = showErrorAlert(error, isSignUp ? 'Sign Up' : 'Sign In');
+      Alert.alert(errorAlert.title, errorAlert.message);
     } finally {
       setLoading(false);
     }
@@ -157,7 +198,7 @@ export default function SignUp() {
       <View style={styles.hero}>
         <View style={styles.logoBadge}>
           <Image
-            source={require('../../assets/images/logo.png')}
+            source={require('../../assets/images/logo-black.png')}
             contentFit="contain"
             style={styles.logo}
           />
@@ -251,21 +292,35 @@ export default function SignUp() {
                   : 'Pick up where you left off.'}
               </Text>
 
-              <Input
-                placeholder="Email"
-                value={email}
-                onChangeText={setEmail}
-                keyboardType="email-address"
-                autoCapitalize="none"
-              />
+              <View>
+                <Input
+                  placeholder="Email"
+                  value={email}
+                  onChangeText={(text) => {
+                    setEmail(text);
+                    if (emailError) validateEmail(text);
+                  }}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                />
+                {emailError ? (
+                  <Text style={styles.errorText}>{emailError}</Text>
+                ) : null}
+              </View>
 
               <View>
                 <Input
                   placeholder="Password"
                   value={password}
-                  onChangeText={setPassword}
+                  onChangeText={(text) => {
+                    setPassword(text);
+                    if (passwordError) validatePassword(text);
+                  }}
                   secureTextEntry={!showPassword}
                 />
+                {passwordError ? (
+                  <Text style={styles.errorText}>{passwordError}</Text>
+                ) : null}
                 <TouchableOpacity
                   activeOpacity={0.8}
                   style={styles.passwordToggle}
@@ -322,8 +377,8 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.xl,
   },
   logo: {
-    width: 28,
-    height: 28,
+    width: 38,
+    height: 38,
   },
   title: {
     ...Typography.h1,
@@ -450,5 +505,10 @@ const styles = StyleSheet.create({
   },
   disabled: {
     opacity: 0.5,
+  },
+  errorText: {
+    ...Typography.bodySmall,
+    color: '#DB4437',
+    marginTop: 4,
   },
 });

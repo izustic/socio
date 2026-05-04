@@ -2,7 +2,6 @@ import OnboardingLayout from '@/src/components/onboarding/OnboardingLayout';
 import { Colors, Radius, Spacing, Typography } from '@/src/constants/theme';
 import { useOnboarding } from '@/src/context/OnboardingContext';
 import { getLocationWithCity, requestLocationPermission } from '@/src/services/location';
-import { router } from 'expo-router';
 import { Alert, StyleSheet, Text, View } from 'react-native';
 
 export default function LocationPermissionScreen() {
@@ -10,7 +9,6 @@ export default function LocationPermissionScreen() {
 
   const continueToNotifications = () => {
     setStep('notifications-permission');
-    router.replace('/notifications-permission');
   };
 
   const handleEnableLocation = async () => {
@@ -42,6 +40,7 @@ export default function LocationPermissionScreen() {
       onPrimaryPress={handleEnableLocation}
       secondaryLabel="Maybe later"
       onSecondaryPress={continueToNotifications}
+      onBackPress={() => setStep('otp')}
       centerContent
     >
       <View style={styles.ringWrap}>

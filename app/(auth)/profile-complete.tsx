@@ -108,6 +108,6 @@ const styles = StyleSheet.create({
     marginTop: 'auto',
   },
   cta: {
-    backgroundColor: Colors.textPrimary,
+    backgroundColor: Colors.white,
   },
 });

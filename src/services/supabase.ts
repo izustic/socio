@@ -13,8 +13,22 @@ type FirebaseAuthUser = {
   photoURL: string | null;
 };
 
+export type SupabaseUserRole = {
+  role: 'user' | 'moderator' | 'admin';
+  status: 'active' | 'suspended' | 'banned';
+  suspended_until?: string | null;
+};
+
+const DEFAULT_USER_ROLE: SupabaseUserRole = {
+  role: 'user',
+  status: 'active',
+  suspended_until: null,
+};
+
 // Sync user to Supabase after Firebase auth
-export const syncUserToSupabase = async (firebaseUser: FirebaseAuthUser) => {
+export const syncUserToSupabase = async (
+  firebaseUser: FirebaseAuthUser
+): Promise<SupabaseUserRole & { id: string }> => {
   const { uid, email, displayName, photoURL } = firebaseUser;
 
   const { data: existing, error: existingError } = await supabase
@@ -47,16 +61,18 @@ export const syncUserToSupabase = async (firebaseUser: FirebaseAuthUser) => {
 };
 
 // Get user role from Supabase
-export const getUserRole = async (uid: string) => {
+export const getUserRole = async (uid: string): Promise<SupabaseUserRole | null> => {
   const { data, error } = await supabase
     .from('users')
     .select('role, status, suspended_until')
     .eq('id', uid)
-    .single();
+    .maybeSingle();
 
   if (error) throw error;
   return data;
 };
+
+export const getDefaultUserRole = () => DEFAULT_USER_ROLE;
 
 // Upload avatar to Supabase Storage
 export const uploadAvatar = async (userId: string, imageUri: string) => {

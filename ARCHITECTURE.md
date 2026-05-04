@@ -324,7 +324,7 @@ Save affordances:
 ### 5.10 Design System Notes
 
 - All colors resolve from semantic HSL tokens (`--primary`, `--primary-soft`, `--muted-foreground` etc.)
-- Primary accent: `#F5C518` warm yellow — used for all primary CTAs, active states, selected chips
+- Primary accent: `#FFB60C` warm orange — used for all primary CTAs, active states, selected chips
 - Rounded pill buttons: `borderRadius: 100`
 - Card radius: `18px`
 - Spacing grid: `8px` base unit
@@ -453,6 +453,16 @@ ALTER TABLE moderation_logs ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Public read users"
 ON users FOR SELECT USING (true);
 
+-- Firebase-authenticated app clients can create their default role row on first login.
+-- The app is not allowed to grant elevated roles or moderation statuses during self-sync.
+CREATE POLICY "Firebase clients create default users"
+ON users FOR INSERT
+WITH CHECK (
+  role = 'user'
+  AND status = 'active'
+  AND suspended_until IS NULL
+);
+
 -- Users can create reports
 CREATE POLICY "Users can report"
 ON reports FOR INSERT WITH CHECK (true);
@@ -520,7 +530,7 @@ export const syncUserToSupabase = async (firebaseUser: {
     .from('users')
     .select('id, role, status, suspended_until')
     .eq('id', uid)
-    .single();
+    .maybeSingle();
 
   if (existing) return existing;
 
@@ -547,7 +557,7 @@ export const getUserRole = async (uid: string) => {
     .from('users')
     .select('role, status, suspended_until')
     .eq('id', uid)
-    .single();
+    .maybeSingle();
 
   if (error) throw error;
   return data;
@@ -1259,10 +1269,10 @@ circles/{circleId}/messages/{messageId}
 ```typescript
 // src/constants/colors.ts
 export const Colors = {
-  primary: '#F5C518',
-  primaryDark: '#E0A800',
-  primaryLight: '#FFF3C4',
-  orange: '#F08C00',
+  primary: '#FFB60C',
+  primaryDark: '#D98F00',
+  primaryLight: '#FFF4DD',
+  orange: '#FFB60C',
   background: '#FFFFFF',
   surface: '#FFFFFF',
   inputBg: '#F5F5F5',
@@ -1281,7 +1291,7 @@ export const Colors = {
 - ❌ No shadows or elevation
 - ❌ No borders or outlines (except interactive dashed chips)
 - ❌ No heavy gradients
-- ✅ Primary CTA: always `#F5C518` with black text
+- ✅ Primary CTA: always `#FFB60C` with black text
 - ✅ All buttons: `borderRadius: 100` (pill shape)
 - ✅ All inputs: `backgroundColor: #F5F5F5`, no border, `borderRadius: 14`
 - ✅ Screen padding: `24` on all sides
@@ -1508,8 +1518,8 @@ Tab 4: Profile       → ProfileScreen
 ### Design Tokens
 ```typescript
 // All colors via HSL semantic tokens
---primary         // #F5C518 warm yellow
---primary-soft    // #FFF3C4 light yellow tint
+--primary         // #FFB60C warm orange
+--primary-soft    // #FFF4DD light orange tint
 --secondary       // supporting accent
 --muted-foreground // #6B6B6B secondary text
 --background      // #FFFFFF

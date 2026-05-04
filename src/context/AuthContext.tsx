@@ -1,7 +1,7 @@
 import { User as FirebaseUser, onAuthStateChanged } from 'firebase/auth';
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { auth } from '../services/firebase';
-import { getUserRole, syncUserToSupabase } from '../services/supabase';
+import { getDefaultUserRole, getUserRole, syncUserToSupabase } from '../services/supabase';
 import { getUserProfile } from '../services/user';
 import { User } from '../types';
 
@@ -11,11 +11,17 @@ interface AuthContextType {
   role: {
     role: 'user' | 'moderator' | 'admin';
     status: 'active' | 'suspended' | 'banned';
-    suspended_until?: string;
+    suspended_until?: string | null;
   } | null;
   loading: boolean;
   refreshProfile: () => Promise<void>;
 }
+
+const isSupabaseRlsError = (error: unknown) =>
+  typeof error === 'object' &&
+  error !== null &&
+  'code' in error &&
+  error.code === '42501';
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -46,10 +52,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Also refresh role from Supabase
     try {
       const userRole = await getUserRole(auth.currentUser.uid);
-      setRole(userRole);
+      setRole(userRole ?? getDefaultUserRole());
     } catch (error) {
       console.error('Error fetching user role:', error);
-      setRole(null);
+      setRole(getDefaultUserRole());
     }
   };
 
@@ -64,13 +70,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         
         // Sync to Supabase and get role
         try {
-          await syncUserToSupabase(firebaseUser);
-          const userRole = await getUserRole(firebaseUser.uid);
+          const userRole = await syncUserToSupabase(firebaseUser);
           setRole(userRole);
         } catch (error) {
-          console.error('Error syncing user to Supabase:', error);
-          // Don't block the app if Supabase fails, just set role to null
-          setRole(null);
+          if (isSupabaseRlsError(error)) {
+            console.warn(
+              'Supabase users insert is blocked by RLS. Apply the ARCHITECTURE.md users INSERT policy to persist roles.'
+            );
+          } else {
+            console.error('Error syncing user to Supabase:', error);
+          }
+          // Do not block regular users if the role row cannot be created yet.
+          setRole(getDefaultUserRole());
         }
       } else {
         setProfile(null);

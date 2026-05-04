@@ -4,13 +4,15 @@ import { auth } from '@/src/services/firebase';
 import { router } from 'expo-router';
 import { signOut } from 'firebase/auth';
 import { Bell, ChevronRight, LogOut, Pencil, Shield, Trash2, User } from 'lucide-react-native';
-import { Alert, Image, SafeAreaView, ScrollView, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Image, Modal, SafeAreaView, ScrollView, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useState } from 'react';
 
 const fallbackInterests = ['Add interests'];
 const fallbackTraits = ['Add traits'];
 
 export default function ProfileScreen() {
   const { user, profile } = useAuth();
+  const [logoutVisible, setLogoutVisible] = useState(false);
 
   const displayName = profile?.name || user?.displayName || 'Your profile';
   const ageLabel = profile?.age ? `, ${profile.age}` : '';
@@ -30,18 +32,10 @@ export default function ProfileScreen() {
     .map((part) => part[0]?.toUpperCase())
     .join('');
 
-  const handleLogout = () => {
-    Alert.alert('Log out', 'Are you sure you want to log out?', [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Log out',
-        style: 'destructive',
-        onPress: async () => {
-          await signOut(auth);
-          router.replace('/(auth)/welcome');
-        },
-      },
-    ]);
+  const handleLogout = async () => {
+    setLogoutVisible(false);
+    await signOut(auth);
+    router.replace('/(auth)/welcome');
   };
 
   return (
@@ -89,11 +83,46 @@ export default function ProfileScreen() {
           <View style={styles.settingsCard}>
             <SettingsRow icon={Bell} title="Notifications" rightText="On" />
             <SettingsRow icon={Shield} title="Privacy & safety" />
-            <SettingsRow icon={LogOut} title="Log out" onPress={handleLogout} />
+            <SettingsRow icon={LogOut} title="Log out" onPress={() => setLogoutVisible(true)} />
             <SettingsRow icon={Trash2} title="Delete account" danger />
           </View>
         </View>
       </ScrollView>
+
+      <Modal
+        visible={logoutVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setLogoutVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.logoutDialog}>
+            <View style={styles.logoutIconWrap}>
+              <LogOut size={31} color={Colors.textPrimary} strokeWidth={2.1} />
+            </View>
+            <Text style={styles.logoutTitle}>Log out of Socio?</Text>
+            <Text style={styles.logoutMessage}>
+              You&apos;ll need to sign back in to access your Circle and chats.
+            </Text>
+            <View style={styles.logoutActions}>
+              <TouchableOpacity
+                activeOpacity={0.82}
+                style={[styles.logoutButton, styles.cancelButton]}
+                onPress={() => setLogoutVisible(false)}
+              >
+                <Text style={styles.cancelText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                activeOpacity={0.82}
+                style={[styles.logoutButton, styles.confirmButton]}
+                onPress={handleLogout}
+              >
+                <Text style={styles.confirmText}>Log out</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -281,5 +310,74 @@ const styles = StyleSheet.create({
   },
   dangerText: {
     color: Colors.danger,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(255, 255, 255, 0.72)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: Spacing.screenPadding,
+  },
+  logoutDialog: {
+    width: '100%',
+    maxWidth: 432,
+    borderRadius: 30,
+    backgroundColor: Colors.inputBg,
+    alignItems: 'center',
+    paddingHorizontal: Spacing.xl,
+    paddingTop: Spacing.xl,
+    paddingBottom: Spacing.lg,
+  },
+  logoutIconWrap: {
+    width: 74,
+    height: 74,
+    borderRadius: 37,
+    backgroundColor: Colors.white,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: Spacing.lg,
+  },
+  logoutTitle: {
+    ...Typography.h2,
+    fontSize: 24,
+    fontWeight: '800',
+    textAlign: 'center',
+    color: Colors.textPrimary,
+  },
+  logoutMessage: {
+    ...Typography.body,
+    maxWidth: 322,
+    marginTop: 10,
+    color: Colors.textSecondary,
+    fontSize: 18,
+    lineHeight: 28,
+    textAlign: 'center',
+  },
+  logoutActions: {
+    width: '100%',
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: Spacing.lg,
+  },
+  logoutButton: {
+    flex: 1,
+    height: 60,
+    borderRadius: Radius.pill,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  cancelButton: {
+    backgroundColor: Colors.white,
+  },
+  confirmButton: {
+    backgroundColor: Colors.textPrimary,
+  },
+  cancelText: {
+    ...Typography.button,
+    color: Colors.textPrimary,
+  },
+  confirmText: {
+    ...Typography.button,
+    color: Colors.white,
   },
 });

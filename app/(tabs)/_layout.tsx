@@ -1,6 +1,6 @@
-import { Tabs } from 'expo-router';
 import { Colors } from '@/src/constants/theme';
-import { Ionicons } from '@expo/vector-icons';
+import { Tabs } from 'expo-router';
+import { Bell, Layers, User, Users } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function TabLayout() {
@@ -10,11 +10,11 @@ export default function TabLayout() {
     <Tabs
       screenOptions={{
         tabBarActiveTintColor: Colors.primary,
-        tabBarInactiveTintColor: Colors.textDisabled,
+        tabBarInactiveTintColor: '#AAAAAA', // Inactive color from architecture
         headerShown: false,
         tabBarStyle: {
           backgroundColor: Colors.white,
-          borderTopWidth: 0,
+          borderTopWidth: 0, // No border on tab bar
           elevation: 0,
           height: 60 + insets.bottom,
           paddingBottom: insets.bottom,
@@ -22,17 +22,31 @@ export default function TabLayout() {
       }}
     >
       <Tabs.Screen
-        name="index"
+        name="home"
         options={{
-          title: 'Home',
-          tabBarIcon: ({ color, size }) => <Ionicons name="home" size={size} color={color} />,
+          title: 'Circle',
+          tabBarIcon: ({ color, size }) => <Users size={size} color={color} strokeWidth={2.2} />,
         }}
       />
       <Tabs.Screen
-        name="explore"
+        name="swipe"
         options={{
-          title: 'Circle',
-          tabBarIcon: ({ color, size }) => <Ionicons name="radio-button-off" size={size} color={color} />,
+          title: 'Swipe',
+          tabBarIcon: ({ color, size }) => <Layers size={size} color={color} strokeWidth={2.2} />,
+        }}
+      />
+      <Tabs.Screen
+        name="notifications"
+        options={{
+          title: 'Alerts',
+          tabBarIcon: ({ color, size }) => <Bell size={size} color={color} strokeWidth={2.2} />,
+        }}
+      />
+      <Tabs.Screen
+        name="profile"
+        options={{
+          title: 'Profile',
+          tabBarIcon: ({ color, size }) => <User size={size} color={color} strokeWidth={2.2} />,
         }}
       />
     </Tabs>

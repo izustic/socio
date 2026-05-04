@@ -1,6 +1,6 @@
 import { doc, getDoc, setDoc } from 'firebase/firestore';
-import { db } from '../../firebase';
 import { User } from '../types';
+import { db } from './firebase';
 
 export const createUserProfile = async (userId: string, profileData: Omit<User, 'uid' | 'createdAt'>) => {
   try {

@@ -1,11 +1,11 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
-  DEFAULT_ONBOARDING_STEP,
-  OnboardingStep,
+    DEFAULT_ONBOARDING_STEP,
+    OnboardingStep,
 } from '@/src/constants/onboarding';
 import { LocationData } from '@/src/services/location';
-import { Interest, ProfileTrait, User } from '@/src/types';
-import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import { Interest, ProfileMedia, ProfileTrait, User } from '@/src/types';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 
 const STORAGE_KEY = 'socio:onboarding';
 
@@ -15,6 +15,7 @@ export interface OnboardingDraft {
   bio: string;
   age: number;
   gender: User['gender'] | null;
+  media: ProfileMedia[];
   interests: Interest[];
   traits: ProfileTrait[];
   education: string;
@@ -40,6 +41,7 @@ const defaultDraft: OnboardingDraft = {
   bio: '',
   age: 24,
   gender: null,
+  media: [],
   interests: [],
   traits: [],
   education: '',
@@ -97,25 +99,37 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
     });
   }, [currentStep, draft, loading]);
 
+  const setStep = useCallback((step: OnboardingStep) => {
+    setCurrentStep(step);
+  }, []);
+
+  const mergeDraft = useCallback((patch: Partial<OnboardingDraft>) => {
+    setDraft((prev) => ({ ...prev, ...patch }));
+  }, []);
+
+  const beginOnboarding = useCallback((seed: Partial<OnboardingDraft> = {}, step: OnboardingStep = 'otp') => {
+    setDraft({
+      ...defaultDraft,
+      ...seed,
+    });
+    setCurrentStep(step);
+  }, []);
+
+  const resetOnboarding = useCallback(async () => {
+    setDraft(defaultDraft);
+    setCurrentStep(DEFAULT_ONBOARDING_STEP);
+    await AsyncStorage.removeItem(STORAGE_KEY);
+  }, []);
+
   const value = useMemo<OnboardingContextType>(() => ({
     currentStep,
     draft,
     loading,
-    setStep: (step) => setCurrentStep(step),
-    mergeDraft: (patch) => setDraft((prev) => ({ ...prev, ...patch })),
-    beginOnboarding: (seed = {}, step = 'otp') => {
-      setDraft({
-        ...defaultDraft,
-        ...seed,
-      });
-      setCurrentStep(step);
-    },
-    resetOnboarding: async () => {
-      setDraft(defaultDraft);
-      setCurrentStep(DEFAULT_ONBOARDING_STEP);
-      await AsyncStorage.removeItem(STORAGE_KEY);
-    },
-  }), [currentStep, draft, loading]);
+    setStep,
+    mergeDraft,
+    beginOnboarding,
+    resetOnboarding,
+  }), [currentStep, draft, loading, setStep, mergeDraft, beginOnboarding, resetOnboarding]);
 
   return (
     <OnboardingContext.Provider value={value}>

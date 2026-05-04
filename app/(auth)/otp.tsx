@@ -1,7 +1,6 @@
 import OnboardingLayout from '@/src/components/onboarding/OnboardingLayout';
 import { Colors, Radius, Spacing, Typography } from '@/src/constants/theme';
 import { useOnboarding } from '@/src/context/OnboardingContext';
-import { router } from 'expo-router';
 import { useMemo, useRef, useState } from 'react';
 import { StyleSheet, Text, TextInput, View } from 'react-native';
 
@@ -28,12 +27,11 @@ export default function OtpScreen() {
       contactHint: draft.contactHint || 'your account',
     });
     setStep('location-permission');
-    router.replace('/location-permission');
   };
 
   return (
     <OnboardingLayout
-      onBackPress={() => router.back()}
+      onBackPress={() => {}}
       title="Verify your account"
       subtitle={`We sent a 4-digit code to ${draft.contactHint || 'your account'}.`}
       stepNumber="02  OTP VERIFICATION"
@@ -41,7 +39,7 @@ export default function OtpScreen() {
       onPrimaryPress={handleContinue}
       primaryDisabled={!complete}
       secondaryLabel="Resend in 0:23"
-      onSecondaryPress={() => setOtp(['4', '8', '2', '1'])}
+      onSecondaryPress={() => setOtp([])}
       centerContent
     >
       <View style={styles.row}>

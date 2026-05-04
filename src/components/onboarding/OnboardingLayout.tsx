@@ -1,6 +1,6 @@
 import Button from '@/src/components/ui/Button';
 import { Colors, Radius, Spacing, Typography } from '@/src/constants/theme';
-import { Ionicons } from '@expo/vector-icons';
+import { ChevronLeft } from 'lucide-react-native';
 import React from 'react';
 import {
   KeyboardAvoidingView,
@@ -70,7 +70,7 @@ export default function OnboardingLayout({
         {onBackPress ? (
           <View style={styles.topBar}>
             <TouchableOpacity activeOpacity={0.7} onPress={onBackPress} style={styles.backButton}>
-              <Ionicons name="chevron-back" size={20} color={Colors.textPrimary} />
+              <ChevronLeft size={20} color={Colors.textPrimary} strokeWidth={2.4} />
             </TouchableOpacity>
           </View>
         ) : (

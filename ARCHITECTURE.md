@@ -1,14 +1,32 @@
 # SOCIO — SYSTEM ARCHITECTURE
 ## Copilot Implementation Guide
-> Version 1.2 | Prepared by: Izu Obikanyi
+> Version 1.3 | Prepared by: Izu Obikanyi
 > Status: Firebase Auth + Firestore = DONE. Everything below = TO BUILD.
-> Updated: Supabase 2026 key naming + storage policy changes applied, plus UI architecture and flow summary.
+> Updated: Full UI architecture, dual user journeys (Host + Joiner), updated screen list.
+> v1.3: Auth flow corrected — WelcomeScreen (01), EmailSignUpScreen (02), LoginScreen (03).
 
 ---
 
 ## 1. WHAT IS SOCIO
 
-Socio is a mobile-first React Native (Expo) app for forming private friend groups called **Circles**. Users are matched through interest-based filtering and mutual swiping. Once a Circle is full, members get access to group chat, media sharing, and E2EE group calls.
+Socio is a mobile-first React Native (Expo) app for forming small in-person friend groups called **Circles**. Users either **create a Circle** and curate members (Host path), or **join an existing Circle** by being swiped on (Joiner path). Once a Circle is full, members unlock group chat, media sharing, and E2EE group calls.
+
+### Two Core User Journeys
+
+```
+HOST PATH:
+Onboard → Profile setup → NoCircle → Create Circle → Set preferences
+→ Swipe users → Circle fills → CircleComplete → Chat
+
+JOINER PATH:
+Onboard → Profile setup → NoCircle → Join Circle → Set preferences
+→ Swipe Circles → Mutual match with host → Added to Circle → Chat
+```
+
+### Matching Logic
+- Joiner likes a Circle → host sees that user **prioritized** in their swipe deck
+- Host likes the joiner back → mutual match → joiner added to Circle
+- Both land in ChatScreen once Circle is complete
 
 ---
 
@@ -57,12 +75,8 @@ EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=
 EXPO_PUBLIC_FIREBASE_APP_ID=
 
 # Supabase
-# URL: https://{project-ref}.supabase.co
-# Find project-ref in browser URL: supabase.com/dashboard/project/{project-ref}
-EXPO_PUBLIC_SUPABASE_URL=https://your-project-ref.supabase.co
-# 2026 NOTE: Supabase renamed keys. Use PUBLISHABLE key here (was called anon key)
-# NEVER use the secret key (was called service_role) in the app
-EXPO_PUBLIC_SUPABASE_ANON_KEY=your-publishable-key-here
+EXPO_PUBLIC_SUPABASE_URL=
+EXPO_PUBLIC_SUPABASE_ANON_KEY=
 
 # Livekit
 EXPO_PUBLIC_LIVEKIT_URL=wss://your-project.livekit.cloud
@@ -82,36 +96,53 @@ EXPO_PUBLIC_NOMINATIM_URL=https://nominatim.openstreetmap.org
 
 ```
 socio/
-├── app/                          # Expo Router screens (file-based routing)
-│   ├── _layout.tsx               # Root layout
-│   ├── index.tsx                 # Splash screen
-│   ├── (auth)/
+├── app/                              # Expo Router screens (file-based routing)
+│   ├── _layout.tsx                   # Root layout
+│   ├── index.tsx                     # Splash screen (Lottie animation)
+│   │
+│   ├── (auth)/                       # Onboarding & auth flow
 │   │   ├── _layout.tsx
-│   │   ├── signup.tsx
-│   │   ├── otp.tsx
-│   │   ├── location-permission.tsx
+│   │   ├── welcome.tsx               # 01 — Logo + tagline + social CTAs + "Log in" link
+│   │   ├── email-signup.tsx          # 02 — Email + password sheet (overlays welcome)
+│   │   ├── login.tsx                 # 03 — Returning user: email/password + social fallback
+│   │   ├── otp.tsx                   # Phone/email OTP verification
+│   │   ├── location-permission.tsx   # Location access request
 │   │   ├── notifications-permission.tsx
-│   │   ├── onboarding-intro.tsx
-│   │   ├── profile-photo-name.tsx
-│   │   ├── profile-age-gender.tsx
-│   │   ├── profile-interests.tsx
-│   │   ├── profile-traits.tsx
-│   │   └── profile-complete.tsx
-│   ├── (tabs)/
-│   │   ├── _layout.tsx
-│   │   ├── home.tsx
-│   │   ├── chats.tsx
-│   │   └── profile.tsx
-│   ├── circle/
-│   │   ├── create.tsx
-│   │   ├── swipe.tsx
-│   │   ├── dashboard.tsx
-│   │   ├── chat.tsx
-│   │   └── call.tsx
+│   │   ├── onboarding-intro.tsx      # Value prop — how Circles work
+│   │   ├── profile-photo-name.tsx    # Step 1/4 — up to 5 photos/videos + name
+│   │   ├── profile-age-gender.tsx    # Step 2/4 — age stepper + gender selector
+│   │   ├── profile-interests.tsx     # Step 3/4 — interest chips
+│   │   ├── profile-traits.tsx        # Step 4/4 — personality trait chips
+│   │   └── profile-complete.tsx      # Celebration → enters main app
+│   │
+│   ├── (tabs)/                       # Main app shell — persistent bottom nav
+│   │   ├── _layout.tsx               # BottomNav: Circle · Swipe · Notifications · Profile
+│   │   ├── home.tsx                  # Circle tab: NoCircleScreen or CircleScreen based on state
+│   │   ├── swipe.tsx                 # SwipeScreen (host) or SwipeCirclesScreen (joiner)
+│   │   ├── notifications.tsx         # Match alerts, Circle activity
+│   │   └── profile.tsx              # ProfileScreen
+│   │
+│   ├── circle/                       # Circle flows
+│   │   ├── no-circle.tsx             # Empty state — Create or Join CTA
+│   │   ├── create.tsx                # Stage 1: name, vibe, meetup details
+│   │   ├── create-preferences.tsx    # Stage 2: who to attract (age/gender/interests)
+│   │   ├── join-preferences.tsx      # Joiner: what they're looking for
+│   │   ├── swipe-users.tsx           # Host swipes users (media carousel cards)
+│   │   ├── swipe-circles.tsx         # Joiner swipes Circles
+│   │   ├── progress.tsx              # Circle filling up
+│   │   ├── complete.tsx              # Circle full → unlock chat
+│   │   ├── chat.tsx                  # Group chat (text + media)
+│   │   ├── call.tsx                  # E2EE group call
+│   │   └── swipe-empty.tsx           # No more profiles/circles to swipe
+│   │
+│   ├── profile/
+│   │   └── edit.tsx                  # Full profile editor (mirrors onboarding fields)
+│   │
 │   ├── moderator/
 │   │   ├── _layout.tsx
 │   │   ├── dashboard.tsx
 │   │   └── report-detail.tsx
+│   │
 │   └── admin/
 │       ├── _layout.tsx
 │       ├── dashboard.tsx
@@ -119,49 +150,55 @@ socio/
 │
 ├── src/
 │   ├── services/
-│   │   ├── firebase.ts           # Firebase init (DONE)
-│   │   ├── firestore.ts          # Firestore helpers (DONE)
-│   │   ├── supabase.ts           # Supabase client + storage + db
-│   │   ├── moderation.ts         # All moderation actions
-│   │   └── livekit.ts            # Call management
+│   │   ├── firebase.ts               # Firebase init (DONE)
+│   │   ├── firestore.ts              # Firestore helpers (DONE)
+│   │   ├── supabase.ts               # Supabase client + storage + db
+│   │   ├── moderation.ts             # All moderation actions
+│   │   └── livekit.ts                # Call management
 │   │
 │   ├── hooks/
-│   │   ├── useAuth.ts            # Firebase auth state
-│   │   ├── useRole.ts            # Supabase role fetching
-│   │   ├── useImageUpload.ts     # Profile photo upload
-│   │   ├── useMediaUpload.ts     # Chat media (video/audio/image)
-│   │   ├── useCircleCall.ts      # Livekit call management
-│   │   └── useLocation.ts        # Expo Location + Nominatim
+│   │   ├── useAuth.ts                # Firebase auth state
+│   │   ├── useRole.ts                # Supabase role fetching
+│   │   ├── useImageUpload.ts         # Profile photo/video upload (up to 5 slots)
+│   │   ├── useMediaUpload.ts         # Chat media (video/audio/image)
+│   │   ├── useCircleCall.ts          # Livekit call management
+│   │   └── useLocation.ts            # Expo Location + Nominatim
 │   │
 │   ├── context/
-│   │   └── AuthContext.tsx       # Global auth + role state
+│   │   └── AuthContext.tsx           # Global auth + role state
 │   │
 │   ├── constants/
-│   │   ├── colors.ts             # Design system colors
-│   │   ├── typography.ts         # Font sizes and weights
-│   │   └── theme.ts              # Full theme export
+│   │   ├── colors.ts                 # Design system colors (HSL semantic tokens)
+│   │   ├── typography.ts             # Font sizes and weights
+│   │   └── theme.ts                  # Full theme export
 │   │
 │   ├── components/
 │   │   ├── ui/
-│   │   │   ├── Button.tsx
+│   │   │   ├── Button.tsx            # Pill button (borderRadius: 100)
 │   │   │   ├── Input.tsx
-│   │   │   ├── Chip.tsx
-│   │   │   └── Avatar.tsx
+│   │   │   ├── Chip.tsx              # Interest/trait chips
+│   │   │   ├── Avatar.tsx            # Single avatar
+│   │   │   ├── AvatarStack.tsx       # Overlapping avatars with +N overflow
+│   │   │   ├── StepIndicator.tsx     # 4-bar progress for profile setup
+│   │   │   ├── DualSlider.tsx        # Dual-thumb range slider (age/radius)
+│   │   │   └── MediaGrid.tsx         # 5-slot photo/video grid (1 main + 4 secondary)
 │   │   ├── circle/
-│   │   │   ├── ProfileCard.tsx   # Swipe card
-│   │   │   ├── CircleProgress.tsx
-│   │   │   └── MemberRow.tsx
+│   │   │   ├── ProfileCard.tsx       # Swipe card for users (media carousel)
+│   │   │   ├── CircleCard.tsx        # Swipe card for Circles (joiner view)
+│   │   │   ├── CircleProgress.tsx    # Circle filling progress
+│   │   │   ├── MemberRow.tsx         # Member avatar row
+│   │   │   └── CapacityBadge.tsx     # "2 / 5 spots" badge
 │   │   └── chat/
 │   │       ├── MessageBubble.tsx
 │   │       ├── MediaMessage.tsx
 │   │       └── ChatInput.tsx
 │   │
 │   └── utils/
-│       ├── locationUtils.ts      # Haversine distance calc
-│       └── nominatimService.ts   # Reverse geocoding
+│       ├── locationUtils.ts          # Haversine distance calc
+│       └── nominatimService.ts       # Reverse geocoding
 │
-├── functions/                    # Firebase Cloud Functions
-│   ├── index.js                  # getLivekitToken function
+├── functions/                        # Firebase Cloud Functions
+│   ├── index.js                      # getLivekitToken function
 │   └── package.json
 │
 ├── assets/
@@ -170,7 +207,7 @@ socio/
 │   ├── splash.png
 │   ├── adaptive-icon.png
 │   └── animations/
-│       └── logo_animation.json   # Lottie splash animation
+│       └── logo_animation.json       # Lottie splash animation
 │
 ├── app.json
 ├── babel.config.js
@@ -184,121 +221,145 @@ socio/
 
 ### Overview
 
-Socio is a mobile-first social app for forming small in-person **Circles** (group meetups). Users either create a Circle and curate members, or join an existing Circle by being swiped on. The UI architecture below is the target screen and interaction blueprint we will tailor into the current Expo Router codebase as implementation continues.
+Socio is a mobile-first social app for forming small in-person **Circles** (group meetups). Users either create a Circle and curate members (Host path), or join an existing Circle by being swiped on (Joiner path). The UI architecture below is the target screen and interaction blueprint tailored into the Expo Router codebase.
 
 ### 5.1 Onboarding & Auth Flow
 
-- `WelcomeScreen` — Logo + tagline, `Get started` CTA
-- `OnboardingIntroScreen` — Value prop intro explaining how Circles work
-- `OtpScreen` — Phone verification with OTP input
+Three-screen auth sequence:
+
+- `WelcomeScreen` (01) — Logo + tagline, social login CTAs (Google, Facebook), "Sign up with Email" link, "Already have an account? Log in" footer
+- `EmailSignUpScreen` (02) — Bottom sheet over dimmed yellow backdrop: email + password fields, "Create account" CTA, link back to Log in
+- `LoginScreen` (03) — Full screen for returning users: email + password, "Forgot?" link, "Log in" CTA, social login fallback (Google, Facebook), "New to Socio? Sign up" footer
+
+Post-auth permissions:
+
+- `OTPScreen` — Phone or email OTP verification
 - `LocationPermissionScreen` — Grants location access for radius matching
 - `NotificationsPermissionScreen` — Push notification opt-in
+
+Auth routing logic:
+
+- No Firebase user → `WelcomeScreen`
+- Firebase user but no Firestore profile → resume at `ProfilePhotoNameScreen`
+- Firebase user + complete profile → `CircleScreen`
 
 ### 5.2 Profile Setup Flow
 
 Tracked via `StepIndicator` with 4-step progress bars:
 
-- `ProfilePhotoNameScreen` — Upload up to 5 photos / short videos (1 main + 4 secondary) + name
-- `ProfileAgeGenderScreen` — Age stepper + gender selector (`male` / `female` / `both`)
-- `ProfileInterestsScreen` — Multi-select interest chips
-- `ProfileTraitsScreen` — Multi-select personality trait chips
-- `ProfileCompleteScreen` — Success confirmation, then enters main app
+- `OnboardingIntroScreen` — Value prop intro: "Let's build your vibe." Explains what's coming before setup begins
+- `ProfilePhotoNameScreen` — Step 1/4: Upload up to 5 photos / short videos (1 main large slot + 4 secondary slots). MAIN slot has a star badge. Video slots show a Play icon overlay. Includes name input (underline style)
+- `ProfileAgeGenderScreen` — Step 2/4: Age stepper + gender selector tiles (`Male` / `Female` / `Both`)
+- `ProfileInterestsScreen` — Step 3/4: Multi-select interest chips, minimum 3 required
+- `ProfileTraitsScreen` — Step 4/4: Multi-select personality trait chips, optional
+- `ProfileCompleteScreen` — Full yellow celebration screen, shows selected interests, "Find My Circle" CTA → navigates to `NoCircleScreen`
 
 ### 5.3 Main App Shell
 
-Persistent bottom navigation:
+Persistent bottom navigation with 4 tabs:
 
-- `Home`
+- `Circle`
 - `Swipe`
 - `Notifications`
 - `Profile`
 
-Home branch:
+Circle tab branch:
 
 - `NoCircleScreen` — Empty state with two paths:
-  `Create a Circle` (primary CTA, Plus icon)
-  `Join a Circle` (secondary CTA, Search icon)
-- `HomeScreen` — Active Circle dashboard once joined or created
+  `Create a Circle` (primary CTA, Plus icon) → Host flow
+  `Join a Circle` (secondary CTA, Search icon) → Joiner flow
+- `CircleScreen` — Active Circle dashboard once a Circle is forming or complete
 
 ### 5.4 Create-a-Circle Flow (Host Path)
 
-- `CreateCircleScreen` — Stage 1: Circle name, vibe, meetup details
+- `CreateCircleScreen` — Stage 1: Circle name, vibe description, meetup goal (chips: Coffee, Study, Gym, Food etc.), meetup timeframe (chips: This week, Within 3 days etc.), circle size stepper (3–8)
 - `CreateCirclePreferencesScreen` — Stage 2: who the host wants to attract
-  age range (dual-thumb slider), gender mix, interests, personality traits
-- `SwipeScreen` — Host swipes through users, with profile media carousel
-- `CircleProgressScreen` — Progress state while members are being matched in
-- `CircleCompleteScreen` — Circle is full and unlocks `ChatScreen`
+  age range (dual-thumb slider), gender mix tiles, location radius slider with km/miles toggle, shared interests chips, personality trait chips
+- `SwipeScreen` — Host swipes through users. Profile cards show media carousel, name + age, bio, shared interest chips, distance. JOIN ✓ / SKIP ✕ overlays animate on drag. Prioritizes users who already liked the Circle
+- `CircleProgressScreen` — Fills as members are matched in. Shows avatar slots (filled + empty placeholders), progress bar, member count, "Continue Swiping" CTA
+- `CircleCompleteScreen` — Circle is full. Shows all members, meetup goal pill, countdown timer ("Meet in X days"), "Enter Circle" CTA → unlocks `ChatScreen`
 
 ### 5.5 Join-a-Circle Flow (Joiner Path)
 
 - `JoinCirclePreferencesScreen` — Defines what the joiner is looking for:
-  radius slider (1–50+ km), age range, gender mix, meetup vibe, interests, personality
-- `SwipeCirclesScreen` — Joiner swipes through Circles rather than users:
-  circle name, host, distance, capacity badge, overlapping member avatar stack, `JOIN` / `SKIP` overlays
+  location radius slider (1–50+ km) with km/miles toggle, age range (dual-thumb slider), gender mix tiles, meetup vibe chips, interests chips, personality trait chips (optional)
+- `SwipeCirclesScreen` — Joiner swipes through Circles rather than users. Circle cards show: circle name, host info, distance, `CapacityBadge` ("2 / 5 spots"), `AvatarStack` of existing members with +N overflow, meetup goal pill, shared interest chips. JOIN ✓ / SKIP ✕ overlays
 
-Matching logic (conceptual):
+Matching logic:
 
 - Joiner likes a Circle → host sees that user prioritized in their swipe deck
-- Mutual like → joiner is added to the Circle → both land in `ChatScreen`
+- Host likes the joiner back → mutual match → joiner added to Circle
+- Both land in `ChatScreen` once Circle is complete
 
 ### 5.6 Edge & Empty States
 
-- `SwipeEmptyScreen` — No more profiles or Circles to swipe
-- `EdgeStatesScreen` — Generic error and empty-state UI patterns
+- `SwipeEmptyScreen` — No more profiles or Circles to swipe. Suggests adjusting filters or checking back later
+- Generic error and loading states handled inline per screen
 
 ### 5.7 Profile & Settings
 
-- `ProfileScreen` — Avatar, name, stats, prominent `Edit profile` pill button with Pencil icon
+- `ProfileScreen` — Avatar (from mediaUrls[0]), name, city, stats row (Circles formed, Members met), interests chips (read-only), traits chips, settings list (Notifications, Privacy, Help), Log out + Delete account links
 - `EditProfileScreen` — Full editor mirroring onboarding fields:
-  5-slot media grid (1 large main + 4 small), `MAIN` star badge, video Play icon, edit overlays,
-  age stepper, gender tiles, bio textarea, interest chips, personality chips
+  5-slot `MediaGrid` (1 large main + 4 small), MAIN star badge, video Play icon overlay, edit overlay on each filled slot,
+  name input, age stepper, gender tiles, bio textarea, interests chip grid, personality chip grid
 
 Save affordances:
 
-- Header `Save` action
-- Bottom `Save` button
+- Header `Save` text button (top right)
+- Bottom sticky `Save` button
 
 ### 5.8 Communication
 
-- `NotificationsScreen` — Match alerts and Circle activity
-- `ChatScreen` — Group chat unlocked once a Circle is complete
+- `NotificationsScreen` — Match alerts, Circle activity, reminders (e.g. "Your Circle is still forming")
+- `ChatScreen` — Group chat unlocked once Circle is complete. Supports text, images, short videos (15s max), audio messages. Creator can remove members or mute notifications
+- `CallScreen` — E2EE group voice/video call per Circle using LiveKit. "E2EE Encrypted" badge shown. Controls: mic toggle, camera toggle, end call
 
-### 5.9 Design System Notes
+### 5.9 Moderation
 
-- All colors should resolve from semantic tokens, with the mobile design system mapped from the existing theme layer
-- Rounded pill buttons use `borderRadius: 100`
-- Standard card radius is `18px`
-- Layouts follow an `8px` spacing grid
-- If a gallery / showcase mode is used, a `Phone.tsx` wrapper can render screens inside a fixed mobile frame
+- `ModeratorDashboard` — Pending reports queue, resolved/dismissed tabs, report cards with reason chip and "Review" CTA
+- `ReportDetailScreen` — Reported user profile, report details, action buttons: Dismiss, Warn, Suspend 7 Days, Permanent Ban (with confirmation modal)
+- `AdminDashboard` — Stats cards (Total Users, Active Circles, Pending Reports, Banned Users), recent moderation log
+- `UserManagementScreen` — User list with search, role badges, status badges, role promotion/demotion actions
 
-### 5.10 Core User Journeys
+### 5.10 Design System Notes
+
+- All colors resolve from semantic HSL tokens (`--primary`, `--primary-soft`, `--muted-foreground` etc.)
+- Primary accent: `#FFB60C` warm orange — used for all primary CTAs, active states, selected chips
+- Rounded pill buttons: `borderRadius: 100`
+- Card radius: `18px`
+- Spacing grid: `8px` base unit
+- Screen padding: `24px` horizontal on all screens
+- No shadows, no borders, no gradients (except one subtle photo overlay in swipe cards)
+- SafeAreaView on every screen
+
+### 5.11 Core User Journeys
 
 Host journey:
-
-- Onboard → Profile setup → No Circle → Create Circle → Set preferences → Swipe users → Circle fills → Chat
+Onboard → Profile setup → No Circle → Create Circle → Set preferences
+→ Swipe users → Circle fills → CircleComplete → Chat / Call
 
 Joiner journey:
-
-- Onboard → Profile setup → No Circle → Join Circle → Set preferences → Swipe Circles → Match with host → Added to Circle → Chat
+Onboard → Profile setup → No Circle → Join Circle → Set preferences
+→ Swipe Circles → Mutual match with host → Added to Circle → Chat / Call
 
 ---
 
-## 6. SUPABASE SETUP
+## 5. SUPABASE SETUP
 
-### 6.1 Storage Buckets
+### 5.1 Storage Buckets
 
-Create two buckets in Supabase Dashboard → Storage → New Bucket:
+Create two buckets in Supabase Dashboard → Storage:
 
-| Bucket | Public Toggle | Purpose |
-|--------|--------------|---------|
-| `avatars` | ❌ Leave OFF | Profile photos |
-| `chat-media` | ❌ Leave OFF | Chat images, videos, audio |
+| Bucket | Public | Purpose |
+|--------|--------|---------|
+| `avatars` | ✅ Yes | Profile photos |
+| `chat-media` | ✅ Yes | Chat images, videos, audio |
 
 > ⚠️ 2026 NOTE: Supabase now defaults buckets to private.
 > Do NOT toggle public on. Access is controlled via SQL storage policies (section 6.6).
 > Public URLs via getPublicUrl() still work as long as the SELECT policy is in place.
 
-### 6.2 File Path Conventions
+### 5.2 File Path Conventions
 
 ```
 avatars/
@@ -315,7 +376,7 @@ chat-media/
         └── {messageId}.m4a
 ```
 
-### 6.3 File Size Limits (enforce in code)
+### 5.3 File Size Limits (enforce in code)
 
 ```
 Profile photo:   5MB  max
@@ -324,9 +385,9 @@ Chat video:      50MB max  (15 seconds, compressed)
 Audio message:   10MB max  (~15s audio ≈ 1MB, very safe)
 ```
 
-### 6.4 PostgreSQL Schema
+### 5.4 PostgreSQL Schema
 
-Run this SQL in Supabase → SQL Editor:
+Run this SQL in Supabase → SQL Editor: (ASSUME I'VE ALREADY DONE THIS ON SUPABASE)
 
 ```sql
 -- Enums
@@ -380,7 +441,7 @@ CREATE TABLE moderation_logs (
 );
 ```
 
-### 6.5 Row Level Security Policies
+### 5.5 Row Level Security Policies (ASSUME I'VE RUN THIS ON SUPABASE)
 
 ```sql
 -- Enable RLS
@@ -391,6 +452,16 @@ ALTER TABLE moderation_logs ENABLE ROW LEVEL SECURITY;
 -- Anyone can read basic user profiles
 CREATE POLICY "Public read users"
 ON users FOR SELECT USING (true);
+
+-- Firebase-authenticated app clients can create their default role row on first login.
+-- The app is not allowed to grant elevated roles or moderation statuses during self-sync.
+CREATE POLICY "Firebase clients create default users"
+ON users FOR INSERT
+WITH CHECK (
+  role = 'user'
+  AND status = 'active'
+  AND suspended_until IS NULL
+);
 
 -- Users can create reports
 CREATE POLICY "Users can report"
@@ -430,53 +501,9 @@ USING (
 );
 ```
 
-### 6.6 Storage Policies (2026 — Run in SQL Editor)
-
-> ⚠️ Because buckets are private by default, you MUST run these policies
-> or file uploads and reads will fail silently.
-
-```sql
--- AVATARS BUCKET POLICIES
-
--- Anyone can view avatars (needed for profile photos to display)
-CREATE POLICY "Public read avatars"
-ON storage.objects FOR SELECT
-TO anon, authenticated
-USING (bucket_id = 'avatars');
-
--- Authenticated users can upload avatars
-CREATE POLICY "Authenticated upload avatars"
-ON storage.objects FOR INSERT
-TO authenticated
-WITH CHECK (bucket_id = 'avatars');
-
--- Users can only update their own avatar folder
-CREATE POLICY "Update own avatar"
-ON storage.objects FOR UPDATE
-TO authenticated
-USING (
-  bucket_id = 'avatars' AND
-  (storage.foldername(name))[1] = auth.uid()::text
-);
-
--- CHAT-MEDIA BUCKET POLICIES
-
--- Anyone can read chat media (needed for images/video/audio to display)
-CREATE POLICY "Public read chat media"
-ON storage.objects FOR SELECT
-TO anon, authenticated
-USING (bucket_id = 'chat-media');
-
--- Authenticated users can upload chat media
-CREATE POLICY "Authenticated upload chat media"
-ON storage.objects FOR INSERT
-TO authenticated
-WITH CHECK (bucket_id = 'chat-media');
-```
-
 ---
 
-## 7. SUPABASE SERVICE IMPLEMENTATION
+## 6. SUPABASE SERVICE IMPLEMENTATION
 
 ### `src/services/supabase.ts`
 
@@ -484,7 +511,6 @@ WITH CHECK (bucket_id = 'chat-media');
 import { createClient } from '@supabase/supabase-js';
 
 const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL!;
-// 2026: EXPO_PUBLIC_SUPABASE_ANON_KEY holds the PUBLISHABLE key (formerly anon key)
 const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY!;
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
@@ -504,7 +530,7 @@ export const syncUserToSupabase = async (firebaseUser: {
     .from('users')
     .select('id, role, status, suspended_until')
     .eq('id', uid)
-    .single();
+    .maybeSingle();
 
   if (existing) return existing;
 
@@ -531,7 +557,7 @@ export const getUserRole = async (uid: string) => {
     .from('users')
     .select('role, status, suspended_until')
     .eq('id', uid)
-    .single();
+    .maybeSingle();
 
   if (error) throw error;
   return data;
@@ -625,7 +651,7 @@ export const uploadChatMedia = async (
 
 ---
 
-## 8. AUTH CONTEXT WITH ROLES
+## 7. AUTH CONTEXT WITH ROLES
 
 ### `src/context/AuthContext.tsx`
 
@@ -707,7 +733,7 @@ export const useAuth = () => {
 
 ---
 
-## 9. ROLE-BASED NAVIGATION
+## 8. ROLE-BASED NAVIGATION
 
 ### `app/_layout.tsx`
 
@@ -737,7 +763,7 @@ export default function RootLayout() {
 
 ---
 
-## 10. MODERATION SERVICE
+## 9. MODERATION SERVICE
 
 ### `src/services/moderation.ts`
 
@@ -897,7 +923,7 @@ const logAction = async (
 
 ---
 
-## 11. LOCATION SERVICES
+## 10. LOCATION SERVICES
 
 ### Stack: Expo Location + Nominatim (OpenStreetMap)
 ### No API key required. Completely free.
@@ -981,7 +1007,7 @@ export const useLocation = () => {
 
 ---
 
-## 12. LIVEKIT E2EE CALLS
+## 11. LIVEKIT E2EE CALLS
 
 ### How E2EE Works in LiveKit
 > There is NO dashboard toggle. E2EE is configured entirely in code.
@@ -1123,7 +1149,7 @@ export const useCircleCall = (circleId: string, userName: string) => {
 
 ---
 
-## 13. FIREBASE CLOUD FUNCTIONS
+## 12. FIREBASE CLOUD FUNCTIONS
 
 ### Purpose: Generate LiveKit tokens securely server-side.
 ### The LiveKit API Secret must NEVER be in the mobile app.
@@ -1182,7 +1208,7 @@ firebase deploy --only functions
 
 ---
 
-## 14. FIRESTORE DATA MODELS
+## 13. FIRESTORE DATA MODELS
 
 These are already set up but documented here for reference.
 
@@ -1190,32 +1216,37 @@ These are already set up but documented here for reference.
 users/{userId}
   name: string
   age: number
-  gender: string
+  gender: 'male' | 'female' | 'both'
   interests: string[]
   traits: string[]
   education: string
   location: { lat: number, lng: number }
   city: string
-  photoURL: string              ← Supabase Storage URL
+  mediaUrls: string[]           ← array of up to 5 Supabase URLs
+                                   index 0 = main photo/video
+                                   index 1–4 = secondary slots
   bio: string
+  activeCircleId: string | null ← null if no active Circle
+  circleRole: 'host' | 'joiner' | null
   createdAt: timestamp
 
 circles/{circleId}
   name: string
-  creatorId: string
+  vibe: string                  ← circle description
+  meetupGoal: string            ← Coffee | Study | Gym | Food etc.
+  meetupTimeframe: string       ← "This week" | "Within 3 days" etc.
+  creatorId: string             ← host userId
   size: number                  ← target member count (3-8)
-  members: string[]             ← array of userIds
-  pendingSwipes: {              ← userId → [approvedUserIds]
-    [userId]: string[]
-  }
+  members: string[]             ← array of confirmed userIds
+  pendingJoiners: string[]      ← joiners who liked this Circle
+                                   (prioritized in host swipe deck)
   callKey: string               ← E2EE key for Livekit calls
   filters: {
-    ageRange: [number, number]
-    educationLevel: string
-    locationRadius: number
+    ageRange: [number, number]  ← dual-thumb slider values
+    genderMix: 'male' | 'female' | 'both'
+    locationRadius: number      ← km
     interests: string[]
-    vibe: string
-    meetupGoal: string
+    traits: string[]
   }
   status: 'forming' | 'complete'
   createdAt: timestamp
@@ -1233,15 +1264,15 @@ circles/{circleId}/messages/{messageId}
 
 ---
 
-## 15. DESIGN SYSTEM
+## 14. DESIGN SYSTEM
 
 ```typescript
 // src/constants/colors.ts
 export const Colors = {
-  primary: '#F5C518',
-  primaryDark: '#E0A800',
-  primaryLight: '#FFF3C4',
-  orange: '#F08C00',
+  primary: '#FFB60C',
+  primaryDark: '#D98F00',
+  primaryLight: '#FFF4DD',
+  orange: '#FFB60C',
   background: '#FFFFFF',
   surface: '#FFFFFF',
   inputBg: '#F5F5F5',
@@ -1260,7 +1291,7 @@ export const Colors = {
 - ❌ No shadows or elevation
 - ❌ No borders or outlines (except interactive dashed chips)
 - ❌ No heavy gradients
-- ✅ Primary CTA: always `#F5C518` with black text
+- ✅ Primary CTA: always `#FFB60C` with black text
 - ✅ All buttons: `borderRadius: 100` (pill shape)
 - ✅ All inputs: `backgroundColor: #F5F5F5`, no border, `borderRadius: 14`
 - ✅ Screen padding: `24` on all sides
@@ -1268,25 +1299,57 @@ export const Colors = {
 
 ---
 
-## 16. ONBOARDING FLOW (COMPLETE)
+## 15. ONBOARDING FLOW (COMPLETE)
 
 ```
-SplashScreen              → Lottie animation (logo_animation.json)
-SignUpScreen              → Firebase Auth (Google + Email)
-OTPScreen                 → Firebase OTP verification
-LocationPermissionScreen  → Expo Location permission request
-NotificationsPermission   → Expo Notifications permission request
-OnboardingIntroScreen     → "Let's build your vibe" story screen
-ProfilePhotoName          → Step 1/4 (photo + name)
-ProfileAgeGender          → Step 2/4 (age picker + gender tiles)
-ProfileInterests          → Step 3/4 (interest chips, min 3)
-ProfileTraits             → Step 4/4 (optional trait chips)
-ProfileCompleteScreen     → Celebration → navigate to HomeScreen
+SplashScreen                  → Lottie animation (logo_animation.json)
+
+── AUTH (3 screens) ──────────────────────────────────────────────
+01 WelcomeScreen              → Logo + tagline + social CTAs
+                                "Sign up with Email" → EmailSignUpScreen (sheet)
+                                "Already have an account? Log in" → LoginScreen
+
+02 EmailSignUpScreen          → Bottom sheet over dimmed yellow welcome backdrop
+                                Email + password fields
+                                "Create account" CTA → OTPScreen
+                                "Already have an account? Log in" → LoginScreen
+
+03 LoginScreen                → Full screen for returning users
+                                Email + password + "Forgot?" link
+                                "Log in" CTA → CircleScreen (if profile exists)
+                                "or continue with" Google / Facebook
+                                "New to Socio? Sign up" → WelcomeScreen
+
+── POST-AUTH PERMISSIONS ─────────────────────────────────────────
+OTPScreen                     → Phone/email OTP verification → LocationPermission
+LocationPermissionScreen      → Expo Location permission request
+NotificationsPermissionScreen → Expo Notifications permission request
+
+── PROFILE SETUP (4-step indicator) ──────────────────────────────
+OnboardingIntroScreen         → "Let's build your vibe" story screen
+ProfilePhotoName              → Step 1/4 — 5 media slots + name
+ProfileAgeGender              → Step 2/4 — age stepper + gender tiles (Male/Female/Both)
+ProfileInterests              → Step 3/4 — interest chips (min 3)
+ProfileTraits                 → Step 4/4 — personality trait chips (optional)
+ProfileCompleteScreen         → Celebration → NoCircleScreen
+```
+
+### Auth Routing Logic
+```
+User opens app
+       ↓
+Firebase onAuthStateChanged
+       ↓
+No user → WelcomeScreen (01)
+       ↓
+User exists but no Firestore profile → ProfilePhotoName (resume setup)
+       ↓
+User exists + profile complete → CircleScreen (or NoCircleScreen)
 ```
 
 ---
 
-## 17. ROLE SYSTEM
+## 16. ROLE SYSTEM
 
 ### Roles
 
@@ -1322,23 +1385,46 @@ After that, all role management is done through the Admin Dashboard UI.
 
 ---
 
-## 18. MEDIA ARCHITECTURE SUMMARY
+## 17. MEDIA ARCHITECTURE SUMMARY
 
 ```
-User action              Storage location
-────────────────────────────────────────────────────────
-Profile photo upload  →  Supabase: avatars/{userId}/profile.jpg
-Chat image send       →  Supabase: chat-media/{circleId}/images/{msgId}.jpg
-Chat video send       →  Supabase: chat-media/{circleId}/videos/{msgId}.mp4
-Chat audio send       →  Supabase: chat-media/{circleId}/audio/{msgId}.m4a
-Media URL reference   →  Stored as string in Firestore message document
-Group call session    →  Livekit Cloud (no files stored)
-Call E2EE key         →  Firestore: circles/{circleId}/callKey
+User action                    Storage location
+────────────────────────────────────────────────────────────────
+Profile photo/video upload  →  Supabase: avatars/{userId}/media-{1..5}.jpg|mp4
+                               Slot 1 = main (large), Slots 2–5 = secondary
+Chat image send             →  Supabase: chat-media/{circleId}/images/{msgId}.jpg
+Chat video send             →  Supabase: chat-media/{circleId}/videos/{msgId}.mp4
+Chat audio send             →  Supabase: chat-media/{circleId}/audio/{msgId}.m4a
+Media URL reference         →  Stored as string array in Firestore user document
+Group call session          →  Livekit Cloud (no files stored)
+Call E2EE key               →  Firestore: circles/{circleId}/callKey
+```
+
+### Profile Media Slots
+
+```
+avatars/{userId}/
+├── media-1.jpg   ← MAIN slot (large display, star badge)
+├── media-2.jpg   ← secondary
+├── media-3.mp4   ← secondary (short video, play icon overlay)
+├── media-4.jpg   ← secondary
+└── media-5.jpg   ← secondary
+```
+
+Stored in Firestore as:
+```javascript
+users/{userId}
+  mediaUrls: [
+    "https://...media-1.jpg",  // index 0 = main
+    "https://...media-2.jpg",
+    "https://...media-3.mp4",
+    ...
+  ]
 ```
 
 ---
 
-## 19. PACKAGES TO INSTALL
+## 18. PACKAGES TO INSTALL
 
 Run these commands to install all required packages:
 
@@ -1369,6 +1455,80 @@ npx expo install --fix
 
 ---
 
+## 19. UI ARCHITECTURE & SCREEN REFERENCE
+
+### Bottom Navigation (persistent in main app)
+```
+Tab 1: Circle        → NoCircleScreen or CircleScreen (Users icon)
+Tab 2: Swipe         → SwipeScreen (host) or SwipeCirclesScreen (joiner)
+Tab 3: Notifications → NotificationsScreen
+Tab 4: Profile       → ProfileScreen
+```
+
+### Screen Inventory
+
+| Screen | Path | Description |
+|--------|------|-------------|
+| SplashScreen | `index.tsx` | Lottie logo animation |
+| WelcomeScreen (01) | `(auth)/welcome.tsx` | Logo + social CTAs + email + login link |
+| EmailSignUpScreen (02) | `(auth)/email-signup.tsx` | Bottom sheet — email + password sign up |
+| LoginScreen (03) | `(auth)/login.tsx` | Returning user — email/password + social |
+| OTPScreen | `(auth)/otp.tsx` | Phone/email verification |
+| LocationPermissionScreen | `(auth)/location-permission.tsx` | GPS request |
+| NotificationsPermissionScreen | `(auth)/notifications-permission.tsx` | Push request |
+| OnboardingIntroScreen | `(auth)/onboarding-intro.tsx` | How Circles work |
+| ProfilePhotoName | `(auth)/profile-photo-name.tsx` | Step 1/4 — 5 media slots + name |
+| ProfileAgeGender | `(auth)/profile-age-gender.tsx` | Step 2/4 |
+| ProfileInterests | `(auth)/profile-interests.tsx` | Step 3/4 |
+| ProfileTraits | `(auth)/profile-traits.tsx` | Step 4/4 |
+| ProfileCompleteScreen | `(auth)/profile-complete.tsx` | Celebration |
+| NoCircleScreen | `circle/no-circle.tsx` | Create or Join CTA |
+| CircleScreen | `(tabs)/home.tsx` | Circle tab and active Circle dashboard |
+| CreateCircleScreen | `circle/create.tsx` | Name, vibe, meetup details |
+| CreateCirclePreferencesScreen | `circle/create-preferences.tsx` | Who to attract |
+| JoinCirclePreferencesScreen | `circle/join-preferences.tsx` | What joiner wants |
+| SwipeScreen | `circle/swipe-users.tsx` | Host swipes users |
+| SwipeCirclesScreen | `circle/swipe-circles.tsx` | Joiner swipes Circles |
+| SwipeEmptyScreen | `circle/swipe-empty.tsx` | No more cards |
+| CircleProgressScreen | `circle/progress.tsx` | Circle filling up |
+| CircleCompleteScreen | `circle/complete.tsx` | Circle full → enter chat |
+| ChatScreen | `circle/chat.tsx` | Group chat |
+| CallScreen | `circle/call.tsx` | E2EE group call |
+| NotificationsScreen | `(tabs)/notifications.tsx` | Alerts + activity |
+| ProfileScreen | `(tabs)/profile.tsx` | View profile + edit button |
+| EditProfileScreen | `profile/edit.tsx` | Full profile editor |
+| ModeratorDashboard | `moderator/dashboard.tsx` | Review reports |
+| ReportDetailScreen | `moderator/report-detail.tsx` | Single report |
+| AdminDashboard | `admin/dashboard.tsx` | All mod powers + role mgmt |
+| UserManagementScreen | `admin/user-management.tsx` | Promote/demote users |
+
+### Key Components
+
+| Component | Purpose |
+|-----------|---------|
+| `StepIndicator` | 4-bar progress tracker for profile setup |
+| `MediaGrid` | 1 main + 4 secondary photo/video slots with overlays |
+| `DualSlider` | Dual-thumb range slider for age/radius |
+| `ProfileCard` | Swipe card for users — shows media carousel |
+| `CircleCard` | Swipe card for Circles — name, host, distance, capacity |
+| `AvatarStack` | Overlapping member avatars with +N overflow badge |
+| `CapacityBadge` | "2 / 5 spots" remaining indicator |
+| `CircleProgress` | Visual fill as circle members join |
+
+### Design Tokens
+```typescript
+// All colors via HSL semantic tokens
+--primary         // #FFB60C warm orange
+--primary-soft    // #FFF4DD light orange tint
+--secondary       // supporting accent
+--muted-foreground // #6B6B6B secondary text
+--background      // #FFFFFF
+--card-radius     // 18px
+--spacing-unit    // 8px grid
+```
+
+---
+
 ## 20. IMPLEMENTATION ORDER
 
 Build in this exact order to avoid dependency issues:
@@ -1381,51 +1541,90 @@ Phase 1 — Foundation (already done)
 
 Phase 2 — Supabase
   1. Create Supabase project
-  2. Create storage buckets (avatars, chat-media)
+  2. Create storage buckets (avatars, chat-media) — leave private
   3. Run PostgreSQL schema SQL
-  4. Add RLS policies
+  4. Add RLS policies (tables + storage)
   5. Implement supabase.ts service
   6. Update AuthContext to sync roles
 
 Phase 3 — Onboarding UI
-  7. SplashScreen (Lottie)
-  8. SignUpScreen
-  9. OTPScreen
-  10. LocationPermissionScreen
-  11. NotificationsPermissionScreen
-  12. OnboardingIntroScreen
-  13. Profile setup screens (4 steps)
-  14. ProfileCompleteScreen
+  7.  SplashScreen (Lottie — logo_animation.json)
+  8.  WelcomeScreen (logo + tagline + Get Started)
+  9.  OnboardingIntroScreen (how Circles work)
+  10. OTPScreen (phone/email verification)
+  11. LocationPermissionScreen
+  12. NotificationsPermissionScreen
+  13. ProfilePhotoName — Step 1/4
+      → MediaGrid component (1 main + 4 secondary slots)
+      → useImageUpload hook (up to 5 files)
+  14. ProfileAgeGender — Step 2/4
+      → age stepper + gender tiles (Male/Female/Both)
+  15. ProfileInterests — Step 3/4
+  16. ProfileTraits — Step 4/4
+  17. ProfileCompleteScreen → NoCircleScreen
 
-Phase 4 — Core App
-  15. HomeScreen
-  16. CreateCircleScreen
-  17. SwipeScreen
-  18. CircleDashboardScreen
+Phase 4 — No Circle State
+  18. NoCircleScreen
+      → "Create a Circle" primary CTA (Plus icon)
+      → "Join a Circle" secondary CTA (Search icon)
 
-Phase 5 — Chat + Media
-  19. CircleChatScreen (text)
-  20. useMediaUpload hook
-  21. Media message sending (image/video/audio)
-  22. MediaMessage component
+Phase 5 — Host (Create) Flow
+  19. CreateCircleScreen (name, vibe, meetup goal + timeframe)
+  20. CreateCirclePreferencesScreen
+      → DualSlider component (age range)
+      → gender mix selector
+      → interest + trait chips
+  21. SwipeScreen — host swipes users
+      → ProfileCard with media carousel
+      → JOIN ✓ / SKIP ✕ overlays
+  22. CircleProgressScreen (fills as members join)
+  23. CircleCompleteScreen → unlocks chat
 
-Phase 6 — Calls
-  23. Firebase Cloud Functions setup
-  24. Livekit integration
-  25. useCircleCall hook
-  26. CallScreen UI
+Phase 6 — Joiner Flow
+  24. JoinCirclePreferencesScreen
+      → radius slider (1–50+ km)
+      → DualSlider (age range)
+      → gender mix, vibe, interests, traits
+  25. SwipeCirclesScreen — joiner swipes Circles
+      → CircleCard component
+      → Circle name, host, distance
+      → CapacityBadge ("2 / 5 spots")
+      → AvatarStack (overlapping members + N overflow)
+      → JOIN ✓ / SKIP ✕ overlays
+  26. SwipeEmptyScreen (no more profiles/circles)
 
-Phase 7 — Moderation
-  27. moderation.ts service
-  28. ModeratorDashboard screen
-  29. ReportDetailScreen
-  30. AdminDashboard screen
-  31. UserManagementScreen
+Phase 7 — Chat + Media
+  27. CircleChatScreen (text)
+  28. useMediaUpload hook
+  29. Media message sending (image/video/audio)
+  30. MediaMessage component
+
+Phase 8 — Calls
+  31. Firebase Cloud Functions setup
+  32. Livekit integration
+  33. useCircleCall hook
+  34. CallScreen UI (E2EE group call)
+
+Phase 9 — Profile Management
+  35. ProfileScreen (avatar, name, stats, Edit pill button)
+  36. EditProfileScreen
+      → mirrors onboarding fields
+      → 5-slot MediaGrid with MAIN star badge + video play icon
+      → edit overlays on each slot
+      → Save header action + bottom Save button
+
+Phase 10 — Moderation
+  37. NotificationsScreen (match alerts, Circle activity)
+  38. moderation.ts service
+  39. ModeratorDashboard screen
+  40. ReportDetailScreen
+  41. AdminDashboard screen
+  42. UserManagementScreen
 ```
 
 ---
 
-## 21. SECURITY CHECKLIST
+## 20. SECURITY CHECKLIST
 
 - [ ] Firebase UID is the single identity source across all services
 - [ ] Supabase RLS policies are enabled on all tables
@@ -1440,4 +1639,4 @@ Phase 7 — Moderation
 ---
 
 *This document should be kept updated as the architecture evolves.*
-*Last updated: April 2026 — v1.1 (Supabase 2026 key naming + storage policy changes)*
+*Last updated: April 2026 — v1.2 (Full UI architecture + dual user journeys added)*

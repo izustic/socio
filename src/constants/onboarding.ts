@@ -12,6 +12,18 @@ export type OnboardingStep =
   | 'profile-complete';
 
 export const ONBOARDING_ROUTE_MAP: Record<OnboardingStep, string> = {
+  otp: '/(auth)/otp',
+  'location-permission': '/(auth)/location-permission',
+  'notifications-permission': '/(auth)/notifications-permission',
+  'onboarding-intro': '/(auth)/onboarding-intro',
+  'profile-photo-name': '/(auth)/profile-photo-name',
+  'profile-age-gender': '/(auth)/profile-age-gender',
+  'profile-interests': '/(auth)/profile-interests',
+  'profile-traits': '/(auth)/profile-traits',
+  'profile-complete': '/(auth)/profile-complete',
+};
+
+export const ONBOARDING_PATHNAME_MAP: Record<OnboardingStep, string> = {
   otp: '/otp',
   'location-permission': '/location-permission',
   'notifications-permission': '/notifications-permission',
@@ -26,6 +38,7 @@ export const ONBOARDING_ROUTE_MAP: Record<OnboardingStep, string> = {
 export const DEFAULT_ONBOARDING_STEP: OnboardingStep = 'location-permission';
 
 export const getOnboardingRoute = (step: OnboardingStep) => ONBOARDING_ROUTE_MAP[step];
+export const getOnboardingPathname = (step: OnboardingStep) => ONBOARDING_PATHNAME_MAP[step];
 
 export const ONBOARDING_INTERESTS: Interest[] = [
   'Music',

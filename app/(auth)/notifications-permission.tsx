@@ -1,7 +1,6 @@
 import OnboardingLayout from '@/src/components/onboarding/OnboardingLayout';
 import { Colors, Spacing, Typography } from '@/src/constants/theme';
 import { useOnboarding } from '@/src/context/OnboardingContext';
-import { router } from 'expo-router';
 import { StyleSheet, Text, View } from 'react-native';
 
 export default function NotificationsPermissionScreen() {
@@ -10,7 +9,6 @@ export default function NotificationsPermissionScreen() {
   const goNext = (enabled: boolean) => {
     mergeDraft({ notificationsEnabled: enabled });
     setStep('onboarding-intro');
-    router.replace('/onboarding-intro');
   };
 
   return (
@@ -22,6 +20,7 @@ export default function NotificationsPermissionScreen() {
       onPrimaryPress={() => goNext(true)}
       secondaryLabel="Not now"
       onSecondaryPress={() => goNext(false)}
+      onBackPress={() => setStep('location-permission')}
       centerContent
     >
       <View style={styles.card}>

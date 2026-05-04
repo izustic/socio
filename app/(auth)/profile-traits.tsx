@@ -1,14 +1,13 @@
 import OnboardingLayout from '@/src/components/onboarding/OnboardingLayout';
 import {
-  ONBOARDING_TRAITS,
-  TRAIT_EMOJI,
+    ONBOARDING_TRAITS,
+    TRAIT_EMOJI,
 } from '@/src/constants/onboarding';
 import { Colors, Radius, Spacing, Typography } from '@/src/constants/theme';
 import { useAuth } from '@/src/context/AuthContext';
 import { useOnboarding } from '@/src/context/OnboardingContext';
 import { createUserProfile } from '@/src/services/user';
 import { ProfileTrait } from '@/src/types';
-import { router } from 'expo-router';
 import { useState } from 'react';
 import { Alert, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
@@ -38,22 +37,28 @@ export default function ProfileTraitsScreen() {
 
     setSaving(true);
     try {
-      await createUserProfile(user.uid, {
+      const profileData: any = {
         name: draft.name.trim(),
         age: draft.age,
         gender: draft.gender,
+        media: draft.media,
         interests: draft.interests,
         traits: draft.traits,
         education: draft.education,
-        location: draft.location || undefined,
-        photoURL: draft.photoURL,
+        photoURL: draft.media[0]?.remoteUrl || draft.photoURL,
         bio: draft.bio.trim(),
         notificationsEnabled: draft.notificationsEnabled,
         locationEnabled: draft.locationEnabled,
         profileComplete: true,
-      });
+      };
+
+      // Only include location if it exists
+      if (draft.location) {
+        profileData.location = draft.location;
+      }
+
+      await createUserProfile(user.uid, profileData);
       setStep('profile-complete');
-      router.replace('/profile-complete');
     } catch (error) {
       console.error('Error creating user profile:', error);
       Alert.alert('Could not save profile', 'Please try again.');
@@ -72,7 +77,7 @@ export default function ProfileTraitsScreen() {
       primaryDisabled={saving}
       secondaryLabel="Skip for now"
       onSecondaryPress={handleSubmit}
-      onBackPress={() => router.back()}
+      onBackPress={() => setStep('profile-interests')}
     >
       <View style={styles.metaRow}>
         <Text style={styles.optional}>Optional</Text>

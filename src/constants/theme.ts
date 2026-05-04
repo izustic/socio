@@ -1,9 +1,9 @@
 export const Colors = {
   // Core
-  primary: '#F5C518',
-  primaryDark: '#E0A800',
-  primaryLight: '#FFF3C4',
-  orange: '#F08C00',
+  primary: '#FFB60C',
+  primaryDark: '#D98F00',
+  primaryLight: '#FFF4DD',
+  orange: '#FFB60C',
 
   // Backgrounds
   background: '#FFFFFF',

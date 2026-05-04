@@ -1,6 +1,6 @@
 import { addDoc, collection } from 'firebase/firestore';
-import { db } from '../../firebase';
 import { Interest } from '../types';
+import { db } from './firebase';
 
 interface CreateCircleInput {
   name: string;

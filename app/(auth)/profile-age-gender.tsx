@@ -2,7 +2,6 @@ import OnboardingLayout from '@/src/components/onboarding/OnboardingLayout';
 import { GENDER_EMOJI, GENDER_OPTIONS } from '@/src/constants/onboarding';
 import { Colors, Radius, Spacing, Typography } from '@/src/constants/theme';
 import { useOnboarding } from '@/src/context/OnboardingContext';
-import { router } from 'expo-router';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 export default function ProfileAgeGenderScreen() {
@@ -16,10 +15,9 @@ export default function ProfileAgeGenderScreen() {
       primaryLabel="Continue"
       onPrimaryPress={() => {
         setStep('profile-interests');
-        router.replace('/profile-interests');
       }}
       primaryDisabled={!draft.gender}
-      onBackPress={() => router.back()}
+      onBackPress={() => setStep('profile-photo-name')}
     >
       <View style={styles.section}>
         <Text style={styles.label}>HOW OLD ARE YOU?</Text>

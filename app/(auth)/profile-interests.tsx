@@ -6,7 +6,6 @@ import {
 import { Colors, Radius, Spacing, Typography } from '@/src/constants/theme';
 import { useOnboarding } from '@/src/context/OnboardingContext';
 import { Interest } from '@/src/types';
-import { router } from 'expo-router';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 export default function ProfileInterestsScreen() {
@@ -29,10 +28,9 @@ export default function ProfileInterestsScreen() {
       primaryLabel="Continue"
       onPrimaryPress={() => {
         setStep('profile-traits');
-        router.replace('/profile-traits');
       }}
       primaryDisabled={draft.interests.length < 3}
-      onBackPress={() => router.back()}
+      onBackPress={() => setStep('profile-age-gender')}
     >
       <View style={styles.metaRow}>
         <Text style={styles.pickHint}>Pick at least 3</Text>

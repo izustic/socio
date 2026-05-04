@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, TextInput } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Mic, Plus, Send, Square } from 'lucide-react-native';
 import { Colors, Radius, Spacing, Typography } from '@/src/constants/theme';
 
 interface ChatInputProps {
@@ -46,10 +46,10 @@ export default function ChatInput({
           onPress={onMediaPress}
           disabled={disabled}
         >
-          <Ionicons 
-            name="add" 
+          <Plus
             size={24} 
             color={disabled ? Colors.textDisabled : Colors.primary} 
+            strokeWidth={2.4}
           />
         </TouchableOpacity>
 
@@ -78,11 +78,20 @@ export default function ChatInput({
             onPress={handleAudioPress}
             disabled={disabled || !onAudioPress}
           >
-            <Ionicons 
-              name={isRecording ? "stop" : "mic"} 
-              size={20} 
-              color={disabled ? Colors.textDisabled : (isRecording ? '#FF5252' : Colors.primary)} 
-            />
+            {isRecording ? (
+              <Square
+                size={20}
+                color={disabled ? Colors.textDisabled : '#FF5252'}
+                fill={disabled ? Colors.textDisabled : '#FF5252'}
+                strokeWidth={2.4}
+              />
+            ) : (
+              <Mic
+                size={20}
+                color={disabled ? Colors.textDisabled : Colors.primary}
+                strokeWidth={2.4}
+              />
+            )}
           </TouchableOpacity>
         ) : (
           <TouchableOpacity
@@ -93,10 +102,10 @@ export default function ChatInput({
             onPress={handleSend}
             disabled={!canSend}
           >
-            <Ionicons 
-              name="send" 
+            <Send
               size={20} 
               color={canSend ? '#fff' : Colors.textDisabled} 
+              strokeWidth={2.4}
             />
           </TouchableOpacity>
         )}

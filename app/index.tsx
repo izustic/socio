@@ -8,8 +8,8 @@ import { useEffect, useState } from 'react';
 export default function SplashScreen() {
   const [showSplash, setShowSplash] = useState(true);
   const { user, profile, loading } = useAuth();
-  const { currentStep, loading: onboardingLoading } = useOnboarding();
-  const { role, loading: roleLoading, isBanned, isSuspended, isModerator, isAdmin } = useRole();
+  const { loading: onboardingLoading } = useOnboarding();
+  const { loading: roleLoading, isBanned, isSuspended, isModerator, isAdmin } = useRole();
 
   useEffect(() => {
     // Show splash for minimum duration, then redirect based on auth state
@@ -55,6 +55,6 @@ export default function SplashScreen() {
     return <Redirect href="/admin/dashboard" />;
   }
 
-  // User + profile + role 'user' → redirect to tabs home
+  // User + profile + role 'user' → redirect to Circle tab
   return <Redirect href="/(tabs)/home" />;
 }

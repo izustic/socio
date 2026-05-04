@@ -1,10 +1,10 @@
 import { Colors, Radius, Spacing, Typography } from '@/src/constants/theme';
-import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
+import { Bell, Plus, Search, User } from 'lucide-react-native';
 import React from 'react';
 import { Image, SafeAreaView, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
-export default function HomeScreen() {
+export default function CircleScreen() {
   const handleCreateCircle = () => {
     router.push('/circle/create');
   };
@@ -22,10 +22,10 @@ export default function HomeScreen() {
         <Text style={styles.logo}>Socio</Text>
         <View style={styles.headerIcons}>
           <TouchableOpacity style={styles.iconButton}>
-            <Ionicons name="notifications-outline" size={24} color={Colors.textPrimary} />
+            <Bell size={24} color={Colors.textPrimary} strokeWidth={2.2} />
           </TouchableOpacity>
           <TouchableOpacity style={styles.iconButton}>
-            <Ionicons name="person-outline" size={24} color={Colors.textPrimary} />
+            <User size={24} color={Colors.textPrimary} strokeWidth={2.2} />
           </TouchableOpacity>
         </View>
       </View>
@@ -52,12 +52,12 @@ export default function HomeScreen() {
         {/* Buttons */}
         <View style={styles.buttons}>
           <TouchableOpacity style={styles.createButton} onPress={handleCreateCircle}>
-            <Ionicons name="add" size={20} color={Colors.textPrimary} />
+            <Plus size={20} color={Colors.textPrimary} strokeWidth={2.4} />
             <Text style={styles.createButtonText}>Create a Circle</Text>
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.joinButton} onPress={handleJoinCircle}>
-            <Ionicons name="search" size={20} color={Colors.primary} />
+            <Search size={20} color={Colors.primary} strokeWidth={2.4} />
             <Text style={styles.joinButtonText}>Join a Circle</Text>
           </TouchableOpacity>
         </View>

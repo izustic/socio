@@ -1,6 +1,6 @@
 import { Colors } from '@/src/constants/theme';
-import { Ionicons } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
+import { Bell, Layers, User, Users } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function TabLayout() {
@@ -24,29 +24,29 @@ export default function TabLayout() {
       <Tabs.Screen
         name="home"
         options={{
-          title: 'Home',
-          tabBarIcon: ({ color, size }) => <Ionicons name="home" size={size} color={color} />,
+          title: 'Circle',
+          tabBarIcon: ({ color, size }) => <Users size={size} color={color} strokeWidth={2.2} />,
         }}
       />
       <Tabs.Screen
         name="swipe"
         options={{
           title: 'Swipe',
-          tabBarIcon: ({ color, size }) => <Ionicons name="layers" size={size} color={color} />,
+          tabBarIcon: ({ color, size }) => <Layers size={size} color={color} strokeWidth={2.2} />,
         }}
       />
       <Tabs.Screen
         name="notifications"
         options={{
-          title: 'Notifications',
-          tabBarIcon: ({ color, size }) => <Ionicons name="notifications" size={size} color={color} />,
+          title: 'Alerts',
+          tabBarIcon: ({ color, size }) => <Bell size={size} color={color} strokeWidth={2.2} />,
         }}
       />
       <Tabs.Screen
         name="profile"
         options={{
           title: 'Profile',
-          tabBarIcon: ({ color, size }) => <Ionicons name="person" size={size} color={color} />,
+          tabBarIcon: ({ color, size }) => <User size={size} color={color} strokeWidth={2.2} />,
         }}
       />
     </Tabs>

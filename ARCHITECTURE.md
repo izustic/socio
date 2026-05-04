@@ -116,8 +116,8 @@ socio/
 │   │   └── profile-complete.tsx      # Celebration → enters main app
 │   │
 │   ├── (tabs)/                       # Main app shell — persistent bottom nav
-│   │   ├── _layout.tsx               # BottomNav: Home · Swipe · Notifications · Profile
-│   │   ├── home.tsx                  # NoCircleScreen or HomeScreen based on state
+│   │   ├── _layout.tsx               # BottomNav: Circle · Swipe · Notifications · Profile
+│   │   ├── home.tsx                  # Circle tab: NoCircleScreen or CircleScreen based on state
 │   │   ├── swipe.tsx                 # SwipeScreen (host) or SwipeCirclesScreen (joiner)
 │   │   ├── notifications.tsx         # Match alerts, Circle activity
 │   │   └── profile.tsx              # ProfileScreen
@@ -241,7 +241,7 @@ Auth routing logic:
 
 - No Firebase user → `WelcomeScreen`
 - Firebase user but no Firestore profile → resume at `ProfilePhotoNameScreen`
-- Firebase user + complete profile → `HomeScreen`
+- Firebase user + complete profile → `CircleScreen`
 
 ### 5.2 Profile Setup Flow
 
@@ -258,17 +258,17 @@ Tracked via `StepIndicator` with 4-step progress bars:
 
 Persistent bottom navigation with 4 tabs:
 
-- `Home`
+- `Circle`
 - `Swipe`
 - `Notifications`
 - `Profile`
 
-Home branch:
+Circle tab branch:
 
 - `NoCircleScreen` — Empty state with two paths:
   `Create a Circle` (primary CTA, Plus icon) → Host flow
   `Join a Circle` (secondary CTA, Search icon) → Joiner flow
-- `HomeScreen` — Active Circle dashboard once a Circle is forming or complete
+- `CircleScreen` — Active Circle dashboard once a Circle is forming or complete
 
 ### 5.4 Create-a-Circle Flow (Host Path)
 
@@ -1306,7 +1306,7 @@ SplashScreen                  → Lottie animation (logo_animation.json)
 
 03 LoginScreen                → Full screen for returning users
                                 Email + password + "Forgot?" link
-                                "Log in" CTA → HomeScreen (if profile exists)
+                                "Log in" CTA → CircleScreen (if profile exists)
                                 "or continue with" Google / Facebook
                                 "New to Socio? Sign up" → WelcomeScreen
 
@@ -1334,7 +1334,7 @@ No user → WelcomeScreen (01)
        ↓
 User exists but no Firestore profile → ProfilePhotoName (resume setup)
        ↓
-User exists + profile complete → HomeScreen (or NoCircleScreen)
+User exists + profile complete → CircleScreen (or NoCircleScreen)
 ```
 
 ---
@@ -1449,7 +1449,7 @@ npx expo install --fix
 
 ### Bottom Navigation (persistent in main app)
 ```
-Tab 1: Home          → NoCircleScreen or HomeScreen
+Tab 1: Circle        → NoCircleScreen or CircleScreen (Users icon)
 Tab 2: Swipe         → SwipeScreen (host) or SwipeCirclesScreen (joiner)
 Tab 3: Notifications → NotificationsScreen
 Tab 4: Profile       → ProfileScreen
@@ -1473,7 +1473,7 @@ Tab 4: Profile       → ProfileScreen
 | ProfileTraits | `(auth)/profile-traits.tsx` | Step 4/4 |
 | ProfileCompleteScreen | `(auth)/profile-complete.tsx` | Celebration |
 | NoCircleScreen | `circle/no-circle.tsx` | Create or Join CTA |
-| HomeScreen | `(tabs)/home.tsx` | Active Circle dashboard |
+| CircleScreen | `(tabs)/home.tsx` | Circle tab and active Circle dashboard |
 | CreateCircleScreen | `circle/create.tsx` | Name, vibe, meetup details |
 | CreateCirclePreferencesScreen | `circle/create-preferences.tsx` | Who to attract |
 | JoinCirclePreferencesScreen | `circle/join-preferences.tsx` | What joiner wants |

@@ -364,7 +364,12 @@ Create two buckets in Supabase Dashboard → Storage:
 ```
 avatars/
 └── {userId}/
-    └── profile.jpg
+    ├── profile.jpg                  # optional single-avatar helper
+    ├── media-1.jpg|mp4              # MAIN onboarding slot
+    ├── media-2.jpg|mp4
+    ├── media-3.jpg|mp4
+    ├── media-4.jpg|mp4
+    └── media-5.jpg|mp4
 
 chat-media/
 └── {circleId}/
@@ -384,6 +389,35 @@ Chat image:      5MB  max
 Chat video:      50MB max  (15 seconds, compressed)
 Audio message:   10MB max  (~15s audio ≈ 1MB, very safe)
 ```
+
+### 5.3.1 Supabase Storage Policies
+
+The mobile app uses Firebase Auth, not Supabase Auth. Until a backend signs Supabase JWTs from Firebase users, Storage policies cannot safely use `auth.uid()` to match Firebase UIDs. For the current client-only MVP, allow app clients to read and write the media buckets with the anon key:
+
+```sql
+CREATE POLICY "Public read avatars"
+ON storage.objects FOR SELECT
+USING (bucket_id = 'avatars');
+
+CREATE POLICY "Public upload avatars"
+ON storage.objects FOR INSERT
+WITH CHECK (bucket_id = 'avatars');
+
+CREATE POLICY "Public update avatars"
+ON storage.objects FOR UPDATE
+USING (bucket_id = 'avatars')
+WITH CHECK (bucket_id = 'avatars');
+
+CREATE POLICY "Public read chat media"
+ON storage.objects FOR SELECT
+USING (bucket_id = 'chat-media');
+
+CREATE POLICY "Public upload chat media"
+ON storage.objects FOR INSERT
+WITH CHECK (bucket_id = 'chat-media');
+```
+
+Production hardening: replace these broad Storage policies with a Firebase-authenticated backend or custom Supabase JWT flow before launch.
 
 ### 5.4 PostgreSQL Schema
 
@@ -576,7 +610,7 @@ export const uploadAvatar = async (
     throw new Error('Image must be under 5MB');
   }
 
-  const filePath = `avatars/${userId}/profile.jpg`;
+  const filePath = `${userId}/profile.jpg`;
 
   const { error } = await supabase.storage
     .from('avatars')

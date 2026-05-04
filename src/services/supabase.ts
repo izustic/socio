@@ -74,16 +74,39 @@ export const getUserRole = async (uid: string): Promise<SupabaseUserRole | null>
 
 export const getDefaultUserRole = () => DEFAULT_USER_ROLE;
 
-// Upload avatar to Supabase Storage
-export const uploadAvatar = async (userId: string, imageUri: string) => {
-  try {
-    // TODO: Implement avatar upload logic
-    // This will be implemented in Phase 2
-    throw new Error('Avatar upload not implemented yet');
-  } catch (error) {
-    console.error('Error uploading avatar:', error);
-    throw error;
+const MAX_STORAGE_SIZES = {
+  avatar: 5 * 1024 * 1024,
+  image: 5 * 1024 * 1024,
+  video: 50 * 1024 * 1024,
+  audio: 10 * 1024 * 1024,
+};
+
+const fetchStorageBlob = async (uri: string) => {
+  const response = await fetch(uri);
+  if (!response.ok) {
+    throw new Error('We could not read that file. Please try another one.');
   }
+  return response.blob();
+};
+
+// Upload avatar to Supabase Storage
+export const uploadAvatar = async (userId: string, imageUri: string): Promise<string> => {
+  const blob = await fetchStorageBlob(imageUri);
+
+  if (blob.size > MAX_STORAGE_SIZES.avatar) {
+    throw new Error('Please choose an image under 5 MB.');
+  }
+
+  const filePath = `${userId}/profile.jpg`;
+  const { error } = await supabase.storage.from('avatars').upload(filePath, blob, {
+    contentType: 'image/jpeg',
+    upsert: true,
+  });
+
+  if (error) throw error;
+
+  const { data } = supabase.storage.from('avatars').getPublicUrl(filePath);
+  return data.publicUrl;
 };
 
 // Upload chat media to Supabase Storage
@@ -92,13 +115,25 @@ export const uploadChatMedia = async (
   messageId: string,
   mediaUri: string,
   type: 'image' | 'video' | 'audio'
-) => {
-  try {
-    // TODO: Implement chat media upload logic
-    // This will be implemented in Phase 6
-    throw new Error('Chat media upload not implemented yet');
-  } catch (error) {
-    console.error('Error uploading chat media:', error);
-    throw error;
+): Promise<string> => {
+  const blob = await fetchStorageBlob(mediaUri);
+
+  if (blob.size > MAX_STORAGE_SIZES[type]) {
+    throw new Error(`${type} file is too large.`);
   }
+
+  const extension = type === 'image' ? 'jpg' : type === 'video' ? 'mp4' : 'm4a';
+  const contentType = type === 'image' ? 'image/jpeg' : type === 'video' ? 'video/mp4' : 'audio/m4a';
+  const folder = type === 'image' ? 'images' : `${type}s`;
+  const filePath = `${circleId}/${folder}/${messageId}.${extension}`;
+
+  const { error } = await supabase.storage.from('chat-media').upload(filePath, blob, {
+    contentType,
+    upsert: false,
+  });
+
+  if (error) throw error;
+
+  const { data } = supabase.storage.from('chat-media').getPublicUrl(filePath);
+  return data.publicUrl;
 };

@@ -66,7 +66,7 @@ export default function CreateCircleScreen() {
         meetupGoal: selectedGoal,
       });
 
-      router.replace('/(app)/swipe');
+      router.replace('/circle/swipe-users');
     } catch (error: any) {
       Alert.alert('Unable to create circle', error?.message || 'Please try again.');
     } finally {

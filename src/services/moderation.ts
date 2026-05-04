@@ -7,7 +7,7 @@ export const reportUser = async (reporterId: string, reportedId: string, reason:
       .from('reports')
       .insert({
         reporter_id: reporterId,
-        reported_id: reportedId,
+        reported_user_id: reportedId,
         reason,
         status: 'pending',
         created_at: new Date().toISOString(),
@@ -49,7 +49,7 @@ export const suspendUser = async (userId: string, suspendedUntil: string, reason
         status: 'suspended',
         suspended_until: suspendedUntil,
       })
-      .eq('uid', userId)
+      .eq('id', userId)
       .select()
       .single();
 
@@ -70,7 +70,7 @@ export const banUser = async (userId: string, reason: string) => {
         status: 'banned',
         suspended_until: null,
       })
-      .eq('uid', userId)
+      .eq('id', userId)
       .select()
       .single();
 

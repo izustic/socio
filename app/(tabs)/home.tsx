@@ -6,13 +6,11 @@ import { Image, SafeAreaView, StatusBar, StyleSheet, Text, TouchableOpacity, Vie
 
 export default function HomeScreen() {
   const handleCreateCircle = () => {
-    router.push('/(app)/create-circle');
+    router.push('/circle/create');
   };
 
   const handleJoinCircle = () => {
-    // TODO: Navigate to join circle flow when implemented
-    // For now, show a placeholder or navigate to explore
-    router.push('/(tabs)/explore');
+    router.push('/circle/join-preferences');
   };
 
   return (
@@ -44,7 +42,7 @@ export default function HomeScreen() {
         </View>
 
         {/* Title */}
-        <Text style={styles.title}>You don't have a Circle yet</Text>
+        <Text style={styles.title}>You don&apos;t have a Circle yet</Text>
 
         {/* Description */}
         <Text style={styles.description}>

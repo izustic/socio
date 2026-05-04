@@ -72,7 +72,7 @@ export default function CircleDashboardScreen() {
           <Text style={styles.title}>My Circle</Text>
           <Text style={styles.subtitle}>You have not created a circle yet.</Text>
           <View style={styles.ctaWrap}>
-            <Button title="Create Circle" onPress={() => router.replace('/(app)/create-circle')} />
+            <Button title="Create Circle" onPress={() => router.replace('/circle/create')} />
           </View>
         </View>
       </SafeAreaView>
@@ -160,13 +160,13 @@ export default function CircleDashboardScreen() {
       <View style={styles.footer}>
         {isComplete ? (
           <>
-            <Button title="Enter Circle" onPress={() => router.push('/(app)/chats/room')} />
-            <TouchableOpacity onPress={() => router.push('/(app)/create-circle')}>
+            <Button title="Enter Circle" onPress={() => router.push('/circle/chat')} />
+            <TouchableOpacity onPress={() => router.push('/circle/progress')}>
               <Text style={styles.viewDetailsText}>View details</Text>
             </TouchableOpacity>
           </>
         ) : (
-          <Button title="Continue swiping" onPress={() => router.push('/(app)/swipe')} />
+          <Button title="Continue swiping" onPress={() => router.push('/circle/swipe-users')} />
         )}
       </View>
     </SafeAreaView>

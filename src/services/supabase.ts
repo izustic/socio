@@ -6,46 +6,56 @@ const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY!;
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
-// Sync user to Supabase after Firebase auth
-export const syncUserToSupabase = async (firebaseUser: any) => {
-  try {
-    const { data, error } = await supabase
-      .from('users')
-      .upsert({
-        uid: firebaseUser.uid,
-        email: firebaseUser.email,
-        name: firebaseUser.displayName || '',
-        photo_url: firebaseUser.photoURL || '',
-        role: 'user',
-        status: 'active',
-        created_at: new Date().toISOString(),
-      })
-      .select()
-      .single();
+type FirebaseAuthUser = {
+  uid: string;
+  email: string | null;
+  displayName: string | null;
+  photoURL: string | null;
+};
 
-    if (error) throw error;
-    return data;
-  } catch (error) {
-    console.error('Error syncing user to Supabase:', error);
-    throw error;
+// Sync user to Supabase after Firebase auth
+export const syncUserToSupabase = async (firebaseUser: FirebaseAuthUser) => {
+  const { uid, email, displayName, photoURL } = firebaseUser;
+
+  const { data: existing, error: existingError } = await supabase
+    .from('users')
+    .select('id, role, status, suspended_until')
+    .eq('id', uid)
+    .maybeSingle();
+
+  if (existingError) {
+    throw existingError;
   }
+
+  if (existing) return existing;
+
+  const { data, error } = await supabase
+    .from('users')
+    .insert({
+      id: uid,
+      email: email ?? '',
+      display_name: displayName,
+      photo_url: photoURL,
+      role: 'user',
+      status: 'active',
+    })
+    .select('id, role, status, suspended_until')
+    .single();
+
+  if (error) throw error;
+  return data;
 };
 
 // Get user role from Supabase
 export const getUserRole = async (uid: string) => {
-  try {
-    const { data, error } = await supabase
-      .from('users')
-      .select('role, status, suspended_until')
-      .eq('uid', uid)
-      .single();
+  const { data, error } = await supabase
+    .from('users')
+    .select('role, status, suspended_until')
+    .eq('id', uid)
+    .single();
 
-    if (error) throw error;
-    return data;
-  } catch (error) {
-    console.error('Error getting user role:', error);
-    throw error;
-  }
+  if (error) throw error;
+  return data;
 };
 
 // Upload avatar to Supabase Storage

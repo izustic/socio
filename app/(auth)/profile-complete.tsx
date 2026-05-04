@@ -12,7 +12,7 @@ export default function ProfileCompleteScreen() {
   const handleEnterApp = async () => {
     await refreshProfile();
     await resetOnboarding();
-    router.replace('/(app)');
+    router.replace('/circle/no-circle');
   };
 
   return (

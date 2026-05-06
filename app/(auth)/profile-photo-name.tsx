@@ -71,7 +71,7 @@ export default function ProfilePhotoNameScreen() {
     try {
       setSlotProgress(slot, { stage: 'picking', progress: 0 });
       const media = await uploadProfileMedia({
-        userId: user.uid,
+        userId: user.id,
         asset,
         slot,
         onProgress: (progress) => {

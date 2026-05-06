@@ -26,7 +26,7 @@ export default function ChatScreen() {
       setLoading(true);
       const targetCircle = params.circleId
         ? await getCircleById(String(params.circleId))
-        : await getLatestCircleForUser(user.uid);
+        : await getLatestCircleForUser(user.id);
       setCircle(targetCircle);
       if (targetCircle) {
         const memberProfiles = await getUsersByIds(targetCircle.members || []);
@@ -37,11 +37,11 @@ export default function ChatScreen() {
       setLoading(false);
     };
     load();
-  }, [user?.uid, params.circleId]);
+  }, [user?.id, params.circleId]);
 
   const membersCount = (circle?.members || []).length;
   const size = circle?.size || 0;
-  const progressWidth = useMemo(() => {
+  const progressWidth = useMemo((): any => {
     if (!size) return '0%';
     return `${Math.min(1, membersCount / size) * 100}%`;
   }, [membersCount, size]);

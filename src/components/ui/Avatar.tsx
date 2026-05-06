@@ -1,14 +1,14 @@
 import { Colors, Radius } from '@/src/constants/theme';
 import React from 'react';
-import { Image, ImageStyle, StyleSheet, View, ViewStyle } from 'react-native';
+import { Image, ImageStyle, StyleProp, StyleSheet, View, ViewStyle } from 'react-native';
 
-type AvatarSize = 'sm' | 'md' | 'lg' | 'xl';
+type AvatarSize = 'sm' | 'md' | 'lg' | 'xl' | number;
 
 interface AvatarProps {
   uri?: string;
   size?: AvatarSize;
   placeholder?: boolean;
-  style?: ViewStyle;
+  style?: StyleProp<ViewStyle>;
 }
 
 const SIZE_MAP: Record<AvatarSize, number> = {
@@ -19,7 +19,7 @@ const SIZE_MAP: Record<AvatarSize, number> = {
 };
 
 export default function Avatar({ uri, size = 'md', placeholder = false, style }: AvatarProps) {
-  const dimension = SIZE_MAP[size];
+  const dimension = typeof size === 'number' ? size : SIZE_MAP[size];
   const avatarStyle: ViewStyle = {
     width: dimension,
     height: dimension,
@@ -37,7 +37,7 @@ export default function Avatar({ uri, size = 'md', placeholder = false, style }:
   return (
     <Image
       source={{ uri }}
-      style={[styles.image, avatarStyle as ImageStyle, style]}
+      style={[styles.image, avatarStyle as any, style as any]}
       resizeMode="cover"
     />
   );

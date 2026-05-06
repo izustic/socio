@@ -39,7 +39,7 @@ export default function SwipeUsersScreen() {
     if (!circle) return '0 of 0 members';
     return `${(circle.members || []).length} of ${circle.size} members`;
   }, [circle]);
-  const progressWidth = useMemo(() => {
+  const progressWidth = useMemo((): any => {
     if (!circle || !circle.size) return '0%';
     const ratio = Math.min(1, (circle.members || []).length / circle.size);
     return `${ratio * 100}%`;
@@ -49,7 +49,7 @@ export default function SwipeUsersScreen() {
     if (!user) return;
     setLoading(true);
     try {
-      const activeCircle = await getActiveCircleForUser(user.uid);
+      const activeCircle = await getActiveCircleForUser(user.id);
       if (!activeCircle) {
         router.replace('/(tabs)/home');
         return null;
@@ -57,7 +57,7 @@ export default function SwipeUsersScreen() {
 
       const nextCandidates = await getSwipeCandidates({
         circle: activeCircle,
-        currentUserId: user.uid,
+        currentUserId: user.id,
         currentUserProfile: profile,
       });
       setCircle(activeCircle);
@@ -71,13 +71,13 @@ export default function SwipeUsersScreen() {
 
   useEffect(() => {
     loadSwipeData();
-  }, [user?.uid]);
+  }, [user?.id]);
 
   const handleSwipe = async (liked: boolean) => {
     if (!user || !circle || !currentCandidate || swiping) return;
     setSwiping(true);
     try {
-      const result = await submitSwipe(circle.id, user.uid, currentCandidate.uid, liked);
+      const result = await submitSwipe(circle.id, user.id, currentCandidate.uid, liked);
       const swipedCandidateName = currentCandidate.name;
 
       if (result.mutualMatch) {

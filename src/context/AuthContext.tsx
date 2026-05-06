@@ -1,12 +1,11 @@
-import { User as FirebaseUser, onAuthStateChanged } from 'firebase/auth';
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { auth } from '../services/firebase';
-import { getDefaultUserRole, getUserRole, syncUserToSupabase } from '../services/supabase';
+import { supabase, getDefaultUserRole, getUserRole, syncUserToSupabase } from '../services/supabase';
 import { getUserProfile } from '../services/user';
 import { User } from '../types';
+import type { User as SupabaseUser } from '@supabase/supabase-js';
 
 interface AuthContextType {
-  user: FirebaseUser | null;
+  user: SupabaseUser | null;
   profile: User | null;
   role: {
     role: 'user' | 'moderator' | 'admin';
@@ -23,7 +22,7 @@ const isSupabaseRlsError = (error: unknown) =>
   'code' in error &&
   error.code === '42501';
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
@@ -34,24 +33,23 @@ export const useAuth = () => {
 };
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<FirebaseUser | null>(null);
+  const [user, setUser] = useState<SupabaseUser | null>(null);
   const [profile, setProfile] = useState<User | null>(null);
   const [role, setRole] = useState<AuthContextType['role']>(null);
   const [loading, setLoading] = useState(true);
 
   const refreshProfile = async () => {
-    if (!auth.currentUser) {
+    if (!user) {
       setProfile(null);
       setRole(null);
       return;
     }
 
-    const userProfile = await getUserProfile(auth.currentUser.uid);
+    const userProfile = await getUserProfile(user.id);
     setProfile(userProfile);
-    
-    // Also refresh role from Supabase
+
     try {
-      const userRole = await getUserRole(auth.currentUser.uid);
+      const userRole = await getUserRole(user.id);
       setRole(userRole ?? getDefaultUserRole());
     } catch (error) {
       console.error('Error fetching user role:', error);
@@ -60,17 +58,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-      setUser(firebaseUser);
-      
-      if (firebaseUser) {
-        // Get Firestore profile
-        const userProfile = await getUserProfile(firebaseUser.uid);
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      const supabaseUser = session?.user ?? null;
+      setUser(supabaseUser);
+
+      if (supabaseUser) {
+        // Get profile from Supabase
+        const userProfile = await getUserProfile(supabaseUser.id);
         setProfile(userProfile);
-        
+
         // Sync to Supabase and get role
         try {
-          const userRole = await syncUserToSupabase(firebaseUser);
+          const userRole = await syncUserToSupabase(
+            supabaseUser.id,
+            supabaseUser.email,
+            supabaseUser.user_metadata?.display_name ?? supabaseUser.email?.split('@')[0],
+            supabaseUser.user_metadata?.avatar_url ?? null
+          );
           setRole(userRole);
         } catch (error) {
           if (isSupabaseRlsError(error)) {
@@ -80,18 +86,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           } else {
             console.error('Error syncing user to Supabase:', error);
           }
-          // Do not block regular users if the role row cannot be created yet.
           setRole(getDefaultUserRole());
         }
       } else {
         setProfile(null);
         setRole(null);
       }
-      
+
       setLoading(false);
     });
 
-    return unsubscribe;
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
 
   return (

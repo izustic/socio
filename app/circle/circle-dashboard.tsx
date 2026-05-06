@@ -27,7 +27,7 @@ export default function CircleDashboardScreen() {
       try {
         const targetCircle = params.circleId
           ? await getCircleById(String(params.circleId))
-          : await getLatestCircleForUser(user.uid);
+          : await getLatestCircleForUser(user.id);
         setCircle(targetCircle);
         if (targetCircle) {
           const memberProfiles = await getUsersByIds(targetCircle.members || []);
@@ -40,7 +40,7 @@ export default function CircleDashboardScreen() {
       }
     };
     load();
-  }, [user?.uid, params.circleId]);
+  }, [user?.id, params.circleId]);
 
   const progressText = useMemo(() => {
     if (!circle) return '0 of 0 members';

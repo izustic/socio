@@ -1,17 +1,43 @@
-import { createClient } from '@supabase/supabase-js';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import * as SecureStore from 'expo-secure-store';
 import 'react-native-url-polyfill/auto';
 
 const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL!;
 const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY!;
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
-
-type FirebaseAuthUser = {
-  uid: string;
-  email: string | null;
-  displayName: string | null;
-  photoURL: string | null;
+// SecureStore adapter for Supabase Auth session persistence
+const SecureStoreAdapter = {
+  getItem: async (key: string): Promise<string | null> => {
+    try {
+      return await SecureStore.getItemAsync(key);
+    } catch {
+      return null;
+    }
+  },
+  setItem: async (key: string, value: string): Promise<void> => {
+    try {
+      await SecureStore.setItemAsync(key, value);
+    } catch {
+      // Silent fail - storage not available
+    }
+  },
+  removeItem: async (key: string): Promise<void> => {
+    try {
+      await SecureStore.deleteItemAsync(key);
+    } catch {
+      // Silent fail - storage not available
+    }
+  },
 };
+
+export const supabase: SupabaseClient = createClient(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    storage: SecureStoreAdapter,
+    autoRefreshToken: true,
+    persistSession: true,
+    detectSessionInUrl: false,
+  },
+});
 
 export type SupabaseUserRole = {
   role: 'user' | 'moderator' | 'admin';
@@ -25,16 +51,17 @@ const DEFAULT_USER_ROLE: SupabaseUserRole = {
   suspended_until: null,
 };
 
-// Sync user to Supabase after Firebase auth
+// Sync user to Supabase after auth
 export const syncUserToSupabase = async (
-  firebaseUser: FirebaseAuthUser
+  userId: string,
+  email?: string | null,
+  displayName?: string | null,
+  photoURL?: string | null
 ): Promise<SupabaseUserRole & { id: string }> => {
-  const { uid, email, displayName, photoURL } = firebaseUser;
-
   const { data: existing, error: existingError } = await supabase
     .from('users')
     .select('id, role, status, suspended_until')
-    .eq('id', uid)
+    .eq('id', userId)
     .maybeSingle();
 
   if (existingError) {
@@ -46,7 +73,7 @@ export const syncUserToSupabase = async (
   const { data, error } = await supabase
     .from('users')
     .insert({
-      id: uid,
+      id: userId,
       email: email ?? '',
       display_name: displayName,
       photo_url: photoURL,

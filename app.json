@@ -23,8 +23,7 @@
         "monochromeImage": "./assets/images/logo.png"
       },
       "predictiveBackGestureEnabled": false,
-      "package": "com.anonymous.demoapp",
-      "googleServicesFile": "./google-services.json"
+      "package": "com.anonymous.demoapp"
     },
     "web": {
       "bundler": "metro",
@@ -43,7 +42,8 @@
         }
       ],
       "expo-font",
-      "expo-web-browser"
+      "expo-web-browser",
+      "expo-secure-store"
     ],
     "experiments": {
       "typedRoutes": true

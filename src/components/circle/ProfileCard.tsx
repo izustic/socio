@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, Dimensions } from 'react-native';
 import { Image } from 'expo-image';
-import { PanGestureHandler, State } from 'react-native-gesture-handler';
-import Animated, { useAnimatedGestureHandler, useAnimatedStyle, useSharedValue, withSpring, runOnJS } from 'react-native-reanimated';
+import { GestureDetector, Gesture } from 'react-native-gesture-handler';
+import Animated, { useAnimatedStyle, useSharedValue, withSpring, runOnJS } from 'react-native-reanimated';
 import { Colors, Radius, Spacing, Typography } from '@/src/constants/theme';
 import Avatar from '../ui/Avatar';
 import Button from '../ui/Button';
 
-const { width: screenWidth } = Dimensions.get('window');
+const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 const cardWidth = screenWidth - 40;
 const cardHeight = cardWidth * 1.4;
 
@@ -25,47 +25,48 @@ interface ProfileCardProps {
   onSuperLike?: () => void;
 }
 
-export default function ProfileCard({ 
-  profile, 
-  onLike, 
-  onPass, 
-  onSuperLike 
+export default function ProfileCard({
+  profile,
+  onLike,
+  onPass,
+  onSuperLike
 }: ProfileCardProps) {
   const translateX = useSharedValue(0);
   const translateY = useSharedValue(0);
   const rotate = useSharedValue(0);
+  const startX = useSharedValue(0);
+  const startY = useSharedValue(0);
 
-  const gestureHandler = useAnimatedGestureHandler({
-    onStart: (_, context) => {
-      context.startX = translateX.value;
-      context.startY = translateY.value;
-    },
-    onActive: (event, context) => {
-      translateX.value = event.translationX + context.startX;
-      translateY.value = event.translationY + context.startY;
+  const panGesture = Gesture.Pan()
+    .onStart(() => {
+      startX.value = translateX.value;
+      startY.value = translateY.value;
+    })
+    .onUpdate((event) => {
+      translateX.value = event.translationX + startX.value;
+      translateY.value = event.translationY + startY.value;
       rotate.value = (translateX.value / screenWidth) * 30;
-    },
-    onEnd: (event) => {
+    })
+    .onEnd(() => {
       const shouldLike = translateX.value > 100;
       const shouldPass = translateX.value < -100;
       const shouldSuperLike = translateY.value < -100;
 
       if (shouldLike) {
         translateX.value = withSpring(screenWidth * 1.5);
-        runOnJS(onLike)();
+        onLike && runOnJS(onLike)();
       } else if (shouldPass) {
         translateX.value = withSpring(-screenWidth * 1.5);
-        runOnJS(onPass)();
+        onPass && runOnJS(onPass)();
       } else if (shouldSuperLike) {
         translateY.value = withSpring(-screenHeight * 1.5);
-        runOnJS(onSuperLike)();
+        onSuperLike && runOnJS(onSuperLike)();
       } else {
         translateX.value = withSpring(0);
         translateY.value = withSpring(0);
         rotate.value = withSpring(0);
       }
-    }
-  });
+    });
 
   const cardStyle = useAnimatedStyle(() => ({
     transform: [
@@ -89,158 +90,199 @@ export default function ProfileCard({
 
   return (
     <View style={styles.container}>
-      <PanGestureHandler onGestureEvent={gestureHandler}>
+      <GestureDetector gesture={panGesture}>
         <Animated.View style={[styles.card, cardStyle]}>
-          {/* Media */}
-          <View style={styles.mediaContainer}>
-            {profile.media && profile.media.length > 0 ? (
+          <View style={styles.imageContainer}>
+            {profile.photoURL ? (
               <Image
-                source={{ uri: profile.media[0].uri }}
-                style={styles.media}
+                source={{ uri: profile.photoURL }}
+                style={styles.image}
                 contentFit="cover"
               />
             ) : (
-              <Avatar 
-                uri={profile.photoURL} 
-                size={cardWidth}
-                style={styles.avatarPlaceholder}
-              />
+              <View style={styles.placeholder}>
+                <Avatar uri={profile.photoURL} size={120} placeholder />
+              </View>
             )}
-            
-            {/* Overlay indicators */}
-            <Animated.View style={[styles.likeIndicator, likeOpacity]}>
-              <Text style={styles.indicatorText}>LIKE</Text>
+
+            <Animated.View style={[styles.likeLabel, likeOpacity, styles.labelLeft]}>
+              <Text style={styles.likeLabelText}>LIKE</Text>
             </Animated.View>
-            
-            <Animated.View style={[styles.passIndicator, passOpacity]}>
-              <Text style={styles.indicatorText}>PASS</Text>
+
+            <Animated.View style={[styles.likeLabel, passOpacity, styles.labelRight]}>
+              <Text style={[styles.likeLabelText, styles.passLabel]}>PASS</Text>
             </Animated.View>
-            
-            <Animated.View style={[styles.superLikeIndicator, superLikeOpacity]}>
-              <Text style={styles.indicatorText}>SUPER</Text>
+
+            <Animated.View style={[styles.likeLabel, superLikeOpacity, styles.labelTop]}>
+              <Text style={[styles.likeLabelText, styles.superLikeLabel]}>SUPER</Text>
             </Animated.View>
           </View>
 
-          {/* Info */}
           <View style={styles.info}>
-            <Text style={styles.name}>
-              {profile.name}, {profile.age}
-            </Text>
-            
+            <View style={styles.nameRow}>
+              <Text style={styles.name}>{profile.name}</Text>
+              <Text style={styles.age}>{profile.age}</Text>
+            </View>
+
             {profile.bio && (
               <Text style={styles.bio} numberOfLines={2}>
                 {profile.bio}
               </Text>
             )}
-            
-            {profile.interests && profile.interests.length > 0 && (
-              <View style={styles.interests}>
-                {profile.interests.slice(0, 3).map((interest, index) => (
-                  <View key={index} style={styles.interestChip}>
-                    <Text style={styles.interestText}>{interest}</Text>
-                  </View>
-                ))}
-              </View>
-            )}
+
+            <View style={styles.interests}>
+              {profile.interests.slice(0, 3).map((interest, index) => (
+                <View key={index} style={styles.interestTag}>
+                  <Text style={styles.interestText}>{interest}</Text>
+                </View>
+              ))}
+            </View>
           </View>
         </Animated.View>
-      </PanGestureHandler>
+      </GestureDetector>
+
+      <View style={styles.buttons}>
+        <Button
+          title="Pass"
+          variant="outline"
+          onPress={() => {
+            translateX.value = withSpring(-screenWidth * 1.5);
+            onPass?.();
+          }}
+          style={styles.button}
+        />
+        <Button
+          title="Super Like"
+          variant="primary"
+          onPress={() => {
+            translateY.value = withSpring(-screenHeight * 1.5);
+            onSuperLike?.();
+          }}
+          style={styles.button}
+        />
+        <Button
+          title="Like"
+          variant="primary"
+          onPress={() => {
+            translateX.value = withSpring(screenWidth * 1.5);
+            onLike?.();
+          }}
+          style={styles.button}
+        />
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    position: 'absolute',
-    width: cardWidth,
-    height: cardHeight,
+    alignItems: 'center',
   },
   card: {
-    width: '100%',
-    height: '100%',
-    backgroundColor: Colors.white,
-    borderRadius: Radius.lg,
+    width: cardWidth,
+    height: cardHeight,
+    backgroundColor: Colors.surface,
+    borderRadius: Radius.xl,
     overflow: 'hidden',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 10 },
+    shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.1,
-    shadowRadius: 20,
-    elevation: 10,
+    shadowRadius: 12,
+    elevation: 5,
   },
-  mediaContainer: {
+  imageContainer: {
     flex: 1,
     position: 'relative',
   },
-  media: {
+  image: {
     width: '100%',
     height: '100%',
   },
-  avatarPlaceholder: {
-    width: '100%',
-    height: '100%',
-    borderRadius: 0,
-  },
-  likeIndicator: {
-    position: 'absolute',
-    top: 40,
-    left: 40,
-    backgroundColor: '#4CAF50',
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: Radius.pill,
-    transform: [{ rotate: '-30deg' }],
-  },
-  passIndicator: {
-    position: 'absolute',
-    top: 40,
-    right: 40,
-    backgroundColor: '#FF5252',
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: Radius.pill,
-    transform: [{ rotate: '30deg' }],
-  },
-  superLikeIndicator: {
-    position: 'absolute',
-    top: 60,
-    left: '50%',
-    marginLeft: -40,
-    backgroundColor: '#2196F3',
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: Radius.pill,
-  },
-  indicatorText: {
-    ...Typography.button,
-    color: '#fff',
-    fontWeight: '700',
+  placeholder: {
+    flex: 1,
+    backgroundColor: Colors.inputBg,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   info: {
     padding: Spacing.md,
+  },
+  nameRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
     gap: Spacing.sm,
   },
   name: {
     ...Typography.h2,
-    fontWeight: '700',
   },
-  bio: {
+  age: {
     ...Typography.body,
     color: Colors.textSecondary,
+  },
+  bio: {
+    ...Typography.bodySmall,
+    color: Colors.textSecondary,
+    marginTop: Spacing.xs,
   },
   interests: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: Spacing.xs,
+    marginTop: Spacing.sm,
   },
-  interestChip: {
+  interestTag: {
     backgroundColor: Colors.primaryLight,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: Radius.pill,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: Spacing.xs,
+    borderRadius: Radius.sm,
   },
   interestText: {
     ...Typography.bodySmall,
+    color: Colors.primaryDark,
+  },
+  likeLabel: {
+    position: 'absolute',
+    top: Spacing.lg,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    borderRadius: Radius.sm,
+    borderWidth: 3,
+  },
+  labelLeft: {
+    left: Spacing.lg,
+    borderColor: Colors.success,
+    transform: [{ rotate: '-20deg' }],
+  },
+  labelRight: {
+    right: Spacing.lg,
+    borderColor: Colors.danger,
+    transform: [{ rotate: '20deg' }],
+  },
+  labelTop: {
+    top: Spacing.xl,
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+    borderColor: Colors.primary,
+    transform: [{ rotate: '0deg' }],
+  },
+  likeLabelText: {
+    ...Typography.h3,
+    color: Colors.success,
+    fontWeight: '800',
+  },
+  passLabel: {
+    color: Colors.danger,
+  },
+  superLikeLabel: {
     color: Colors.primary,
-    fontWeight: '600',
+  },
+  buttons: {
+    flexDirection: 'row',
+    marginTop: Spacing.lg,
+    gap: Spacing.md,
+  },
+  button: {
+    minWidth: 80,
   },
 });

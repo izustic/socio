@@ -11,6 +11,7 @@ export interface ProfileMedia {
 
 export interface User {
   uid: string;
+  id?: string; // Supabase uses 'id', 'uid' is for backward compatibility
   name: string;
   age: number;
   gender: 'Male' | 'Female' | 'Non-binary' | 'Prefer not to say';
@@ -60,6 +61,7 @@ export interface Circle {
   members: string[];
   pendingSwipes: Record<string, string[]>;
   filters: CircleFilters;
+  meetupGoal?: string;
   status: CircleStatus;
   createdAt: Date;
 }

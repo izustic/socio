@@ -1,8 +1,7 @@
 import { Colors, Radius, Spacing, Typography } from '@/src/constants/theme';
 import { useAuth } from '@/src/context/AuthContext';
-import { auth } from '@/src/services/firebase';
 import { router } from 'expo-router';
-import { signOut } from 'firebase/auth';
+import { signOut } from '@/src/services/auth';
 import { Bell, ChevronRight, LogOut, Pencil, Shield, Trash2, User } from 'lucide-react-native';
 import { Image, Modal, SafeAreaView, ScrollView, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useState } from 'react';
@@ -14,14 +13,14 @@ export default function ProfileScreen() {
   const { user, profile } = useAuth();
   const [logoutVisible, setLogoutVisible] = useState(false);
 
-  const displayName = profile?.name || user?.displayName || 'Your profile';
+  const displayName = profile?.name || (user?.user_metadata?.display_name as string) || 'Your profile';
   const ageLabel = profile?.age ? `, ${profile.age}` : '';
   const city = profile?.location?.city || 'Location not set';
   const avatarUri =
     profile?.photoURL ||
     profile?.media?.find((item) => item.remoteUrl || item.uri)?.remoteUrl ||
     profile?.media?.find((item) => item.remoteUrl || item.uri)?.uri ||
-    user?.photoURL ||
+    (user?.user_metadata?.avatar_url as string) ||
     undefined;
   const interests = profile?.interests?.length ? profile.interests : fallbackInterests;
   const traits = profile?.traits?.length ? profile.traits : fallbackTraits;
@@ -34,7 +33,7 @@ export default function ProfileScreen() {
 
   const handleLogout = async () => {
     setLogoutVisible(false);
-    await signOut(auth);
+    await signOut();
     router.replace('/(auth)/welcome');
   };
 

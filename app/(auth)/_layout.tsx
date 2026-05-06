@@ -33,10 +33,10 @@ export default function AuthLayout() {
     if (user && !profile?.profileComplete && currentStep) {
       const targetRoute = getOnboardingRoute(currentStep);
       const targetPathname = getOnboardingPathname(currentStep);
-      
+
       // Only redirect if we're not already on the correct onboarding step
       if (pathname !== targetPathname) {
-        return <Redirect href={targetRoute} />;
+        return <Redirect href={targetRoute as any} />;
       }
     }
 

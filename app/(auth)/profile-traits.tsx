@@ -57,7 +57,7 @@ export default function ProfileTraitsScreen() {
         profileData.location = draft.location;
       }
 
-      await createUserProfile(user.uid, profileData);
+      await createUserProfile(user.id, profileData);
       setStep('profile-complete');
     } catch (error) {
       console.error('Error creating user profile:', error);

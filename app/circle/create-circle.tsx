@@ -56,7 +56,7 @@ export default function CreateCircleScreen() {
     try {
       await createCircle({
         name: circleName.trim(),
-        creatorId: user.uid,
+        creatorId: user.id,
         size,
         ageRange: [18, 28],
         educationLevel: education,

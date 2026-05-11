@@ -120,7 +120,7 @@ export default function ChatScreen() {
 
       <View style={styles.goalCard}>
         <Text style={styles.goalLabel}>MEETUP GOAL</Text>
-        <Text style={styles.goalValue}>{(circle as any).meetupGoal || 'Coffee · Within 3 days'}</Text>
+        <Text style={styles.goalValue}>{`${(circle as any).meetupGoal || 'Coffee'} · ${(circle as any).meetupTimeframe || 'Within 3 days'}`}</Text>
       </View>
 
       <View style={styles.footer}>

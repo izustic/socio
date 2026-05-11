@@ -54,7 +54,7 @@ export default function CreateCircleScreen() {
 
     setLoading(true);
     try {
-      await createCircle({
+      const payload = {
         name: circleName.trim(),
         creatorId: user.id,
         size,
@@ -64,7 +64,11 @@ export default function CreateCircleScreen() {
         interests: selectedInterests as Interest[],
         vibe: vibe.trim(),
         meetupGoal: selectedGoal,
-      });
+        meetupTimeframe: 'Within 3 days',
+      };
+      console.log('create circle payload:', payload);
+
+      await createCircle(payload);
 
       router.replace('/circle/swipe-users');
     } catch (error: any) {

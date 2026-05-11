@@ -70,6 +70,7 @@ export interface Circle {
   pendingSwipes: Record<string, string[]>;
   filters: CircleFilters;
   meetupGoal?: string;
+  meetupTimeframe?: string;
   status: CircleStatus;
   createdAt: Date;
 }
@@ -80,6 +81,8 @@ export interface CircleFilters {
   locationRadius: number;
   interests: Interest[];
   vibe?: string;
+  genderMix?: 'Male' | 'Female' | 'Both';
+  traits?: ProfileTrait[];
 }
 
 export interface Message {

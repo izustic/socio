@@ -1,6 +1,7 @@
 import { supabase } from './supabase';
-import { Circle, Interest } from '../types';
+import { Circle, Interest, ProfileTrait } from '../types';
 import type { RealtimeChannel } from '@supabase/supabase-js';
+import * as Crypto from 'expo-crypto';
 
 interface CreateCircleInput {
   name: string;
@@ -12,6 +13,9 @@ interface CreateCircleInput {
   interests: Interest[];
   vibe?: string;
   meetupGoal?: string;
+  meetupTimeframe?: string;
+  genderMix?: 'Male' | 'Female' | 'Both';
+  traits?: ProfileTrait[];
 }
 
 interface CircleFilters {
@@ -20,6 +24,8 @@ interface CircleFilters {
   locationRadius: number;
   interests: Interest[];
   vibe?: string;
+  gender_mix?: 'Male' | 'Female' | 'Both';
+  traits?: ProfileTrait[];
 }
 
 interface CircleRow {
@@ -31,6 +37,7 @@ interface CircleRow {
   pending_swipes: Record<string, string[]>;
   filters: CircleFilters;
   meetup_goal: string;
+  meetup_timeframe?: string;
   status: 'forming' | 'complete';
   created_at: string;
 }
@@ -43,30 +50,42 @@ const rowToCircle = (row: CircleRow): Circle => ({
   members: row.members,
   pendingSwipes: row.pending_swipes,
   filters: row.filters,
+  meetupGoal: row.meetup_goal,
+  meetupTimeframe: row.meetup_timeframe,
   status: row.status,
   createdAt: new Date(row.created_at),
 });
 
 export const createCircle = async (input: CreateCircleInput): Promise<string> => {
   try {
+    const circleId = Crypto.randomUUID();
+    const payload = {
+      id: circleId,
+      name: input.name,
+      creator_id: input.creatorId,
+      size: input.size,
+      members: [input.creatorId],
+      pending_swipes: {},
+      skipped_swipes: {},
+      filters: {
+        age_range: input.ageRange,
+        education_level: input.educationLevel,
+        location_radius: input.locationRadius,
+        interests: input.interests,
+        vibe: input.vibe || '',
+        gender_mix: input.genderMix || 'Both',
+        traits: input.traits || [],
+      },
+      meetup_goal: input.meetupGoal || '',
+      meetup_timeframe: input.meetupTimeframe || 'Within 3 days',
+      status: 'forming',
+    };
+
+    console.log('createCircle payload:', payload);
+
     const { data, error } = await supabase
       .from('circles')
-      .insert({
-        name: input.name,
-        creator_id: input.creatorId,
-        size: input.size,
-        members: [input.creatorId],
-        pending_swipes: {},
-        filters: {
-          age_range: input.ageRange,
-          education_level: input.educationLevel,
-          location_radius: input.locationRadius,
-          interests: input.interests,
-          vibe: input.vibe || '',
-        },
-        meetup_goal: input.meetupGoal || '',
-        status: 'forming',
-      })
+      .insert(payload)
       .select('id')
       .single();
 
@@ -112,9 +131,12 @@ export const updateCircle = async (circleId: string, updates: Partial<Circle>): 
         location_radius: updates.filters.locationRadius,
         interests: updates.filters.interests,
         vibe: updates.filters.vibe || '',
+        gender_mix: updates.filters.genderMix || 'Both',
+        traits: updates.filters.traits || [],
       };
     }
     if (updates.meetupGoal !== undefined) dbUpdates.meetup_goal = updates.meetupGoal;
+    if (updates.meetupTimeframe !== undefined) dbUpdates.meetup_timeframe = updates.meetupTimeframe;
     if (updates.status !== undefined) dbUpdates.status = updates.status;
 
     const { error } = await supabase

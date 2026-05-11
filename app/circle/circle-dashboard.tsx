@@ -151,7 +151,7 @@ export default function CircleDashboardScreen() {
 
             <View style={styles.goalBlock}>
               <Text style={styles.goalLabel}>MEETUP GOAL</Text>
-              <Text style={styles.goalValue}>Coffee • Within 3 days</Text>
+              <Text style={styles.goalValue}>{`${circle.meetupGoal || 'Coffee'} • ${circle.meetupTimeframe || 'Within 3 days'}`}</Text>
             </View>
           </>
         )}

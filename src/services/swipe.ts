@@ -1,5 +1,5 @@
 import { supabase } from './supabase';
-import { Circle, Interest, ProfileMedia, ProfileTrait, User } from '../types';
+import { Circle, EducationLevel, Interest, ProfileMedia, ProfileTrait, User } from '../types';
 
 export interface SwipeCandidate extends User {
   uid: string;
@@ -25,8 +25,11 @@ interface CircleRow {
     location_radius: number;
     interests: Interest[];
     vibe?: string;
+    gender_mix?: 'Male' | 'Female' | 'Both';
+    traits?: ProfileTrait[];
   };
   meetup_goal: string;
+  meetup_timeframe?: string;
   status: 'forming' | 'complete';
   created_at: string;
 }
@@ -39,7 +42,7 @@ interface UserRow {
   interests: Interest[];
   traits: string[];
   media: Array<{ uri: string; remoteUrl?: string }>;
-  education: string;
+  education: EducationLevel | '';
   location: { lat: number; lng: number; city?: string } | null;
   photo_url: string;
   bio: string;
@@ -94,8 +97,11 @@ export const getActiveCircleForUser = async (userId: string): Promise<(Circle & 
       locationRadius: row.filters.location_radius,
       interests: row.filters.interests,
       vibe: row.filters.vibe,
+      genderMix: row.filters.gender_mix,
+      traits: row.filters.traits ?? [],
     },
     meetupGoal: row.meetup_goal,
+    meetupTimeframe: row.meetup_timeframe,
     status: row.status,
     createdAt: new Date(row.created_at),
   };
@@ -129,8 +135,11 @@ export const getCircleById = async (circleId: string): Promise<(Circle & { id: s
       locationRadius: row.filters.location_radius,
       interests: row.filters.interests,
       vibe: row.filters.vibe,
+      genderMix: row.filters.gender_mix,
+      traits: row.filters.traits ?? [],
     },
     meetupGoal: row.meetup_goal,
+    meetupTimeframe: row.meetup_timeframe,
     status: row.status,
     createdAt: new Date(row.created_at),
   };
@@ -167,8 +176,11 @@ export const getLatestCircleForUser = async (
       locationRadius: row.filters.location_radius,
       interests: row.filters.interests,
       vibe: row.filters.vibe,
+      genderMix: row.filters.gender_mix,
+      traits: row.filters.traits ?? [],
     },
     meetupGoal: row.meetup_goal,
+    meetupTimeframe: row.meetup_timeframe,
     status: row.status,
     createdAt: new Date(row.created_at),
   };
@@ -259,6 +271,17 @@ export const getSwipeCandidates = async ({
       const candidateInterests = candidate.interests || [];
       const hasSharedInterest = candidateInterests.some((i) => requiredInterests.has(i));
       if (!hasSharedInterest) return false;
+
+      if (circle.filters.genderMix && circle.filters.genderMix !== 'Both' && candidate.gender !== circle.filters.genderMix) {
+        return false;
+      }
+
+      const requiredTraits = new Set<ProfileTrait>(circle.filters.traits || []);
+      if (requiredTraits.size > 0) {
+        const candidateTraits = candidate.traits || [];
+        const hasSharedTrait = candidateTraits.some((trait) => requiredTraits.has(trait));
+        if (!hasSharedTrait) return false;
+      }
 
       if (currentUserProfile?.location && candidate.location) {
         const distance = getDistanceKm(currentUserProfile.location, candidate.location);

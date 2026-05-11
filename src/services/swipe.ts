@@ -1,5 +1,12 @@
-import { supabase } from './supabase';
-import { Circle, EducationLevel, Interest, ProfileMedia, ProfileTrait, User } from '../types';
+import {
+  Circle,
+  EducationLevel,
+  Interest,
+  ProfileMedia,
+  ProfileTrait,
+  User,
+} from "../types";
+import { supabase } from "./supabase";
 
 export interface SwipeCandidate extends User {
   uid: string;
@@ -25,12 +32,12 @@ interface CircleRow {
     location_radius: number;
     interests: Interest[];
     vibe?: string;
-    gender_mix?: 'Male' | 'Female' | 'Both';
+    gender_mix?: "Male" | "Female" | "Both";
     traits?: ProfileTrait[];
   };
   meetup_goal: string;
   meetup_timeframe?: string;
-  status: 'forming' | 'complete';
+  status: "forming" | "complete";
   created_at: string;
 }
 
@@ -42,7 +49,7 @@ interface UserRow {
   interests: Interest[];
   traits: string[];
   media: Array<{ uri: string; remoteUrl?: string }>;
-  education: EducationLevel | '';
+  education: EducationLevel | "";
   location: { lat: number; lng: number; city?: string } | null;
   photo_url: string;
   bio: string;
@@ -51,7 +58,7 @@ interface UserRow {
 
 const getDistanceKm = (
   from: { lat: number; lng: number },
-  to: { lat: number; lng: number }
+  to: { lat: number; lng: number },
 ): number => {
   const toRad = (d: number) => (d * Math.PI) / 180;
   const R = 6371;
@@ -67,17 +74,19 @@ const getDistanceKm = (
   return R * c;
 };
 
-export const getActiveCircleForUser = async (userId: string): Promise<(Circle & { id: string }) | null> => {
+export const getActiveCircleForUser = async (
+  userId: string,
+): Promise<(Circle & { id: string }) | null> => {
   const { data, error } = await supabase
-    .from('circles')
-    .select('*')
-    .eq('creator_id', userId)
-    .eq('status', 'forming')
-    .order('created_at', { ascending: false })
+    .from("circles")
+    .select("*")
+    .eq("creator_id", userId)
+    .eq("status", "forming")
+    .order("created_at", { ascending: false })
     .limit(1);
 
   if (error) {
-    console.error('Error getting active circle:', error);
+    console.error("Error getting active circle:", error);
     return null;
   }
 
@@ -107,15 +116,17 @@ export const getActiveCircleForUser = async (userId: string): Promise<(Circle & 
   };
 };
 
-export const getCircleById = async (circleId: string): Promise<(Circle & { id: string }) | null> => {
+export const getCircleById = async (
+  circleId: string,
+): Promise<(Circle & { id: string }) | null> => {
   const { data, error } = await supabase
-    .from('circles')
-    .select('*')
-    .eq('id', circleId)
+    .from("circles")
+    .select("*")
+    .eq("id", circleId)
     .maybeSingle();
 
   if (error) {
-    console.error('Error getting circle:', error);
+    console.error("Error getting circle:", error);
     return null;
   }
 
@@ -146,17 +157,17 @@ export const getCircleById = async (circleId: string): Promise<(Circle & { id: s
 };
 
 export const getLatestCircleForUser = async (
-  userId: string
+  userId: string,
 ): Promise<(Circle & { id: string }) | null> => {
   const { data, error } = await supabase
-    .from('circles')
-    .select('*')
-    .eq('creator_id', userId)
-    .order('created_at', { ascending: false })
+    .from("circles")
+    .select("*")
+    .eq("creator_id", userId)
+    .order("created_at", { ascending: false })
     .limit(1);
 
   if (error) {
-    console.error('Error getting latest circle:', error);
+    console.error("Error getting latest circle:", error);
     return null;
   }
 
@@ -186,31 +197,37 @@ export const getLatestCircleForUser = async (
   };
 };
 
-export const getUsersByIds = async (userIds: string[]): Promise<SwipeCandidate[]> => {
+export const getUsersByIds = async (
+  userIds: string[],
+): Promise<SwipeCandidate[]> => {
   if (userIds.length === 0) return [];
 
   const { data, error } = await supabase
-    .from('users')
-    .select('*')
-    .in('id', userIds);
+    .from("users")
+    .select("*")
+    .in("id", userIds);
 
   if (error) {
-    console.error('Error getting users by ids:', error);
+    console.error("Error getting users by ids:", error);
     return [];
   }
 
   return (data as UserRow[]).map((row) => ({
     uid: row.id,
-    name: row.display_name ?? '',
+    name: row.display_name ?? "",
     age: row.age ?? 0,
-    gender: row.gender as 'Male' | 'Female' | 'Non-binary' | 'Prefer not to say',
+    gender: row.gender as
+      | "Male"
+      | "Female"
+      | "Non-binary"
+      | "Prefer not to say",
     interests: row.interests ?? [],
     traits: (row.traits ?? []) as ProfileTrait[],
     media: (row.media ?? []) as ProfileMedia[],
-    education: row.education ?? '',
+    education: row.education ?? "",
     location: row.location ?? undefined,
-    photoURL: row.photo_url ?? '',
-    bio: row.bio ?? '',
+    photoURL: row.photo_url ?? "",
+    bio: row.bio ?? "",
     notificationsEnabled: true,
     locationEnabled: true,
     profileComplete: true,
@@ -223,12 +240,10 @@ export const getSwipeCandidates = async ({
   currentUserId,
   currentUserProfile,
 }: CandidateParams): Promise<SwipeCandidate[]> => {
-  const { data: usersData, error } = await supabase
-    .from('users')
-    .select('*');
+  const { data: usersData, error } = await supabase.from("users").select("*");
 
   if (error) {
-    console.error('Error getting swipe candidates:', error);
+    console.error("Error getting swipe candidates:", error);
     return [];
   }
 
@@ -239,16 +254,20 @@ export const getSwipeCandidates = async ({
   return (usersData as UserRow[])
     .map((row) => ({
       uid: row.id,
-      name: row.display_name ?? '',
+      name: row.display_name ?? "",
       age: row.age ?? 0,
-      gender: row.gender as 'Male' | 'Female' | 'Non-binary' | 'Prefer not to say',
+      gender: row.gender as
+        | "Male"
+        | "Female"
+        | "Non-binary"
+        | "Prefer not to say",
       interests: row.interests ?? [],
       traits: (row.traits ?? []) as ProfileTrait[],
       media: (row.media ?? []) as ProfileMedia[],
-      education: row.education ?? '',
+      education: row.education ?? "",
       location: row.location ?? undefined,
-      photoURL: row.photo_url ?? '',
-      bio: row.bio ?? '',
+      photoURL: row.photo_url ?? "",
+      bio: row.bio ?? "",
       notificationsEnabled: true,
       locationEnabled: true,
       profileComplete: true,
@@ -261,30 +280,51 @@ export const getSwipeCandidates = async ({
       if (skippedByCurrent.has(candidate.uid)) return false;
 
       const [minAge, maxAge] = circle.filters.ageRange;
-      if (typeof candidate.age !== 'number' || candidate.age < minAge || candidate.age > maxAge) return false;
+      if (
+        typeof candidate.age !== "number" ||
+        candidate.age < minAge ||
+        candidate.age > maxAge
+      )
+        return false;
 
-      if (circle.filters.educationLevel !== 'Any' && candidate.education !== circle.filters.educationLevel) {
+      if (
+        circle.filters.educationLevel !== "Any" &&
+        candidate.education !== circle.filters.educationLevel
+      ) {
         return false;
       }
 
-      const requiredInterests = new Set<Interest>(circle.filters.interests || []);
+      const requiredInterests = new Set<Interest>(
+        circle.filters.interests || [],
+      );
       const candidateInterests = candidate.interests || [];
-      const hasSharedInterest = candidateInterests.some((i) => requiredInterests.has(i));
+      const hasSharedInterest = candidateInterests.some((i) =>
+        requiredInterests.has(i),
+      );
       if (!hasSharedInterest) return false;
 
-      if (circle.filters.genderMix && circle.filters.genderMix !== 'Both' && candidate.gender !== circle.filters.genderMix) {
+      if (
+        circle.filters.genderMix &&
+        circle.filters.genderMix !== "Both" &&
+        candidate.gender !== circle.filters.genderMix
+      ) {
         return false;
       }
 
       const requiredTraits = new Set<ProfileTrait>(circle.filters.traits || []);
       if (requiredTraits.size > 0) {
         const candidateTraits = candidate.traits || [];
-        const hasSharedTrait = candidateTraits.some((trait) => requiredTraits.has(trait));
+        const hasSharedTrait = candidateTraits.some((trait) =>
+          requiredTraits.has(trait),
+        );
         if (!hasSharedTrait) return false;
       }
 
       if (currentUserProfile?.location && candidate.location) {
-        const distance = getDistanceKm(currentUserProfile.location, candidate.location);
+        const distance = getDistanceKm(
+          currentUserProfile.location,
+          candidate.location,
+        );
         if (distance > (circle.filters.locationRadius || 10)) return false;
       }
 
@@ -296,17 +336,17 @@ export const submitSwipe = async (
   circleId: string,
   currentUserId: string,
   targetUserId: string,
-  liked: boolean
+  liked: boolean,
 ): Promise<{ mutualMatch: boolean; circleComplete: boolean }> => {
   // Get current circle data
   const { data: circle, error: fetchError } = await supabase
-    .from('circles')
-    .select('*')
-    .eq('id', circleId)
+    .from("circles")
+    .select("*")
+    .eq("id", circleId)
     .single();
 
   if (fetchError || !circle) {
-    throw new Error('Circle not found.');
+    throw new Error("Circle not found.");
   }
 
   const circleRow = circle as CircleRow;
@@ -315,7 +355,11 @@ export const submitSwipe = async (
   const members = [...(circleRow.members || [])];
   const size = circleRow.size || 5;
 
-  const upsertUserArray = (obj: Record<string, string[]>, uid: string, value: string) => {
+  const upsertUserArray = (
+    obj: Record<string, string[]>,
+    uid: string,
+    value: string,
+  ) => {
     const current = new Set(obj[uid] || []);
     current.add(value);
     obj[uid] = Array.from(current);
@@ -337,17 +381,17 @@ export const submitSwipe = async (
   const circleComplete = members.length >= size;
 
   const { error } = await supabase
-    .from('circles')
+    .from("circles")
     .update({
       pending_swipes: pendingSwipes,
       skipped_swipes: skippedSwipes,
       members: members,
-      status: circleComplete ? 'complete' : 'forming',
+      status: circleComplete ? "complete" : "forming",
     })
-    .eq('id', circleId);
+    .eq("id", circleId);
 
   if (error) {
-    console.error('Error updating circle:', error);
+    console.error("Error updating circle:", error);
     throw error;
   }
 

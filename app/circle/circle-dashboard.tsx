@@ -1,17 +1,26 @@
-import Avatar from '@/src/components/ui/Avatar';
-import Button from '@/src/components/ui/Button';
-import { Colors, Radius, Spacing, Typography } from '@/src/constants/theme';
-import { useAuth } from '@/src/context/AuthContext';
+import Avatar from "@/src/components/ui/Avatar";
+import Button from "@/src/components/ui/Button";
+import { Colors, Radius, Spacing, Typography } from "@/src/constants/theme";
+import { useAuth } from "@/src/context/AuthContext";
 import {
   getCircleById,
   getLatestCircleForUser,
   getUsersByIds,
   SwipeCandidate,
-} from '@/src/services/swipe';
-import { Circle } from '@/src/types';
-import { router, useLocalSearchParams } from 'expo-router';
-import React, { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, SafeAreaView, StatusBar, StyleSheet, Text, View, TouchableOpacity, DimensionValue } from 'react-native';
+} from "@/src/services/swipe";
+import { Circle } from "@/src/types";
+import { router, useLocalSearchParams } from "expo-router";
+import React, { useEffect, useMemo, useState } from "react";
+import {
+  ActivityIndicator,
+  DimensionValue,
+  SafeAreaView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 
 export default function CircleDashboardScreen() {
   const { user } = useAuth();
@@ -30,7 +39,9 @@ export default function CircleDashboardScreen() {
           : await getLatestCircleForUser(user.id);
         setCircle(targetCircle);
         if (targetCircle) {
-          const memberProfiles = await getUsersByIds(targetCircle.members || []);
+          const memberProfiles = await getUsersByIds(
+            targetCircle.members || [],
+          );
           setMembers(memberProfiles);
         } else {
           setMembers([]);
@@ -43,12 +54,12 @@ export default function CircleDashboardScreen() {
   }, [user?.id, params.circleId]);
 
   const progressText = useMemo(() => {
-    if (!circle) return '0 of 0 members';
+    if (!circle) return "0 of 0 members";
     return `${(circle.members || []).length} of ${circle.size} members`;
   }, [circle]);
 
   const progressWidth = useMemo<DimensionValue>(() => {
-    if (!circle || !circle.size) return '0%';
+    if (!circle || !circle.size) return "0%";
     const ratio = Math.min(1, (circle.members || []).length / circle.size);
     return `${ratio * 100}%`;
   }, [circle]);
@@ -70,17 +81,25 @@ export default function CircleDashboardScreen() {
         <StatusBar barStyle="dark-content" />
         <View style={styles.center}>
           <Text style={styles.title}>My Circle</Text>
-          <Text style={styles.subtitle}>You have not created a circle yet.</Text>
+          <Text style={styles.subtitle}>
+            You have not created a circle yet.
+          </Text>
           <View style={styles.ctaWrap}>
-            <Button title="Create Circle" onPress={() => router.replace('/circle/create')} />
+            <Button
+              title="Create Circle"
+              onPress={() => router.replace("/circle/create")}
+            />
           </View>
         </View>
       </SafeAreaView>
     );
   }
 
-  const membersNeeded = Math.max(0, circle.size - (circle.members || []).length);
-  const isComplete = circle.status === 'complete' || membersNeeded === 0;
+  const membersNeeded = Math.max(
+    0,
+    circle.size - (circle.members || []).length,
+  );
+  const isComplete = circle.status === "complete" || membersNeeded === 0;
 
   return (
     <SafeAreaView style={styles.container}>
@@ -91,23 +110,30 @@ export default function CircleDashboardScreen() {
             <Text style={styles.badgeTopText}>COMPLETE</Text>
           </View>
         )}
-        <Text style={styles.title}>{circle.name || 'My Circle'}</Text>
+        <Text style={styles.title}>{circle.name || "My Circle"}</Text>
         <Text style={styles.subtitle}>
-          {isComplete ? 'Your Circle is ready to meet' : 'Your circle is forming'}
+          {isComplete
+            ? "Your Circle is ready to meet"
+            : "Your circle is forming"}
         </Text>
 
         <View style={styles.memberRow}>
           {Array.from({ length: circle.size }).map((_, index) => {
             const member = members[index];
             return (
-              <View key={`${member?.uid || 'empty'}-${index}`} style={styles.avatarWrap}>
+              <View
+                key={`${member?.uid || "empty"}-${index}`}
+                style={styles.avatarWrap}
+              >
                 <Avatar
                   size="md"
                   uri={member?.photoURL || undefined}
                   placeholder={!member?.photoURL}
                   style={index > 0 && !isComplete ? undefined : undefined} // Adjusted to avoid overlap if we have names
                 />
-                <Text style={styles.avatarName}>{member ? member.name.split(' ')[0] : 'Open'}</Text>
+                <Text style={styles.avatarName}>
+                  {member ? member.name.split(" ")[0] : "Open"}
+                </Text>
               </View>
             );
           })}
@@ -116,7 +142,13 @@ export default function CircleDashboardScreen() {
         {isComplete ? (
           <>
             <Text style={styles.membersListText}>
-              You{members.length > 1 ? `, ${members.slice(1).map(m => m.name.split(' ')[0]).join(', ')}` : ''}
+              You
+              {members.length > 1
+                ? `, ${members
+                    .slice(1)
+                    .map((m) => m.name.split(" ")[0])
+                    .join(", ")}`
+                : ""}
             </Text>
             <View style={styles.timerBlock}>
               <Text style={styles.timerLabel}>COFFEE MEETUP IN</Text>
@@ -141,17 +173,25 @@ export default function CircleDashboardScreen() {
             <View style={styles.progressBlock}>
               <View style={styles.progressHeader}>
                 <Text style={styles.progressTitle}>Progress</Text>
-                <Text style={styles.progressCount}>{circle.members?.length || 0} / {circle.size}</Text>
+                <Text style={styles.progressCount}>
+                  {circle.members?.length || 0} / {circle.size}
+                </Text>
               </View>
               <View style={styles.progressTrackDash}>
-                <View style={[styles.progressFillDash, { width: progressWidth }]} />
+                <View
+                  style={[styles.progressFillDash, { width: progressWidth }]}
+                />
               </View>
-              <Text style={styles.progressWait}>Waiting for {membersNeeded} more to accept your invite</Text>
+              <Text style={styles.progressWait}>
+                Waiting for {membersNeeded} more to accept your invite
+              </Text>
             </View>
 
             <View style={styles.goalBlock}>
               <Text style={styles.goalLabel}>MEETUP GOAL</Text>
-              <Text style={styles.goalValue}>{`${circle.meetupGoal || 'Coffee'} • ${circle.meetupTimeframe || 'Within 3 days'}`}</Text>
+              <Text
+                style={styles.goalValue}
+              >{`${circle.meetupGoal || "Coffee"} • ${circle.meetupTimeframe || "Within 3 days"}`}</Text>
             </View>
           </>
         )}
@@ -160,13 +200,19 @@ export default function CircleDashboardScreen() {
       <View style={styles.footer}>
         {isComplete ? (
           <>
-            <Button title="Enter Circle" onPress={() => router.push('/circle/chat')} />
-            <TouchableOpacity onPress={() => router.push('/circle/progress')}>
+            <Button
+              title="Enter Circle"
+              onPress={() => router.push("/circle/chat")}
+            />
+            <TouchableOpacity onPress={() => router.push("/circle/progress")}>
               <Text style={styles.viewDetailsText}>View details</Text>
             </TouchableOpacity>
           </>
         ) : (
-          <Button title="Continue swiping" onPress={() => router.push('/circle/swipe-users')} />
+          <Button
+            title="Continue swiping"
+            onPress={() => router.push("/circle/swipe-users")}
+          />
         )}
       </View>
     </SafeAreaView>
@@ -180,15 +226,15 @@ const styles = StyleSheet.create({
   },
   center: {
     flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     paddingHorizontal: Spacing.screenPadding,
   },
   content: {
     flex: 1,
     paddingHorizontal: Spacing.screenPadding,
     paddingTop: Spacing.lg,
-    alignItems: 'center',
+    alignItems: "center",
   },
   badgeTop: {
     backgroundColor: Colors.primary,
@@ -200,45 +246,45 @@ const styles = StyleSheet.create({
   badgeTopText: {
     ...Typography.label,
     color: Colors.textPrimary,
-    fontWeight: '800',
+    fontWeight: "800",
   },
   title: {
     ...Typography.h1,
-    textAlign: 'center',
+    textAlign: "center",
   },
   subtitle: {
     ...Typography.bodySmall,
     marginTop: Spacing.xs,
-    textAlign: 'center',
+    textAlign: "center",
   },
   memberRow: {
-    flexDirection: 'row',
-    justifyContent: 'center',
+    flexDirection: "row",
+    justifyContent: "center",
     marginTop: Spacing.xl,
     marginBottom: Spacing.lg,
     gap: Spacing.md,
   },
   avatarWrap: {
-    alignItems: 'center',
+    alignItems: "center",
     gap: 6,
   },
   avatarName: {
     ...Typography.bodySmall,
-    fontWeight: '600',
+    fontWeight: "600",
     color: Colors.textPrimary,
   },
   membersListText: {
     ...Typography.bodySmall,
     color: Colors.textSecondary,
     marginBottom: Spacing.xl,
-    textAlign: 'center',
+    textAlign: "center",
   },
   timerBlock: {
-    backgroundColor: '#FFF8EA',
+    backgroundColor: "#FFF8EA",
     borderRadius: Radius.lg,
     padding: Spacing.xl,
-    width: '100%',
-    alignItems: 'center',
+    width: "100%",
+    alignItems: "center",
   },
   timerLabel: {
     ...Typography.label,
@@ -246,11 +292,11 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.md,
   },
   timerNumbers: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: Spacing.xl,
   },
   timerCol: {
-    alignItems: 'center',
+    alignItems: "center",
   },
   timerVal: {
     ...Typography.display,
@@ -261,36 +307,36 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   progressBlock: {
-    backgroundColor: '#FFF8EA',
+    backgroundColor: "#FFF8EA",
     borderRadius: Radius.lg,
     padding: Spacing.lg,
-    width: '100%',
+    width: "100%",
     marginBottom: Spacing.md,
   },
   progressHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    justifyContent: "space-between",
     marginBottom: Spacing.sm,
   },
   progressTitle: {
     ...Typography.bodySmall,
-    fontWeight: '700',
+    fontWeight: "700",
     color: Colors.textPrimary,
   },
   progressCount: {
     ...Typography.bodySmall,
-    fontWeight: '700',
+    fontWeight: "700",
     color: Colors.textPrimary,
   },
   progressTrackDash: {
     height: 8,
     backgroundColor: Colors.white,
     borderRadius: Radius.pill,
-    overflow: 'hidden',
+    overflow: "hidden",
     marginBottom: Spacing.md,
   },
   progressFillDash: {
-    height: '100%',
+    height: "100%",
     backgroundColor: Colors.primary,
     borderRadius: Radius.pill,
   },
@@ -302,7 +348,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.inputBg,
     borderRadius: Radius.lg,
     padding: Spacing.lg,
-    width: '100%',
+    width: "100%",
   },
   goalLabel: {
     ...Typography.label,
@@ -311,14 +357,14 @@ const styles = StyleSheet.create({
   },
   goalValue: {
     ...Typography.body,
-    fontWeight: '700',
+    fontWeight: "700",
   },
   viewDetailsText: {
     ...Typography.bodySmall,
     color: Colors.textSecondary,
-    textAlign: 'center',
+    textAlign: "center",
     marginTop: Spacing.md,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   footer: {
     paddingHorizontal: Spacing.screenPadding,
@@ -326,7 +372,7 @@ const styles = StyleSheet.create({
     gap: Spacing.sm,
   },
   ctaWrap: {
-    width: '100%',
+    width: "100%",
     marginTop: Spacing.lg,
   },
 });

@@ -1,7 +1,7 @@
-import { supabase } from './supabase';
-import { Circle, Interest, ProfileTrait } from '../types';
-import type { RealtimeChannel } from '@supabase/supabase-js';
-import * as Crypto from 'expo-crypto';
+import type { RealtimeChannel } from "@supabase/supabase-js";
+import * as Crypto from "expo-crypto";
+import { Circle, Interest, ProfileTrait } from "../types";
+import { supabase } from "./supabase";
 
 interface CreateCircleInput {
   name: string;
@@ -14,7 +14,7 @@ interface CreateCircleInput {
   vibe?: string;
   meetupGoal?: string;
   meetupTimeframe?: string;
-  genderMix?: 'Male' | 'Female' | 'Both';
+  genderMix?: "Male" | "Female" | "Both";
   traits?: ProfileTrait[];
 }
 
@@ -24,7 +24,7 @@ interface CircleFilters {
   locationRadius: number;
   interests: Interest[];
   vibe?: string;
-  gender_mix?: 'Male' | 'Female' | 'Both';
+  gender_mix?: "Male" | "Female" | "Both";
   traits?: ProfileTrait[];
 }
 
@@ -38,7 +38,7 @@ interface CircleRow {
   filters: CircleFilters;
   meetup_goal: string;
   meetup_timeframe?: string;
-  status: 'forming' | 'complete';
+  status: "forming" | "complete";
   created_at: string;
 }
 
@@ -56,7 +56,9 @@ const rowToCircle = (row: CircleRow): Circle => ({
   createdAt: new Date(row.created_at),
 });
 
-export const createCircle = async (input: CreateCircleInput): Promise<string> => {
+export const createCircle = async (
+  input: CreateCircleInput,
+): Promise<string> => {
   try {
     const circleId = Crypto.randomUUID();
     const payload = {
@@ -72,29 +74,29 @@ export const createCircle = async (input: CreateCircleInput): Promise<string> =>
         education_level: input.educationLevel,
         location_radius: input.locationRadius,
         interests: input.interests,
-        vibe: input.vibe || '',
-        gender_mix: input.genderMix || 'Both',
+        vibe: input.vibe || "",
+        gender_mix: input.genderMix || "Both",
         traits: input.traits || [],
       },
-      meetup_goal: input.meetupGoal || '',
-      meetup_timeframe: input.meetupTimeframe || 'Within 3 days',
-      status: 'forming',
+      meetup_goal: input.meetupGoal || "",
+      meetup_timeframe: input.meetupTimeframe || "Within 3 days",
+      status: "forming",
     };
 
-    console.log('createCircle payload:', payload);
+    console.log("createCircle payload:", payload);
 
     const { data, error } = await supabase
-      .from('circles')
+      .from("circles")
       .insert(payload)
-      .select('id')
+      .select("id")
       .single();
 
     if (error) throw error;
 
-    console.log('Circle created:', data.id);
+    console.log("Circle created:", data.id);
     return data.id;
   } catch (error) {
-    console.error('Error creating circle:', error);
+    console.error("Error creating circle:", error);
     throw error;
   }
 };
@@ -102,97 +104,109 @@ export const createCircle = async (input: CreateCircleInput): Promise<string> =>
 export const getCircle = async (circleId: string): Promise<Circle | null> => {
   try {
     const { data, error } = await supabase
-      .from('circles')
-      .select('*')
-      .eq('id', circleId)
+      .from("circles")
+      .select("*")
+      .eq("id", circleId)
       .maybeSingle();
 
     if (error) throw error;
     if (data) return rowToCircle(data as CircleRow);
     return null;
   } catch (error) {
-    console.error('Error getting circle:', error);
+    console.error("Error getting circle:", error);
     return null;
   }
 };
 
-export const updateCircle = async (circleId: string, updates: Partial<Circle>): Promise<void> => {
+export const updateCircle = async (
+  circleId: string,
+  updates: Partial<Circle>,
+): Promise<void> => {
   try {
     const dbUpdates: Record<string, unknown> = {};
 
     if (updates.name !== undefined) dbUpdates.name = updates.name;
     if (updates.size !== undefined) dbUpdates.size = updates.size;
     if (updates.members !== undefined) dbUpdates.members = updates.members;
-    if (updates.pendingSwipes !== undefined) dbUpdates.pending_swipes = updates.pendingSwipes;
+    if (updates.pendingSwipes !== undefined)
+      dbUpdates.pending_swipes = updates.pendingSwipes;
     if (updates.filters !== undefined) {
       dbUpdates.filters = {
         age_range: updates.filters.ageRange,
         education_level: updates.filters.educationLevel,
         location_radius: updates.filters.locationRadius,
         interests: updates.filters.interests,
-        vibe: updates.filters.vibe || '',
-        gender_mix: updates.filters.genderMix || 'Both',
+        vibe: updates.filters.vibe || "",
+        gender_mix: updates.filters.genderMix || "Both",
         traits: updates.filters.traits || [],
       };
     }
-    if (updates.meetupGoal !== undefined) dbUpdates.meetup_goal = updates.meetupGoal;
-    if (updates.meetupTimeframe !== undefined) dbUpdates.meetup_timeframe = updates.meetupTimeframe;
+    if (updates.meetupGoal !== undefined)
+      dbUpdates.meetup_goal = updates.meetupGoal;
+    if (updates.meetupTimeframe !== undefined)
+      dbUpdates.meetup_timeframe = updates.meetupTimeframe;
     if (updates.status !== undefined) dbUpdates.status = updates.status;
 
     const { error } = await supabase
-      .from('circles')
+      .from("circles")
       .update(dbUpdates)
-      .eq('id', circleId);
+      .eq("id", circleId);
 
     if (error) throw error;
   } catch (error) {
-    console.error('Error updating circle:', error);
+    console.error("Error updating circle:", error);
     throw error;
   }
 };
 
-export const addMember = async (circleId: string, userId: string): Promise<void> => {
+export const addMember = async (
+  circleId: string,
+  userId: string,
+): Promise<void> => {
   try {
     // First get current members
     const { data: circle, error: fetchError } = await supabase
-      .from('circles')
-      .select('members, size')
-      .eq('id', circleId)
+      .from("circles")
+      .select("members, size")
+      .eq("id", circleId)
       .single();
 
     if (fetchError) throw fetchError;
 
     // Check if already a member
     if (circle.members.includes(userId)) {
-      console.log('User already a member');
+      console.log("User already a member");
       return;
     }
 
     // Check if circle is full
     if (circle.members.length >= circle.size) {
-      throw new Error('Circle is full');
+      throw new Error("Circle is full");
     }
 
     // Add member
     const newMembers = [...circle.members, userId];
     const { error } = await supabase
-      .from('circles')
+      .from("circles")
       .update({ members: newMembers })
-      .eq('id', circleId);
+      .eq("id", circleId);
 
     if (error) throw error;
   } catch (error) {
-    console.error('Error adding member:', error);
+    console.error("Error adding member:", error);
     throw error;
   }
 };
 
-export const removeMember = async (circleId: string, userId: string): Promise<void> => {
+export const removeMember = async (
+  circleId: string,
+  userId: string,
+): Promise<void> => {
   try {
     const { data: circle, error: fetchError } = await supabase
-      .from('circles')
-      .select('members')
-      .eq('id', circleId)
+      .from("circles")
+      .select("members")
+      .eq("id", circleId)
       .single();
 
     if (fetchError) throw fetchError;
@@ -200,59 +214,65 @@ export const removeMember = async (circleId: string, userId: string): Promise<vo
     const newMembers = circle.members.filter((id: string) => id !== userId);
 
     const { error } = await supabase
-      .from('circles')
+      .from("circles")
       .update({ members: newMembers })
-      .eq('id', circleId);
+      .eq("id", circleId);
 
     if (error) throw error;
   } catch (error) {
-    console.error('Error removing member:', error);
+    console.error("Error removing member:", error);
     throw error;
   }
 };
 
-export const addPendingJoiner = async (circleId: string, userId: string): Promise<void> => {
+export const addPendingJoiner = async (
+  circleId: string,
+  userId: string,
+): Promise<void> => {
   try {
-    const { error } = await supabase
-      .from('circle_pending')
-      .insert({
-        circle_id: circleId,
-        user_id: userId,
-      });
+    const { error } = await supabase.from("circle_pending").insert({
+      circle_id: circleId,
+      user_id: userId,
+    });
 
     if (error) throw error;
   } catch (error) {
-    console.error('Error adding pending joiner:', error);
+    console.error("Error adding pending joiner:", error);
     throw error;
   }
 };
 
-export const getPendingJoiners = async (circleId: string): Promise<string[]> => {
+export const getPendingJoiners = async (
+  circleId: string,
+): Promise<string[]> => {
   try {
     const { data, error } = await supabase
-      .from('circle_pending')
-      .select('user_id')
-      .eq('circle_id', circleId);
+      .from("circle_pending")
+      .select("user_id")
+      .eq("circle_id", circleId);
 
     if (error) throw error;
     return data?.map((row) => row.user_id) ?? [];
   } catch (error) {
-    console.error('Error getting pending joiners:', error);
+    console.error("Error getting pending joiners:", error);
     return [];
   }
 };
 
-export const removePendingJoiner = async (circleId: string, userId: string): Promise<void> => {
+export const removePendingJoiner = async (
+  circleId: string,
+  userId: string,
+): Promise<void> => {
   try {
     const { error } = await supabase
-      .from('circle_pending')
+      .from("circle_pending")
       .delete()
-      .eq('circle_id', circleId)
-      .eq('user_id', userId);
+      .eq("circle_id", circleId)
+      .eq("user_id", userId);
 
     if (error) throw error;
   } catch (error) {
-    console.error('Error removing pending joiner:', error);
+    console.error("Error removing pending joiner:", error);
     throw error;
   }
 };
@@ -263,21 +283,20 @@ export const getCirclesForJoiner = async (filters: {
   interests?: Interest[];
 }): Promise<Circle[]> => {
   try {
-    let query = supabase
-      .from('circles')
-      .select('*')
-      .eq('status', 'forming');
+    let query = supabase.from("circles").select("*").eq("status", "forming");
 
     if (filters.ageRange) {
-      query = query.gte('age_range', filters.ageRange[0]).lte('age_range', filters.ageRange[1]);
+      query = query
+        .gte("age_range", filters.ageRange[0])
+        .lte("age_range", filters.ageRange[1]);
     }
 
     if (filters.educationLevel) {
-      query = query.eq('education_level', filters.educationLevel);
+      query = query.eq("education_level", filters.educationLevel);
     }
 
     if (filters.interests && filters.interests.length > 0) {
-      query = query.contains('interests', filters.interests);
+      query = query.contains("interests", filters.interests);
     }
 
     const { data, error } = await query;
@@ -285,7 +304,7 @@ export const getCirclesForJoiner = async (filters: {
     if (error) throw error;
     return data?.map((row) => rowToCircle(row as CircleRow)) ?? [];
   } catch (error) {
-    console.error('Error getting circles for joiner:', error);
+    console.error("Error getting circles for joiner:", error);
     return [];
   }
 };
@@ -293,43 +312,43 @@ export const getCirclesForJoiner = async (filters: {
 export const getCirclesForUser = async (userId: string): Promise<Circle[]> => {
   try {
     const { data, error } = await supabase
-      .from('circles')
-      .select('*')
-      .contains('members', [userId]);
+      .from("circles")
+      .select("*")
+      .contains("members", [userId]);
 
     if (error) throw error;
     return data?.map((row) => rowToCircle(row as CircleRow)) ?? [];
   } catch (error) {
-    console.error('Error getting circles for user:', error);
+    console.error("Error getting circles for user:", error);
     return [];
   }
 };
 
 export const subscribeToCircle = (
   circleId: string,
-  callback: (payload: unknown) => void
+  callback: (payload: unknown) => void,
 ): RealtimeChannel => {
   const channel = supabase
     .channel(`circle:${circleId}`)
     .on(
-      'postgres_changes',
+      "postgres_changes",
       {
-        event: '*',
-        schema: 'public',
-        table: 'circles',
+        event: "*",
+        schema: "public",
+        table: "circles",
         filter: `id=eq.${circleId}`,
       },
-      callback
+      callback,
     )
     .on(
-      'postgres_changes',
+      "postgres_changes",
       {
-        event: 'INSERT',
-        schema: 'public',
-        table: 'circle_members',
+        event: "INSERT",
+        schema: "public",
+        table: "circle_members",
         filter: `circle_id=eq.${circleId}`,
       },
-      callback
+      callback,
     )
     .subscribe();
 

@@ -118,9 +118,14 @@ const MAX_STORAGE_SIZES = {
 const fetchStorageBlob = async (
   uri: string,
   contentType: string = "image/jpeg",
-) => {
+): Promise<{ buffer: ArrayBuffer; size: number }> => {
   // Handle local file URIs on mobile
   if (uri.startsWith("file://") || uri.startsWith("content://")) {
+    // Get file size first
+    const fileInfo = await FileSystem.getInfoAsync(uri);
+    const fileSize =
+      fileInfo.exists && typeof fileInfo.size === "number" ? fileInfo.size : 0;
+
     // Use FileSystem to read the file as base64, then convert to blob
     const base64Data = await FileSystem.readAsStringAsync(uri, {
       encoding: FileSystem.EncodingType.Base64,
@@ -134,15 +139,21 @@ const fetchStorageBlob = async (
       bytes[i] = binaryString.charCodeAt(i);
     }
 
-    // In React Native, use ArrayBuffer directly instead of Blob
-    return bytes.buffer;
+    // In React Native, use ArrayBuffer directly instead of Blob.
+    const buffer = bytes.buffer.slice(
+      bytes.byteOffset,
+      bytes.byteOffset + bytes.byteLength,
+    );
+    return { buffer, size: fileSize };
   }
 
   const response = await fetch(uri);
   if (!response.ok) {
     throw new Error("We could not read that file. Please try another one.");
   }
-  return response.blob();
+  const blob = await response.blob();
+  const buffer = await blob.arrayBuffer();
+  return { buffer, size: blob.size };
 };
 
 // Upload avatar to Supabase Storage
@@ -150,16 +161,16 @@ export const uploadAvatar = async (
   userId: string,
   imageUri: string,
 ): Promise<string> => {
-  const blob = await fetchStorageBlob(imageUri);
+  const { buffer, size } = await fetchStorageBlob(imageUri);
 
-  if (blob.size > MAX_STORAGE_SIZES.avatar) {
+  if (size > MAX_STORAGE_SIZES.avatar) {
     throw new Error("Please choose an image under 5 MB.");
   }
 
   const filePath = `${userId}/profile.jpg`;
   const { error } = await supabase.storage
     .from("avatars")
-    .upload(filePath, blob, {
+    .upload(filePath, buffer, {
       contentType: "image/jpeg",
       upsert: true,
     });
@@ -177,9 +188,9 @@ export const uploadChatMedia = async (
   mediaUri: string,
   type: "image" | "video" | "audio",
 ): Promise<string> => {
-  const blob = await fetchStorageBlob(mediaUri);
+  const { buffer, size } = await fetchStorageBlob(mediaUri);
 
-  if (blob.size > MAX_STORAGE_SIZES[type]) {
+  if (size > MAX_STORAGE_SIZES[type]) {
     throw new Error(`${type} file is too large.`);
   }
 
@@ -195,7 +206,7 @@ export const uploadChatMedia = async (
 
   const { error } = await supabase.storage
     .from("chat-media")
-    .upload(filePath, blob, {
+    .upload(filePath, buffer, {
       contentType,
       upsert: false,
     });

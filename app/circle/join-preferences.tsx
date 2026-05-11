@@ -9,7 +9,7 @@ export default function JoinPreferencesScreen() {
         Join Preferences Screen
       </Text>
       <Text style={{ color: '#6B6B6B', marginTop: 8 }}>
-        Joiner: what they're looking for
+        Joiner: what they are looking for
       </Text>
       <Text style={{ color: '#6B6B6B', marginTop: 8 }}>
         Implementation coming in Phase 4

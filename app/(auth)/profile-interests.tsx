@@ -54,10 +54,6 @@ export default function ProfileInterestsScreen() {
           );
         })}
       </View>
-
-      <TouchableOpacity activeOpacity={0.8} style={styles.customChip}>
-        <Text style={styles.customChipText}>+ Add your own</Text>
-      </TouchableOpacity>
     </OnboardingLayout>
   );
 }
@@ -93,19 +89,5 @@ const styles = StyleSheet.create({
   chipText: {
     ...Typography.bodySmall,
     fontWeight: '600',
-  },
-  customChip: {
-    alignSelf: 'flex-start',
-    borderWidth: 1,
-    borderColor: Colors.primary,
-    borderStyle: 'dashed',
-    borderRadius: Radius.pill,
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-  },
-  customChipText: {
-    ...Typography.bodySmall,
-    color: Colors.primaryDark,
-    fontWeight: '700',
   },
 });

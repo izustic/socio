@@ -1,15 +1,46 @@
 import { supabase } from './supabase';
 import { User } from '../types';
 
-export const createUserProfile = async (userId: string, profileData: Omit<User, 'uid' | 'createdAt'>) => {
+const mapUserToDbUpdates = (updates: Partial<User>): Record<string, unknown> => {
+  const dbUpdates: Record<string, unknown> = {};
+
+  if (updates.name !== undefined) dbUpdates.display_name = updates.name;
+  if (updates.age !== undefined) dbUpdates.age = updates.age;
+  if (updates.gender !== undefined) dbUpdates.gender = updates.gender;
+  if (updates.interests !== undefined) dbUpdates.interests = updates.interests;
+  if (updates.traits !== undefined) dbUpdates.traits = updates.traits;
+  if (updates.media !== undefined) dbUpdates.media = updates.media;
+  if (updates.education !== undefined) dbUpdates.education = updates.education;
+  if (updates.location !== undefined) dbUpdates.location = updates.location;
+  if (updates.photoURL !== undefined) dbUpdates.photo_url = updates.photoURL;
+  if (updates.bio !== undefined) dbUpdates.bio = updates.bio;
+  if (updates.notificationsEnabled !== undefined) dbUpdates.notifications_enabled = updates.notificationsEnabled;
+  if (updates.locationEnabled !== undefined) dbUpdates.location_enabled = updates.locationEnabled;
+  if (updates.profileComplete !== undefined) dbUpdates.profile_complete = updates.profileComplete;
+
+  return dbUpdates;
+};
+
+export const createUserProfile = async (
+  userId: string,
+  profileData: Omit<User, 'uid' | 'createdAt'>,
+  email?: string | null,
+) => {
   try {
+    const dbUpdates = mapUserToDbUpdates(profileData);
+    const payload = {
+      id: userId,
+      email: email ?? '',
+      ...dbUpdates,
+    };
+
+    if (__DEV__) {
+      console.log('Supabase users upsert payload:', payload);
+    }
+
     const { error } = await supabase
       .from('users')
-      .insert({
-        id: userId,
-        ...profileData,
-        profile_complete: profileData.profileComplete,
-      });
+      .upsert(payload, { onConflict: 'id' });
 
     if (error) throw error;
   } catch (error) {
@@ -60,21 +91,7 @@ export const getUserProfile = async (userId: string): Promise<User | null> => {
 
 export const updateUserProfile = async (userId: string, updates: Partial<User>): Promise<void> => {
   try {
-    const dbUpdates: Record<string, unknown> = {};
-
-    if (updates.name !== undefined) dbUpdates.display_name = updates.name;
-    if (updates.age !== undefined) dbUpdates.age = updates.age;
-    if (updates.gender !== undefined) dbUpdates.gender = updates.gender;
-    if (updates.interests !== undefined) dbUpdates.interests = updates.interests;
-    if (updates.traits !== undefined) dbUpdates.traits = updates.traits;
-    if (updates.media !== undefined) dbUpdates.media = updates.media;
-    if (updates.education !== undefined) dbUpdates.education = updates.education;
-    if (updates.location !== undefined) dbUpdates.location = updates.location;
-    if (updates.photoURL !== undefined) dbUpdates.photo_url = updates.photoURL;
-    if (updates.bio !== undefined) dbUpdates.bio = updates.bio;
-    if (updates.notificationsEnabled !== undefined) dbUpdates.notifications_enabled = updates.notificationsEnabled;
-    if (updates.locationEnabled !== undefined) dbUpdates.location_enabled = updates.locationEnabled;
-    if (updates.profileComplete !== undefined) dbUpdates.profile_complete = updates.profileComplete;
+    const dbUpdates = mapUserToDbUpdates(updates);
 
     const { error } = await supabase
       .from('users')

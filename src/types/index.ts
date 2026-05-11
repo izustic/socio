@@ -18,7 +18,7 @@ export interface User {
   interests: Interest[];
   traits?: ProfileTrait[];
   media?: ProfileMedia[];
-  education: string;
+  education: EducationLevel | '';
   location?: { lat: number; lng: number; city?: string };
   photoURL: string;
   bio?: string;
@@ -34,6 +34,14 @@ export type Interest =
   | 'Photo' | 'Outdoors' | 'Tech' | 'Sports'
   | 'Coffee' | 'Nature' | 'Pets' | 'Wellness'
   | 'Theatre';
+
+export type EducationLevel =
+  | 'High school'
+  | 'In college'
+  | 'Finished college'
+  | 'Postgraduate'
+  | 'Trade school'
+  | 'Prefer not to say';
 
 export type ProfileTrait =
   | 'Introverted'

@@ -1,5 +1,6 @@
 import OnboardingLayout from '@/src/components/onboarding/OnboardingLayout';
 import {
+    getFirstIncompleteOnboardingStep,
     ONBOARDING_TRAITS,
     TRAIT_EMOJI,
 } from '@/src/constants/onboarding';
@@ -30,8 +31,10 @@ export default function ProfileTraitsScreen() {
       Alert.alert('You are signed out', 'Please sign in again to continue.');
       return;
     }
-    if (!draft.name.trim() || !draft.gender || draft.interests.length < 3) {
+    const nextRequiredStep = getFirstIncompleteOnboardingStep(draft);
+    if (nextRequiredStep !== 'profile-traits') {
       Alert.alert('A few things are missing', 'Please finish the previous steps first.');
+      setStep(nextRequiredStep);
       return;
     }
 
@@ -57,7 +60,14 @@ export default function ProfileTraitsScreen() {
         profileData.location = draft.location;
       }
 
-      await createUserProfile(user.id, profileData);
+      if (__DEV__) {
+        console.log('Creating user profile payload:', {
+          userId: user.id,
+          profileData,
+        });
+      }
+
+      await createUserProfile(user.id, profileData, user.email);
       setStep('profile-complete');
     } catch (error) {
       console.error('Error creating user profile:', error);

@@ -1,8 +1,8 @@
 import OnboardingLayout from '@/src/components/onboarding/OnboardingLayout';
 import { Colors, Radius, Spacing, Typography } from '@/src/constants/theme';
 import { useOnboarding } from '@/src/context/OnboardingContext';
-import { getLocationWithCity, requestLocationPermission } from '@/src/services/location';
-import { Alert, StyleSheet, Text, View } from 'react-native';
+import { getLocationWithCity, requestLocationPermissionStatus } from '@/src/services/location';
+import { Alert, Linking, StyleSheet, Text, View } from 'react-native';
 
 export default function LocationPermissionScreen() {
   const { mergeDraft, setStep } = useOnboarding();
@@ -12,13 +12,35 @@ export default function LocationPermissionScreen() {
   };
 
   const handleEnableLocation = async () => {
-    const granted = await requestLocationPermission();
-    if (!granted) {
+    const permission = await requestLocationPermissionStatus();
+    if (permission.status !== 'granted') {
+      if (!permission.canAskAgain) {
+        Alert.alert(
+          'Location is blocked',
+          'Location permission was already denied for Socio. Open your device settings to allow location access, or continue without it for now.',
+          [
+            {
+              text: 'Continue without it',
+              style: 'cancel',
+              onPress: () => {
+                mergeDraft({ locationEnabled: false, locationPermissionResolved: true, location: null });
+                continueToNotifications();
+              },
+            },
+            {
+              text: 'Open Settings',
+              onPress: () => Linking.openSettings(),
+            },
+          ]
+        );
+        return;
+      }
+
       Alert.alert(
         'Location turned off',
         'You can keep going for now, but circles nearby work better when location is enabled.'
       );
-      mergeDraft({ locationEnabled: false, location: null });
+      mergeDraft({ locationEnabled: false, locationPermissionResolved: true, location: null });
       continueToNotifications();
       return;
     }
@@ -26,6 +48,7 @@ export default function LocationPermissionScreen() {
     const location = await getLocationWithCity();
     mergeDraft({
       locationEnabled: true,
+      locationPermissionResolved: true,
       location,
     });
     continueToNotifications();
@@ -39,7 +62,10 @@ export default function LocationPermissionScreen() {
       primaryLabel="Set Location Services"
       onPrimaryPress={handleEnableLocation}
       secondaryLabel="Maybe later"
-      onSecondaryPress={continueToNotifications}
+      onSecondaryPress={() => {
+        mergeDraft({ locationEnabled: false, locationPermissionResolved: true, location: null });
+        continueToNotifications();
+      }}
       onBackPress={() => setStep('otp')}
       centerContent
     >

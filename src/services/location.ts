@@ -11,6 +11,28 @@ export const requestLocationPermission = async (): Promise<boolean> => {
   return status === 'granted';
 };
 
+export type LocationPermissionResult =
+  | { status: 'granted' }
+  | { status: 'denied'; canAskAgain: boolean };
+
+export const requestLocationPermissionStatus = async (): Promise<LocationPermissionResult> => {
+  const existing = await Location.getForegroundPermissionsAsync();
+  if (existing.status === 'granted') {
+    return { status: 'granted' };
+  }
+
+  if (!existing.canAskAgain) {
+    return { status: 'denied', canAskAgain: false };
+  }
+
+  const requested = await Location.requestForegroundPermissionsAsync();
+  if (requested.status === 'granted') {
+    return { status: 'granted' };
+  }
+
+  return { status: 'denied', canAskAgain: requested.canAskAgain };
+};
+
 export const getCurrentLocation = async (): Promise<LocationData | null> => {
   try {
     const location = await Location.getCurrentPositionAsync({

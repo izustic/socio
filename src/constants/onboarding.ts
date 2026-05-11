@@ -1,4 +1,5 @@
-import { Interest, ProfileTrait, User } from '@/src/types';
+import { EducationLevel, Interest, ProfileTrait, User } from '@/src/types';
+import type { OnboardingDraft } from '@/src/context/OnboardingContext';
 
 export type OnboardingStep =
   | 'otp'
@@ -37,8 +38,41 @@ export const ONBOARDING_PATHNAME_MAP: Record<OnboardingStep, string> = {
 
 export const DEFAULT_ONBOARDING_STEP: OnboardingStep = 'location-permission';
 
+export const ONBOARDING_STEP_ORDER: OnboardingStep[] = [
+  'otp',
+  'location-permission',
+  'notifications-permission',
+  'onboarding-intro',
+  'profile-photo-name',
+  'profile-age-gender',
+  'profile-interests',
+  'profile-traits',
+  'profile-complete',
+];
+
 export const getOnboardingRoute = (step: OnboardingStep) => ONBOARDING_ROUTE_MAP[step];
 export const getOnboardingPathname = (step: OnboardingStep) => ONBOARDING_PATHNAME_MAP[step];
+
+export const getFirstIncompleteOnboardingStep = (draft: OnboardingDraft): OnboardingStep => {
+  if (!draft.locationPermissionResolved) return 'location-permission';
+  if (!draft.notificationsPermissionResolved) return 'notifications-permission';
+  if (!draft.name.trim()) return 'profile-photo-name';
+  if (!draft.gender || !draft.education) return 'profile-age-gender';
+  if (draft.interests.length < 3) return 'profile-interests';
+  return 'profile-traits';
+};
+
+export const getSafeOnboardingStep = (
+  requestedStep: OnboardingStep,
+  draft: OnboardingDraft,
+): OnboardingStep => {
+  const firstIncompleteStep = getFirstIncompleteOnboardingStep(draft);
+  const requestedIndex = ONBOARDING_STEP_ORDER.indexOf(requestedStep);
+  const incompleteIndex = ONBOARDING_STEP_ORDER.indexOf(firstIncompleteStep);
+
+  if (requestedStep === 'profile-complete') return requestedStep;
+  return requestedIndex <= incompleteIndex ? requestedStep : firstIncompleteStep;
+};
 
 export const ONBOARDING_INTERESTS: Interest[] = [
   'Music',
@@ -81,6 +115,15 @@ export const GENDER_OPTIONS: User['gender'][] = [
   'Male',
   'Female',
   'Non-binary',
+  'Prefer not to say',
+];
+
+export const EDUCATION_OPTIONS: EducationLevel[] = [
+  'High school',
+  'In college',
+  'Finished college',
+  'Postgraduate',
+  'Trade school',
   'Prefer not to say',
 ];
 

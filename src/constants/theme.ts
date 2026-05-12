@@ -18,9 +18,11 @@ export const Colors = {
   // Structure
   divider: '#EFEFEF',
   placeholder: '#D4D4D4',
+  border: '#E5E5E5',
 
   // State
   success: '#34C759',
+  warning: '#FF9500',
   danger: '#FF3B30',
   white: '#FFFFFF',
 };

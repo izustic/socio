@@ -1,12 +1,12 @@
-import Button from '@/src/components/ui/Button';
-import Chip from '@/src/components/ui/Chip';
-import Input from '@/src/components/ui/Input';
-import { Colors, Radius, Spacing, Typography } from '@/src/constants/theme';
-import { useAuth } from '@/src/context/AuthContext';
-import { createCircle } from '@/src/services/circle';
-import { Interest } from '@/src/types';
-import { router } from 'expo-router';
-import React, { useState } from 'react';
+import Button from "@/src/components/ui/Button";
+import Chip from "@/src/components/ui/Chip";
+import Input from "@/src/components/ui/Input";
+import { Colors, Radius, Spacing, Typography } from "@/src/constants/theme";
+import { useAuth } from "@/src/context/AuthContext";
+import { createCircle } from "@/src/services/circle";
+import { Interest } from "@/src/types";
+import { router } from "expo-router";
+import React, { useState } from "react";
 import {
   Alert,
   SafeAreaView,
@@ -16,47 +16,64 @@ import {
   Text,
   TouchableOpacity,
   View,
-} from 'react-native';
+} from "react-native";
 
-const educationOptions = ['Any', 'High School', "Bachelor's", "Master's", 'PhD'];
-const interests = ['Music', 'Travel', 'Books', 'Gaming', 'Fitness', 'Art', 'Food', 'Film'];
-const goals = ['Coffee ☕', 'Study 📚', 'Gym 💪', 'Food 🍜', 'Walk 🚶'];
+const educationOptions = [
+  "Any",
+  "High School",
+  "Bachelor's",
+  "Master's",
+  "PhD",
+];
+const interests = [
+  "Music",
+  "Travel",
+  "Books",
+  "Gaming",
+  "Fitness",
+  "Art",
+  "Food",
+  "Film",
+];
+const goals = ["Coffee ☕", "Study 📚", "Gym 💪", "Food 🍜", "Walk 🚶"];
 
 export default function CreateCircleScreen() {
   const { user } = useAuth();
-  const [circleName, setCircleName] = useState('');
-  const [vibe, setVibe] = useState('');
+  const [circleName, setCircleName] = useState("");
+  const [vibe, setVibe] = useState("");
   const [size, setSize] = useState(5);
-  const [education, setEducation] = useState('Any');
+  const [education, setEducation] = useState("Any");
   const [selectedInterests, setSelectedInterests] = useState<string[]>([]);
-  const [selectedGoal, setSelectedGoal] = useState('Coffee ☕');
+  const [selectedGoal, setSelectedGoal] = useState("Coffee ☕");
   const [loading, setLoading] = useState(false);
 
   const toggleInterest = (interest: string) => {
     setSelectedInterests((prev) =>
-      prev.includes(interest) ? prev.filter((i) => i !== interest) : [...prev, interest]
+      prev.includes(interest)
+        ? prev.filter((i) => i !== interest)
+        : [...prev, interest],
     );
   };
 
   const handleCreateCircle = async () => {
     if (!user) {
-      Alert.alert('Not signed in', 'Please sign in again to create a circle.');
+      Alert.alert("Not signed in", "Please sign in again to create a circle.");
       return;
     }
     if (!circleName.trim()) {
-      Alert.alert('Missing Circle Name', 'Please enter a circle name.');
+      Alert.alert("Missing Circle Name", "Please enter a circle name.");
       return;
     }
     if (selectedInterests.length === 0) {
-      Alert.alert('Add Interests', 'Please choose at least one interest.');
+      Alert.alert("Add Interests", "Please choose at least one interest.");
       return;
     }
 
     setLoading(true);
     try {
-      await createCircle({
+      const payload = {
         name: circleName.trim(),
-        creatorId: user.uid,
+        creatorId: user.id,
         size,
         ageRange: [18, 28],
         educationLevel: education,
@@ -64,11 +81,18 @@ export default function CreateCircleScreen() {
         interests: selectedInterests as Interest[],
         vibe: vibe.trim(),
         meetupGoal: selectedGoal,
-      });
+        meetupTimeframe: "Within 3 days",
+      };
+      console.log("create circle payload:", payload);
 
-      router.replace('/circle/swipe-users');
+      await createCircle(payload);
+
+      router.replace("/circle/swipe-users");
     } catch (error: any) {
-      Alert.alert('Unable to create circle', error?.message || 'Please try again.');
+      Alert.alert(
+        "Unable to create circle",
+        error?.message || "Please try again.",
+      );
     } finally {
       setLoading(false);
     }
@@ -84,7 +108,11 @@ export default function CreateCircleScreen() {
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.section}>
           <Text style={styles.label}>CIRCLE NAME</Text>
-          <Input placeholder="Circle Name" value={circleName} onChangeText={setCircleName} />
+          <Input
+            placeholder="Circle Name"
+            value={circleName}
+            onChangeText={setCircleName}
+          />
         </View>
 
         <View style={styles.section}>
@@ -124,7 +152,11 @@ export default function CreateCircleScreen() {
 
         <View style={styles.section}>
           <Text style={styles.label}>EDUCATION LEVEL</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.horizontalChips}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.horizontalChips}
+          >
             {educationOptions.map((option) => (
               <Chip
                 key={option}
@@ -152,7 +184,11 @@ export default function CreateCircleScreen() {
 
         <View style={styles.section}>
           <Text style={styles.label}>MEETUP GOAL</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.horizontalChips}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.horizontalChips}
+          >
             {goals.map((goal) => (
               <Chip
                 key={goal}
@@ -167,7 +203,7 @@ export default function CreateCircleScreen() {
 
       <View style={styles.footer}>
         <Button
-          title={loading ? 'Creating...' : 'Create Circle'}
+          title={loading ? "Creating..." : "Create Circle"}
           onPress={handleCreateCircle}
           disabled={loading}
         />
@@ -202,27 +238,27 @@ const styles = StyleSheet.create({
   },
   multilineInput: {
     minHeight: 80,
-    textAlignVertical: 'top',
+    textAlignVertical: "top",
   },
   sizeRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
   },
   sizeButton: {
     width: 40,
     height: 40,
     borderRadius: Radius.full,
     backgroundColor: Colors.inputBg,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   sizeButtonText: {
     ...Typography.h2,
     lineHeight: 28,
   },
   sizeValueWrap: {
-    alignItems: 'center',
+    alignItems: "center",
   },
   sizeValue: {
     ...Typography.h2,
@@ -235,8 +271,8 @@ const styles = StyleSheet.create({
     gap: Spacing.sm,
   },
   grid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+    flexDirection: "row",
+    flexWrap: "wrap",
     gap: Spacing.sm,
   },
   footer: {

@@ -3,9 +3,9 @@ import {
     OnboardingStep,
 } from '@/src/constants/onboarding';
 import { LocationData } from '@/src/services/location';
-import { Interest, ProfileMedia, ProfileTrait, User } from '@/src/types';
+import { EducationLevel, Interest, ProfileMedia, ProfileTrait, User } from '@/src/types';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 
 const STORAGE_KEY = 'socio:onboarding';
 
@@ -18,11 +18,13 @@ export interface OnboardingDraft {
   media: ProfileMedia[];
   interests: Interest[];
   traits: ProfileTrait[];
-  education: string;
+  education: EducationLevel | '';
   photoURL: string;
   location: LocationData | null;
   locationEnabled: boolean;
+  locationPermissionResolved: boolean;
   notificationsEnabled: boolean;
+  notificationsPermissionResolved: boolean;
 }
 
 interface OnboardingContextType {
@@ -48,7 +50,9 @@ const defaultDraft: OnboardingDraft = {
   photoURL: '',
   location: null,
   locationEnabled: false,
+  locationPermissionResolved: false,
   notificationsEnabled: false,
+  notificationsPermissionResolved: false,
 };
 
 const OnboardingContext = createContext<OnboardingContextType | undefined>(undefined);
@@ -57,6 +61,20 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
   const [currentStep, setCurrentStep] = useState<OnboardingStep>(DEFAULT_ONBOARDING_STEP);
   const [draft, setDraft] = useState<OnboardingDraft>(defaultDraft);
   const [loading, setLoading] = useState(true);
+  const currentStepRef = useRef(currentStep);
+  const draftRef = useRef(draft);
+
+  const persistState = useCallback((nextStep: OnboardingStep, nextDraft: OnboardingDraft) => {
+    AsyncStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({
+        currentStep: nextStep,
+        draft: nextDraft,
+      })
+    ).catch((error) => {
+      console.error('Failed to persist onboarding state:', error);
+    });
+  }, []);
 
   useEffect(() => {
     const loadState = async () => {
@@ -67,12 +85,17 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
             currentStep?: OnboardingStep;
             draft?: OnboardingDraft;
           };
-          if (parsed.currentStep) setCurrentStep(parsed.currentStep);
+          if (parsed.currentStep) {
+            currentStepRef.current = parsed.currentStep;
+            setCurrentStep(parsed.currentStep);
+          }
           if (parsed.draft) {
-            setDraft({
+            const nextDraft = {
               ...defaultDraft,
               ...parsed.draft,
-            });
+            };
+            draftRef.current = nextDraft;
+            setDraft(nextDraft);
           }
         }
       } catch (error) {
@@ -88,34 +111,39 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
   useEffect(() => {
     if (loading) return;
 
-    AsyncStorage.setItem(
-      STORAGE_KEY,
-      JSON.stringify({
-        currentStep,
-        draft,
-      })
-    ).catch((error) => {
-      console.error('Failed to persist onboarding state:', error);
-    });
-  }, [currentStep, draft, loading]);
+    persistState(currentStep, draft);
+  }, [currentStep, draft, loading, persistState]);
 
   const setStep = useCallback((step: OnboardingStep) => {
+    currentStepRef.current = step;
     setCurrentStep(step);
-  }, []);
+    persistState(step, draftRef.current);
+  }, [persistState]);
 
   const mergeDraft = useCallback((patch: Partial<OnboardingDraft>) => {
-    setDraft((prev) => ({ ...prev, ...patch }));
-  }, []);
+    setDraft((prev) => {
+      const nextDraft = { ...prev, ...patch };
+      draftRef.current = nextDraft;
+      persistState(currentStepRef.current, nextDraft);
+      return nextDraft;
+    });
+  }, [persistState]);
 
   const beginOnboarding = useCallback((seed: Partial<OnboardingDraft> = {}, step: OnboardingStep = 'otp') => {
-    setDraft({
+    const nextDraft = {
       ...defaultDraft,
       ...seed,
-    });
+    };
+    draftRef.current = nextDraft;
+    currentStepRef.current = step;
+    setDraft(nextDraft);
     setCurrentStep(step);
-  }, []);
+    persistState(step, nextDraft);
+  }, [persistState]);
 
   const resetOnboarding = useCallback(async () => {
+    draftRef.current = defaultDraft;
+    currentStepRef.current = DEFAULT_ONBOARDING_STEP;
     setDraft(defaultDraft);
     setCurrentStep(DEFAULT_ONBOARDING_STEP);
     await AsyncStorage.removeItem(STORAGE_KEY);

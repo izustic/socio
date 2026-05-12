@@ -2,7 +2,7 @@ export interface ProfileMedia {
   id: string;
   uri: string;
   remoteUrl: string;
-  type: 'image' | 'video';
+  type: "image" | "video";
   fileName?: string;
   mimeType?: string;
   fileSize?: number;
@@ -11,13 +11,14 @@ export interface ProfileMedia {
 
 export interface User {
   uid: string;
+  id?: string; // Supabase uses 'id', 'uid' is for backward compatibility
   name: string;
   age: number;
-  gender: 'Male' | 'Female' | 'Non-binary' | 'Prefer not to say';
+  gender: "Male" | "Female" | "Non-binary" | "Prefer not to say";
   interests: Interest[];
   traits?: ProfileTrait[];
   media?: ProfileMedia[];
-  education: string;
+  education: EducationLevel | "";
   location?: { lat: number; lng: number; city?: string };
   photoURL: string;
   bio?: string;
@@ -28,29 +29,49 @@ export interface User {
 }
 
 export type Interest =
-  | 'Music' | 'Travel' | 'Books' | 'Gaming'
-  | 'Fitness' | 'Art' | 'Food' | 'Film'
-  | 'Photo' | 'Outdoors' | 'Tech' | 'Sports'
-  | 'Coffee' | 'Nature' | 'Pets' | 'Wellness'
-  | 'Theatre';
+  | "Music"
+  | "Travel"
+  | "Books"
+  | "Gaming"
+  | "Fitness"
+  | "Art"
+  | "Food"
+  | "Film"
+  | "Photo"
+  | "Outdoors"
+  | "Tech"
+  | "Sports"
+  | "Coffee"
+  | "Nature"
+  | "Pets"
+  | "Wellness"
+  | "Theatre";
+
+export type EducationLevel =
+  | "High school"
+  | "In college"
+  | "Finished college"
+  | "Postgraduate"
+  | "Trade school"
+  | "Prefer not to say";
 
 export type ProfileTrait =
-  | 'Introverted'
-  | 'Extroverted'
-  | 'Adventurous'
-  | 'Laid-back'
-  | 'Intellectual'
-  | 'Funny'
-  | 'Ambitious'
-  | 'Creative'
-  | 'Loyal'
-  | 'Open-minded'
-  | 'Active'
-  | 'Artsy'
-  | 'Deep thinker'
-  | 'Spontaneous';
+  | "Introverted"
+  | "Extroverted"
+  | "Adventurous"
+  | "Laid-back"
+  | "Intellectual"
+  | "Funny"
+  | "Ambitious"
+  | "Creative"
+  | "Loyal"
+  | "Open-minded"
+  | "Active"
+  | "Artsy"
+  | "Deep thinker"
+  | "Spontaneous";
 
-export type CircleStatus = 'forming' | 'complete';
+export type CircleStatus = "forming" | "complete";
 
 export interface Circle {
   id: string;
@@ -60,6 +81,8 @@ export interface Circle {
   members: string[];
   pendingSwipes: Record<string, string[]>;
   filters: CircleFilters;
+  meetupGoal?: string;
+  meetupTimeframe?: string;
   status: CircleStatus;
   createdAt: Date;
 }
@@ -70,6 +93,8 @@ export interface CircleFilters {
   locationRadius: number;
   interests: Interest[];
   vibe?: string;
+  genderMix?: "Male" | "Female" | "Both";
+  traits?: ProfileTrait[];
 }
 
 export interface Message {

@@ -4,7 +4,6 @@ import { Image } from 'expo-image';
 import { Video, ResizeMode } from 'expo-av';
 import { Colors, Radius, Spacing, Typography } from '@/src/constants/theme';
 import Avatar from '../ui/Avatar';
-import MessageBubble from './MessageBubble';
 
 interface MediaMessageProps {
   message: {
@@ -85,6 +84,9 @@ export default function MediaMessage({
         <View style={styles.playButton}>
           <Text style={styles.playIcon}>▶</Text>
         </View>
+        {videoStatus === 'error' && (
+          <Text style={styles.videoError}>Unable to preview</Text>
+        )}
         {message.duration && (
           <Text style={styles.duration}>{formatDuration(message.duration)}</Text>
         )}
@@ -248,6 +250,13 @@ const styles = StyleSheet.create({
     fontSize: 20,
     color: Colors.textPrimary,
     fontWeight: '700',
+  },
+  videoError: {
+    position: 'absolute',
+    bottom: 28,
+    color: '#fff',
+    fontSize: 11,
+    fontWeight: '600',
   },
   duration: {
     position: 'absolute',

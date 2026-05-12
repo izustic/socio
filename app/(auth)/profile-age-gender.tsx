@@ -1,22 +1,25 @@
 import OnboardingLayout from '@/src/components/onboarding/OnboardingLayout';
-import { GENDER_EMOJI, GENDER_OPTIONS } from '@/src/constants/onboarding';
+import { EDUCATION_OPTIONS, GENDER_EMOJI, GENDER_OPTIONS } from '@/src/constants/onboarding';
 import { Colors, Radius, Spacing, Typography } from '@/src/constants/theme';
 import { useOnboarding } from '@/src/context/OnboardingContext';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ChevronDown } from 'lucide-react-native';
+import { useState } from 'react';
+import { Modal, Pressable, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 export default function ProfileAgeGenderScreen() {
   const { draft, mergeDraft, setStep } = useOnboarding();
+  const [educationOpen, setEducationOpen] = useState(false);
 
   return (
     <OnboardingLayout
       title="A little about you."
       subtitle="This helps us find the right people for your Circle."
-      stepNumber="07  PROFILE  AGE & GENDER"
+      stepNumber="07  PROFILE  DETAILS"
       primaryLabel="Continue"
       onPrimaryPress={() => {
         setStep('profile-interests');
       }}
-      primaryDisabled={!draft.gender}
+      primaryDisabled={!draft.gender || !draft.education}
       onBackPress={() => setStep('profile-photo-name')}
     >
       <View style={styles.section}>
@@ -61,6 +64,51 @@ export default function ProfileAgeGenderScreen() {
           })}
         </View>
       </View>
+
+      <View style={styles.section}>
+        <Text style={styles.label}>EDUCATION</Text>
+        <TouchableOpacity
+          activeOpacity={0.82}
+          style={styles.selectButton}
+          onPress={() => setEducationOpen(true)}
+        >
+          <Text style={[styles.selectText, !draft.education && styles.selectPlaceholder]}>
+            {draft.education || 'Select education'}
+          </Text>
+          <ChevronDown size={18} color={Colors.textPrimary} strokeWidth={2.2} />
+        </TouchableOpacity>
+      </View>
+
+      <Modal
+        visible={educationOpen}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setEducationOpen(false)}
+      >
+        <Pressable style={styles.modalBackdrop} onPress={() => setEducationOpen(false)}>
+          <Pressable style={styles.menu} onPress={(event) => event.stopPropagation()}>
+            <Text style={styles.menuTitle}>Education</Text>
+            {EDUCATION_OPTIONS.map((option) => {
+              const selected = draft.education === option;
+              return (
+                <TouchableOpacity
+                  key={option}
+                  activeOpacity={0.82}
+                  style={[styles.menuItem, selected && styles.menuItemSelected]}
+                  onPress={() => {
+                    mergeDraft({ education: option });
+                    setEducationOpen(false);
+                  }}
+                >
+                  <Text style={[styles.menuItemText, selected && styles.menuItemTextSelected]}>
+                    {option}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </Pressable>
+        </Pressable>
+      </Modal>
     </OnboardingLayout>
   );
 }
@@ -120,6 +168,56 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   genderTextSelected: {
+    color: Colors.textPrimary,
+  },
+  selectButton: {
+    minHeight: 52,
+    borderRadius: 16,
+    backgroundColor: '#F7F4EB',
+    paddingHorizontal: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  selectText: {
+    ...Typography.body,
+    fontWeight: '700',
+  },
+  selectPlaceholder: {
+    color: Colors.textSecondary,
+  },
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.28)',
+    justifyContent: 'flex-end',
+    padding: Spacing.screenPadding,
+  },
+  menu: {
+    backgroundColor: Colors.white,
+    borderRadius: 24,
+    padding: Spacing.md,
+    gap: 8,
+  },
+  menuTitle: {
+    ...Typography.h2,
+    paddingHorizontal: 4,
+    marginBottom: 4,
+  },
+  menuItem: {
+    minHeight: 48,
+    borderRadius: 14,
+    paddingHorizontal: 14,
+    justifyContent: 'center',
+    backgroundColor: '#F7F4EB',
+  },
+  menuItemSelected: {
+    backgroundColor: Colors.primary,
+  },
+  menuItemText: {
+    ...Typography.body,
+    fontWeight: '700',
+  },
+  menuItemTextSelected: {
     color: Colors.textPrimary,
   },
 });

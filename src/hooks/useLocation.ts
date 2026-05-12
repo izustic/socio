@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import * as Location from 'expo-location';
-import { getLocationFromCoordinates } from '@/src/utils/nominatimService';
+import { getLocationFromCoordinates } from '../utils/nominatimService';
 
 interface LocationState {
   location: Location.LocationObject | null;

@@ -2,7 +2,7 @@ import Button from '@/src/components/ui/Button';
 import Input from '@/src/components/ui/Input';
 import { Colors, Radius, Spacing, Typography } from '@/src/constants/theme';
 import { useOnboarding } from '@/src/context/OnboardingContext';
-import { signInWithEmail, signUpWithEmail, signUpWithFacebook, signUpWithGoogle } from '@/src/services/auth';
+import { signInWithEmail, signInWithGoogleIdToken, signUpWithEmail, signUpWithFacebook } from '@/src/services/auth';
 import { getUserProfile } from '@/src/services/user';
 import { showErrorAlert } from '@/src/utils/errorHandling';
 import { makeRedirectUri } from 'expo-auth-session';
@@ -115,13 +115,16 @@ export default function SignUp() {
         try {
           setLoading(true);
           const { idToken, accessToken } = googleResponse.authentication;
-          const user = await signUpWithGoogle(idToken, accessToken);
+          if (!idToken) {
+            throw new Error('No ID token received from Google');
+          }
+          const user = await signInWithGoogleIdToken(idToken, accessToken ?? undefined);
           await continueIntoOnboarding(
-            user.uid,
+            user.id,
             user.email || 'your Google account',
             {
-              name: user.displayName || '',
-              photoURL: user.photoURL || '',
+              name: user.user_metadata?.display_name as string || '',
+              photoURL: user.user_metadata?.avatar_url as string || '',
             }
           );
         } catch (error: any) {
@@ -144,11 +147,11 @@ export default function SignUp() {
           const { accessToken } = facebookResponse.authentication;
           const user = await signUpWithFacebook(accessToken);
           await continueIntoOnboarding(
-            user.uid,
+            user.id,
             user.email || 'your Facebook account',
             {
-              name: user.displayName || '',
-              photoURL: user.photoURL || '',
+              name: user.user_metadata?.display_name as string || '',
+              photoURL: user.user_metadata?.avatar_url as string || '',
             }
           );
         } catch (error: any) {
@@ -165,11 +168,11 @@ export default function SignUp() {
 
   const handleEmailAuth = async () => {
     clearErrors();
-    
+
     // Validate inputs first
     const isEmailValid = validateEmail(email);
     const isPasswordValid = validatePassword(password);
-    
+
     if (!isEmailValid || !isPasswordValid) {
       return;
     }
@@ -180,9 +183,13 @@ export default function SignUp() {
         ? await signUpWithEmail(email, password)
         : await signInWithEmail(email, password);
 
+      if (!user) {
+        throw new Error('Authentication failed');
+      }
+
       setShowEmailModal(false);
       setPassword('');
-      await continueIntoOnboarding(user.uid, email, { name: user.displayName || '' });
+      await continueIntoOnboarding(user.id, email, { name: (user.user_metadata?.display_name as string) || '' });
     } catch (error: any) {
       console.error('Email auth error:', error);
       const errorAlert = showErrorAlert(error, isSignUp ? 'Sign Up' : 'Sign In');

@@ -1,17 +1,24 @@
-import Avatar from '@/src/components/ui/Avatar';
-import Button from '@/src/components/ui/Button';
-import { Colors, Radius, Spacing, Typography } from '@/src/constants/theme';
-import { useAuth } from '@/src/context/AuthContext';
+import Avatar from "@/src/components/ui/Avatar";
+import Button from "@/src/components/ui/Button";
+import { Colors, Radius, Spacing, Typography } from "@/src/constants/theme";
+import { useAuth } from "@/src/context/AuthContext";
 import {
   getCircleById,
   getLatestCircleForUser,
   getUsersByIds,
   SwipeCandidate,
-} from '@/src/services/swipe';
-import { Circle } from '@/src/types';
-import { router, useLocalSearchParams } from 'expo-router';
-import React, { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, SafeAreaView, StatusBar, StyleSheet, Text, View } from 'react-native';
+} from "@/src/services/swipe";
+import { Circle } from "@/src/types";
+import { router, useLocalSearchParams } from "expo-router";
+import React, { useEffect, useMemo, useState } from "react";
+import {
+  ActivityIndicator,
+  SafeAreaView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 
 export default function ChatScreen() {
   const { user } = useAuth();
@@ -26,7 +33,7 @@ export default function ChatScreen() {
       setLoading(true);
       const targetCircle = params.circleId
         ? await getCircleById(String(params.circleId))
-        : await getLatestCircleForUser(user.uid);
+        : await getLatestCircleForUser(user.id);
       setCircle(targetCircle);
       if (targetCircle) {
         const memberProfiles = await getUsersByIds(targetCircle.members || []);
@@ -37,15 +44,17 @@ export default function ChatScreen() {
       setLoading(false);
     };
     load();
-  }, [user?.uid, params.circleId]);
+  }, [user?.id, params.circleId]);
 
   const membersCount = (circle?.members || []).length;
   const size = circle?.size || 0;
-  const progressWidth = useMemo(() => {
-    if (!size) return '0%';
+  const progressWidth = useMemo((): any => {
+    if (!size) return "0%";
     return `${Math.min(1, membersCount / size) * 100}%`;
   }, [membersCount, size]);
-  const isComplete = Boolean(circle && (circle.status === 'complete' || membersCount >= size));
+  const isComplete = Boolean(
+    circle && (circle.status === "complete" || membersCount >= size),
+  );
 
   if (loading) {
     return (
@@ -66,7 +75,10 @@ export default function ChatScreen() {
           <Text style={styles.title}>Your Circle</Text>
           <Text style={styles.subtitle}>No active circle yet.</Text>
           <View style={styles.ctaWrap}>
-            <Button title="Create Circle" onPress={() => router.push('/circle/create')} />
+            <Button
+              title="Create Circle"
+              onPress={() => router.push("/circle/create")}
+            />
           </View>
         </View>
       </SafeAreaView>
@@ -79,25 +91,32 @@ export default function ChatScreen() {
 
       <View style={styles.headerRow}>
         <Text style={styles.title}>{circle.name}</Text>
-        <View style={[styles.stageBadge, isComplete && styles.stageBadgeComplete]}>
-          <Text style={styles.stageBadgeText}>{isComplete ? 'COMPLETE' : 'FORMING'}</Text>
+        <View
+          style={[styles.stageBadge, isComplete && styles.stageBadgeComplete]}
+        >
+          <Text style={styles.stageBadgeText}>
+            {isComplete ? "COMPLETE" : "FORMING"}
+          </Text>
         </View>
       </View>
       <Text style={styles.subtitle}>
-        {isComplete ? 'Your Circle is ready to meet' : 'Your circle is forming'}
+        {isComplete ? "Your Circle is ready to meet" : "Your circle is forming"}
       </Text>
 
       <View style={styles.membersRow}>
         {Array.from({ length: size }).map((_, index) => {
           const member = members[index];
           return (
-            <View key={`${member?.uid || `empty-${index}`}`} style={styles.memberItem}>
+            <View
+              key={`${member?.uid || `empty-${index}`}`}
+              style={styles.memberItem}
+            >
               <Avatar
                 size="md"
                 uri={member?.photoURL || undefined}
                 placeholder={!member?.photoURL}
               />
-              <Text style={styles.memberName}>{member?.name || 'Open'}</Text>
+              <Text style={styles.memberName}>{member?.name || "Open"}</Text>
             </View>
           );
         })}
@@ -106,31 +125,45 @@ export default function ChatScreen() {
       <View style={styles.progressCard}>
         <View style={styles.progressHeader}>
           <Text style={styles.progressLabel}>Progress</Text>
-          <Text style={styles.progressCount}>{membersCount} / {size}</Text>
+          <Text style={styles.progressCount}>
+            {membersCount} / {size}
+          </Text>
         </View>
         <View style={styles.progressTrack}>
           <View style={[styles.progressFill, { width: progressWidth }]} />
         </View>
         <Text style={styles.progressText}>
           {isComplete
-            ? 'All members accepted. Your Circle is complete.'
+            ? "All members accepted. Your Circle is complete."
             : `Waiting for ${Math.max(0, size - membersCount)} more to accept your invite`}
         </Text>
       </View>
 
       <View style={styles.goalCard}>
         <Text style={styles.goalLabel}>MEETUP GOAL</Text>
-        <Text style={styles.goalValue}>{(circle as any).meetupGoal || 'Coffee · Within 3 days'}</Text>
+        <Text
+          style={styles.goalValue}
+        >{`${(circle as any).meetupGoal || "Coffee"} · ${(circle as any).meetupTimeframe || "Within 3 days"}`}</Text>
       </View>
 
       <View style={styles.footer}>
         {isComplete ? (
           <>
-            <Button title="Enter Circle" onPress={() => router.push('/circle/call')} />
-            <Button title="View details" variant="ghost" onPress={() => router.push('/circle/progress')} />
+            <Button
+              title="Enter Circle"
+              onPress={() => router.push("/circle/call")}
+            />
+            <Button
+              title="View details"
+              variant="ghost"
+              onPress={() => router.push("/circle/progress")}
+            />
           </>
         ) : (
-          <Button title="Continue swiping" onPress={() => router.push('/circle/swipe-users')} />
+          <Button
+            title="Continue swiping"
+            onPress={() => router.push("/circle/swipe-users")}
+          />
         )}
       </View>
     </SafeAreaView>
@@ -145,17 +178,17 @@ const styles = StyleSheet.create({
   },
   centered: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   ctaWrap: {
     marginTop: Spacing.lg,
-    width: '100%',
+    width: "100%",
   },
   headerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
   },
   title: {
     ...Typography.h2,
@@ -171,20 +204,20 @@ const styles = StyleSheet.create({
   },
   stageBadgeText: {
     ...Typography.bodySmall,
-    fontWeight: '700',
+    fontWeight: "700",
   },
   subtitle: {
     ...Typography.bodySmall,
     marginTop: Spacing.xs,
   },
   membersRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+    flexDirection: "row",
+    flexWrap: "wrap",
     gap: Spacing.sm,
     marginTop: Spacing.lg,
   },
   memberItem: {
-    alignItems: 'center',
+    alignItems: "center",
     width: 58,
   },
   memberName: {
@@ -192,14 +225,14 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   progressCard: {
-    backgroundColor: '#F7F1DD',
+    backgroundColor: "#F7F1DD",
     borderRadius: Radius.lg,
     padding: Spacing.md,
     marginTop: Spacing.lg,
   },
   progressHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    justifyContent: "space-between",
   },
   progressLabel: {
     ...Typography.h3,
@@ -212,10 +245,10 @@ const styles = StyleSheet.create({
     height: 8,
     borderRadius: Radius.pill,
     backgroundColor: Colors.white,
-    overflow: 'hidden',
+    overflow: "hidden",
   },
   progressFill: {
-    height: '100%',
+    height: "100%",
     backgroundColor: Colors.primary,
     borderRadius: Radius.pill,
   },
@@ -237,7 +270,7 @@ const styles = StyleSheet.create({
     marginTop: Spacing.xs,
   },
   footer: {
-    marginTop: 'auto',
+    marginTop: "auto",
     gap: Spacing.sm,
   },
 });

@@ -7,7 +7,10 @@ export default function NotificationsPermissionScreen() {
   const { mergeDraft, setStep } = useOnboarding();
 
   const goNext = (enabled: boolean) => {
-    mergeDraft({ notificationsEnabled: enabled });
+    mergeDraft({
+      notificationsEnabled: enabled,
+      notificationsPermissionResolved: true,
+    });
     setStep('onboarding-intro');
   };
 

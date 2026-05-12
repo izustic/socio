@@ -94,7 +94,6 @@ const styles = StyleSheet.create({
   },
   progressFill: {
     borderRadius: Radius.pill,
-    transition: 'width 0.3s ease-in-out',
   },
   countContainer: {
     flexDirection: 'row',

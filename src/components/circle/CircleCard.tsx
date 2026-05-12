@@ -36,7 +36,7 @@ export default function CircleCard({
         <View style={styles.hostInfo}>
           <Avatar uri={circle.hostPhoto} size={40} />
           <View style={styles.hostDetails}>
-            <Text style={styles.hostName}>{circle.hostName}'s Circle</Text>
+            <Text style={styles.hostName}>{circle.hostName}&apos;s Circle</Text>
             <Text style={styles.circleName}>{circle.name}</Text>
           </View>
         </View>

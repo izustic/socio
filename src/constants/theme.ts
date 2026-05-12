@@ -72,7 +72,7 @@ export const Typography = {
     fontWeight: '600' as const,
     color: Colors.textSecondary,
     letterSpacing: 0.5,
-    textTransform: 'uppercase' as const,
+    // textTransform: 'uppercase' as const,
   },
   // Button text
   button: {

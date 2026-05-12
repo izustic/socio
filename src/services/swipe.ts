@@ -1,10 +1,10 @@
 import {
-  Circle,
-  EducationLevel,
-  Interest,
-  ProfileMedia,
-  ProfileTrait,
-  User,
+    Circle,
+    EducationLevel,
+    Interest,
+    ProfileMedia,
+    ProfileTrait,
+    User,
 } from "../types";
 import { supabase } from "./supabase";
 
@@ -39,6 +39,7 @@ interface CircleRow {
   meetup_timeframe?: string;
   status: "forming" | "complete";
   created_at: string;
+  image_url?: string;
 }
 
 interface UserRow {
@@ -48,7 +49,7 @@ interface UserRow {
   gender: string;
   interests: Interest[];
   traits: string[];
-  media: Array<{ uri: string; remoteUrl?: string }>;
+  media: { uri: string; remoteUrl?: string }[];
   education: EducationLevel | "";
   location: { lat: number; lng: number; city?: string } | null;
   photo_url: string;
@@ -420,6 +421,7 @@ export interface CircleCandidate {
   status: "forming" | "complete";
   createdAt: Date;
   distance?: number;
+  imageUrl?: string;
 }
 
 export const getCircleCandidates = async (
@@ -461,6 +463,7 @@ export const getCircleCandidates = async (
       meetupTimeframe: row.meetup_timeframe,
       status: row.status,
       createdAt: new Date(row.created_at),
+      imageUrl: row.image_url,
     }))
     .filter((circle) => {
       // Filter by user's preferences against circle's filters

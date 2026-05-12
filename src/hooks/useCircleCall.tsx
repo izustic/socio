@@ -5,12 +5,12 @@ interface CallState {
   isConnected: boolean;
   isMuted: boolean;
   isCameraOff: boolean;
-  participants: Array<{
+  participants: {
     id: string;
     name: string;
     isMuted: boolean;
     isCameraOff: boolean;
-  }>;
+  }[];
   error: string | null;
 }
 

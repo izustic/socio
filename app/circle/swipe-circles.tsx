@@ -3,25 +3,28 @@ import Chip from "@/src/components/ui/Chip";
 import { Colors, Radius, Spacing, Typography } from "@/src/constants/theme";
 import { useAuth } from "@/src/context/AuthContext";
 import {
-    CircleCandidate,
-    getCircleCandidates,
-    JoinCircleFilters,
-    submitCircleSwipe,
+  CircleCandidate,
+  getCircleCandidates,
+  JoinCircleFilters,
+  submitCircleSwipe,
 } from "@/src/services/swipe";
+import { getUserProfile } from "@/src/services/user";
+import { LinearGradient } from "expo-linear-gradient";
 import { router, useLocalSearchParams } from "expo-router";
+import { Check, MapPin, Users, X } from "lucide-react-native";
 import React, { useEffect, useMemo, useState } from "react";
 import {
-    ActivityIndicator,
-    Alert,
-    Animated,
-    Dimensions,
-    Image,
-    SafeAreaView,
-    StatusBar,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Alert,
+  Animated,
+  Dimensions,
+  Image,
+  SafeAreaView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import Toast from "../../src/components/ui/Toast";
 
@@ -46,7 +49,12 @@ export default function SwipeCirclesScreen() {
   const [matchName, setMatchName] = useState<string | null>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [showToast, setShowToast] = useState(false);
-  const [toastData, setToastData] = useState<{ circleName: string; userName: string } | null>(null);
+  const [toastData, setToastData] = useState<{
+    circleName: string;
+    userName: string;
+  } | null>(null);
+  const [memberProfiles, setMemberProfiles] = useState<any[]>([]);
+  const [hostProfile, setHostProfile] = useState<any>(null);
 
   // Onboarding guide animation
   const [showGuide, setShowGuide] = useState(true);
@@ -71,6 +79,34 @@ export default function SwipeCirclesScreen() {
       return () => clearTimeout(timer);
     }
   }, [showOverlayButtons, overlayOpacity]);
+
+  // Fetch member profiles and host profile when current circle changes
+  useEffect(() => {
+    const fetchCircleMembers = async () => {
+      if (circles.length > 0 && currentIndex < circles.length) {
+        const currentCircle = circles[currentIndex];
+
+        // Fetch host profile
+        const host = await getUserProfile(currentCircle.creatorId);
+        setHostProfile(host);
+
+        // Fetch member profiles (excluding host)
+        const memberIds = currentCircle.members.filter(
+          (id) => id !== currentCircle.creatorId,
+        );
+        if (memberIds.length > 0) {
+          const profiles = await Promise.all(
+            memberIds.map((id) => getUserProfile(id)),
+          );
+          setMemberProfiles(profiles.filter(Boolean));
+        } else {
+          setMemberProfiles([]);
+        }
+      }
+    };
+
+    fetchCircleMembers();
+  }, [circles, currentIndex]);
 
   // Parse filters from params
   const filters = useMemo((): JoinCircleFilters => {
@@ -143,7 +179,10 @@ export default function SwipeCirclesScreen() {
       const result = await submitCircleSwipe(currentCircle.id, user.id, liked);
 
       if (liked) {
-        setToastData({ circleName: currentCircle.name, userName: profile?.name || 'You' });
+        setToastData({
+          circleName: currentCircle.name,
+          userName: profile?.name || "You",
+        });
         setShowToast(true);
       }
 
@@ -252,9 +291,10 @@ export default function SwipeCirclesScreen() {
       <View style={styles.topBar}>
         <Text style={styles.topTitle}>Find a Circle</Text>
         <View style={styles.badge}>
-          <Text style={styles.badgeText}>
+          {/* <Text style={styles.badgeText}>
             {circles.length - currentIndex} left
-          </Text>
+          </Text> */}
+          <Users size={13} color={Colors.textPrimary} />
         </View>
       </View>
 
@@ -268,6 +308,105 @@ export default function SwipeCirclesScreen() {
       </View>
 
       <View style={styles.card}>
+        {/* Full-bleed photo */}
+        <Image
+          source={
+            currentCircle.imageUrl
+              ? { uri: currentCircle.imageUrl }
+              : require("../../assets/images/circle-placeholder.png")
+          }
+          style={styles.cardImage}
+        />
+
+        {/* Top-left: spots badge */}
+        {/* <View style={styles.spotsBadge}>
+    <Text style={styles.spotsBadgeText}>👥 {currentCircle.members.length} / {currentCircle.size} spots</Text>
+  </View> */}
+        <View style={styles.spotsBadge}>
+          <Users size={13} color={Colors.textPrimary} />
+          <Text style={styles.spotsBadgeText}>
+            {currentCircle.members.length} / {currentCircle.size} spots
+          </Text>
+        </View>
+
+        {/* Top-left: JOIN label (bottom-left of top area) */}
+        {showOverlayButtons && (
+          <Animated.View
+            style={[styles.joinLabel, { opacity: overlayOpacity }]}
+          >
+            <Text style={styles.joinLabelText}>JOIN ✓</Text>
+          </Animated.View>
+        )}
+        {/* Top-right: SKIP label */}
+        {showOverlayButtons && (
+          <Animated.View
+            style={[styles.skipLabel, { opacity: overlayOpacity }]}
+          >
+            <Text style={styles.skipLabelText}>SKIP ✕</Text>
+          </Animated.View>
+        )}
+        {/* Bottom overlay: circle info */}
+        <LinearGradient
+          colors={["transparent", "rgba(0,0,0,0.75)"]}
+          style={styles.cardOverlay}
+        >
+          <Text style={styles.overlayName}>{currentCircle.name}</Text>
+          {/* <View style={styles.overlayMeta}>
+      <Text style={styles.overlayMetaText}>📍 {currentCircle.distance?.toFixed(1)} km away</Text>
+      <Text style={styles.overlayMetaText}> · Ages {currentCircle.filters.ageRange[0]}-{currentCircle.filters.ageRange[1]}</Text>
+    </View> */}
+          <View style={styles.overlayMeta}>
+            <MapPin size={13} color="rgba(255,255,255,0.85)" />
+            <Text style={styles.overlayMetaText}>
+              {currentCircle.distance?.toFixed(1)} km away
+            </Text>
+            <Text style={styles.overlayMetaText}>
+              · Ages {currentCircle.filters.ageRange[0]}-
+              {currentCircle.filters.ageRange[1]}
+            </Text>
+          </View>
+          <Text style={styles.overlayBio}>{currentCircle.meetupGoal}</Text>
+          <View style={styles.overlayAvatarRow}>
+            {memberProfiles.length > 0 ? (
+              <>
+                {/* Show up to 3 member avatars */}
+                {memberProfiles.slice(0, 3).map((profile, idx) => (
+                  <Image
+                    key={profile.id}
+                    source={{ uri: profile.photoURL }}
+                    style={styles.memberAvatar}
+                  />
+                ))}
+                {/* Show remaining count if there are more than 3 members */}
+                {memberProfiles.length > 3 && (
+                  <Text style={styles.overlayHostText}>
+                    +{memberProfiles.length - 3} Hosted by{" "}
+                    {hostProfile?.name || "Unknown"}
+                  </Text>
+                )}
+                {/* If there are 3 or fewer members, just show host name */}
+                {memberProfiles.length <= 3 && (
+                  <Text style={styles.overlayHostText}>
+                    Hosted by {hostProfile?.name || "Unknown"}
+                  </Text>
+                )}
+              </>
+            ) : (
+              /* If no members yet, just show host name */
+              <Text style={styles.overlayHostText}>
+                Hosted by {hostProfile?.name || "Unknown"}
+              </Text>
+            )}
+          </View>
+          <View style={styles.chipsRow}>
+            {currentCircle.filters.interests?.slice(0, 3).map((i, idx) => (
+              <Chip key={idx} label={i} selected />
+            ))}
+          </View>
+        </LinearGradient>
+      </View>
+
+      {/* <View style={styles.card}>
         <View style={styles.photoPlaceholder}>
           <Image 
             source={require("../../assets/images/circle-placeholder.png")} 
@@ -276,7 +415,7 @@ export default function SwipeCirclesScreen() {
           />
         </View>
         
-        {/* Overlay Action Buttons */}
+     
         {showOverlayButtons && (
           <Animated.View style={[styles.overlayButtons, { opacity: overlayOpacity }]}>
             <View style={styles.overlaySkipButton}>
@@ -291,7 +430,7 @@ export default function SwipeCirclesScreen() {
         <View style={styles.info}>
           <Text style={styles.name}>{currentCircle.name}</Text>
           
-          {/* Distance with location icon */}
+        
           <View style={styles.distanceRow}>
             <Text style={styles.locationIcon}>📍</Text>
             <Text style={styles.distance}>
@@ -299,7 +438,7 @@ export default function SwipeCirclesScreen() {
             </Text>
           </View>
           
-          {/* Member count with user icon */}
+         
           <View style={styles.memberCountRow}>
             <Text style={styles.userIcon}>👥</Text>
             <Text style={styles.memberCount}>
@@ -321,10 +460,10 @@ export default function SwipeCirclesScreen() {
               ))}
           </View>
           
-          {/* Members section */}
+          
           <View style={styles.membersSection}>
             <View style={styles.memberAvatars}>
-              {/* Placeholder avatars - in real app would show actual member photos */}
+             
               <View style={[styles.memberAvatar, { backgroundColor: Colors.primaryLight }]} />
               <View style={[styles.memberAvatar, { backgroundColor: Colors.inputBg, marginLeft: -8 }]} />
               <View style={[styles.memberAvatar, { backgroundColor: Colors.inputBg, marginLeft: -8 }]} />
@@ -333,10 +472,22 @@ export default function SwipeCirclesScreen() {
             <Text style={styles.hostInfo}>Hosted by Marcus</Text>
           </View>
         </View>
-      </View>
+      </View> */}
 
       <View style={styles.actions}>
         <TouchableOpacity
+          style={styles.skipButton}
+          onPress={() => handleSwipe(false)}
+        >
+          <X size={28} color={Colors.textSecondary} />
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.acceptButton}
+          onPress={() => handleSwipe(true)}
+        >
+          <Check size={28} color={Colors.textPrimary} />
+        </TouchableOpacity>
+        {/* <TouchableOpacity
           activeOpacity={0.7}
           style={[styles.skipButton, swiping && styles.disabled]}
           onPress={() => handleSwipe(false)}
@@ -351,7 +502,7 @@ export default function SwipeCirclesScreen() {
           disabled={swiping}
         >
           <Text style={styles.acceptIcon}>✓</Text>
-        </TouchableOpacity>
+        </TouchableOpacity> */}
       </View>
 
       {matchName ? (
@@ -428,12 +579,12 @@ const styles = StyleSheet.create({
     height: "100%",
     backgroundColor: Colors.primary,
   },
-  card: {
-    flex: 1,
-    borderRadius: 24,
-    overflow: "hidden",
-    backgroundColor: Colors.white,
-  },
+  // card: {
+  //   flex: 1,
+  //   borderRadius: 24,
+  //   overflow: "hidden",
+  //   backgroundColor: Colors.white,
+  // },
   photoPlaceholder: {
     height: "55%",
     backgroundColor: Colors.primaryLight,
@@ -468,11 +619,9 @@ const styles = StyleSheet.create({
     width: 72,
     height: 72,
     borderRadius: 36,
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.inputBg,
     justifyContent: "center",
     alignItems: "center",
-    borderWidth: 2,
-    borderColor: Colors.danger,
   },
   acceptButton: {
     width: 72,
@@ -667,13 +816,13 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginRight: Spacing.sm,
   },
-  memberAvatar: {
-    width: 24,
-    height: 24,
-    borderRadius: Radius.full,
-    borderWidth: 2,
-    borderColor: Colors.white,
-  },
+  // memberAvatar: {
+  //   width: 24,
+  //   height: 24,
+  //   borderRadius: Radius.full,
+  //   borderWidth: 2,
+  //   borderColor: Colors.white,
+  // },
   moreMembers: {
     ...Typography.bodySmall,
     color: Colors.textSecondary,
@@ -682,5 +831,110 @@ const styles = StyleSheet.create({
   hostInfo: {
     ...Typography.bodySmall,
     color: Colors.textSecondary,
+  },
+  card: {
+    flex: 1,
+    borderRadius: 24,
+    overflow: "hidden",
+    backgroundColor: Colors.white,
+    position: "relative",
+  },
+  cardImage: {
+    ...StyleSheet.absoluteFillObject,
+    width: "100%",
+    height: "100%",
+    resizeMode: "cover",
+  },
+  cardOverlay: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    padding: 20,
+    gap: 6,
+  },
+  overlayName: {
+    ...Typography.h2,
+    color: Colors.white,
+  },
+  overlayMeta: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
+  overlayMetaText: {
+    ...Typography.bodySmall,
+    color: "rgba(255,255,255,0.85)",
+  },
+  overlayBio: {
+    ...Typography.bodySmall,
+    color: "rgba(255,255,255,0.8)",
+  },
+  overlayAvatarRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    marginTop: 4,
+  },
+  overlayHostText: {
+    ...Typography.bodySmall,
+    color: "rgba(255,255,255,0.85)",
+    marginLeft: 4,
+  },
+  memberAvatar: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: Colors.primaryLight,
+    borderWidth: 2,
+    borderColor: Colors.white,
+    marginLeft: -6,
+  },
+  spotsBadge: {
+    position: "absolute",
+    top: Spacing.md,
+    left: Spacing.md,
+    backgroundColor: Colors.primary,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: Radius.full,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
+  spotsBadgeText: {
+    ...Typography.label,
+    fontWeight: "600",
+    color: Colors.textPrimary,
+  },
+  joinLabel: {
+    position: "absolute",
+    top: 50,
+    left: Spacing.md,
+    backgroundColor: Colors.primary,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: Radius.md,
+    transform: [{ rotate: "-8deg" }],
+  },
+  joinLabelText: {
+    ...Typography.label,
+    color: Colors.white,
+    fontWeight: "700",
+  },
+  skipLabel: {
+    position: "absolute",
+    top: 50,
+    right: Spacing.md,
+    backgroundColor: "rgba(255,255,255,0.9)",
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: Radius.md,
+    transform: [{ rotate: "8deg" }],
+  },
+  skipLabelText: {
+    ...Typography.label,
+    color: Colors.textSecondary,
+    fontWeight: "700",
   },
 });

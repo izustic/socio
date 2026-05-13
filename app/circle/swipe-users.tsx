@@ -1,28 +1,30 @@
 import Button from "@/src/components/ui/Button";
-import Chip from "@/src/components/ui/Chip";
 import Toast from "@/src/components/ui/Toast";
 import { Colors, Radius, Spacing, Typography } from "@/src/constants/theme";
 import { useAuth } from "@/src/context/AuthContext";
 import {
-    getActiveCircleForUser,
-    getSwipeCandidates,
-    submitSwipe,
-    SwipeCandidate,
+  getActiveCircleForUser,
+  getSwipeCandidates,
+  submitSwipe,
+  SwipeCandidate,
 } from "@/src/services/swipe";
 import { Circle } from "@/src/types";
+import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
+import { Check, ChevronLeft, ChevronRight, X } from "lucide-react-native";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
-    ActivityIndicator,
-    Alert,
-    Animated,
-    Dimensions,
-    SafeAreaView,
-    StatusBar,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Alert,
+  Animated,
+  Dimensions,
+  Image,
+  SafeAreaView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
@@ -35,31 +37,35 @@ export default function SwipeUsersScreen() {
   const [swiping, setSwiping] = useState(false);
   const [matchName, setMatchName] = useState<string | null>(null);
   const [showToast, setShowToast] = useState(false);
-  const [toastUser, setToastUser] = useState<{ name: string; age: number } | null>(null);
+  const [toastUser, setToastUser] = useState<{
+    name: string;
+    age: number;
+  } | null>(null);
+  const [currentMediaIndex, setCurrentMediaIndex] = useState(0);
 
   // Onboarding guide animation
   const [showGuide, setShowGuide] = useState(true);
   const guideOpacity = useRef(new Animated.Value(1)).current;
 
-  // Overlay buttons fade animation
-  const [showOverlayButtons, setShowOverlayButtons] = useState(true);
+  // Overlay labels fade animation
+  const [showOverlayLabels, setShowOverlayLabels] = useState(true);
   const overlayOpacity = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
-    if (showOverlayButtons) {
+    if (showOverlayLabels) {
       const timer = setTimeout(() => {
         Animated.timing(overlayOpacity, {
           toValue: 0,
           duration: 1000,
           useNativeDriver: true,
         }).start(() => {
-          setShowOverlayButtons(false);
+          setShowOverlayLabels(false);
         });
       }, 2000);
 
       return () => clearTimeout(timer);
     }
-  }, [showOverlayButtons, overlayOpacity]);
+  }, [showOverlayLabels, overlayOpacity]);
 
   const currentCandidate = useMemo(() => candidates[0] || null, [candidates]);
   const progressText = useMemo(() => {
@@ -142,7 +148,10 @@ export default function SwipeUsersScreen() {
       const swipedCandidateName = currentCandidate.name;
 
       if (liked) {
-        setToastUser({ name: currentCandidate.name, age: currentCandidate.age });
+        setToastUser({
+          name: currentCandidate.name,
+          age: currentCandidate.age,
+        });
         setShowToast(true);
       }
 
@@ -204,7 +213,7 @@ export default function SwipeUsersScreen() {
     return (
       <SafeAreaView style={styles.container}>
         <StatusBar barStyle="dark-content" />
-        <View style={styles.topBar}>
+        {/* <View style={styles.topBar}>
           <Text style={styles.topTitle}>{circle.name}</Text>
           <View style={styles.badge}>
             <Text style={styles.badgeText}>{progressText}</Text>
@@ -213,6 +222,16 @@ export default function SwipeUsersScreen() {
         <Text style={styles.progressSub}>{progressSubText}</Text>
         <View style={styles.progressTrackTop}>
           <View style={[styles.progressFillTop, { width: progressWidth }]} />
+        </View> */}
+        <View style={styles.headerTitleRow}>
+          <Text style={styles.headerTitle}>{circle.name}</Text>
+          <View style={styles.badgePill}>
+            <Text style={styles.badgeText}>{progressText}</Text>
+          </View>
+        </View>
+        <Text style={styles.headerSubtitle}>{progressSubText}</Text>
+        <View style={styles.progressTrack}>
+          <View style={[styles.progressFill, { width: progressWidth }]} />
         </View>
 
         <View style={styles.caughtUpCard}>
@@ -256,73 +275,135 @@ export default function SwipeUsersScreen() {
           <View style={styles.guideCard}>
             <Text style={styles.guideTitle}>👆 Swipe to connect</Text>
             <Text style={styles.guideText}>
-              Swipe right on people you'd like in your Circle. If they also like
-              you, they'll be added!
+              Swipe right on people you&apos;d like in your Circle. If they also
+              like you, they&apos;ll be added!
             </Text>
           </View>
         </Animated.View>
       )}
 
-      <View style={styles.topBar}>
-        <Text style={styles.topTitle}>{circle.name}</Text>
-        <Text style={styles.topTitle}>{progressText}</Text>
+      {/* Top Header Section */}
+      <View style={styles.headerContainer}>
+        <View style={styles.headerTitleRow}>
+          <Text style={styles.headerTitle}>{circle.name}</Text>
+          <View style={styles.badgePill}>
+            <Text style={styles.badgeText}>{progressText}</Text>
+          </View>
+        </View>
+        <Text style={styles.headerSubtitle}>{progressSubText}</Text>
       </View>
+
+      {/* Progress Bar */}
       <View style={styles.progressTrack}>
         <View style={[styles.progressFill, { width: progressWidth }]} />
       </View>
 
+      {/* Main Card with Image and Overlays */}
       <View style={styles.card}>
-        <View style={styles.photoPlaceholder} />
-        
-        {/* Overlay Action Buttons */}
-        {showOverlayButtons && (
-          <Animated.View style={[styles.overlayButtons, { opacity: overlayOpacity }]}>
-            <View style={styles.overlaySkipButton}>
-              <Text style={styles.overlayX}>✕</Text>
-            </View>
-            <View style={styles.overlayAddButton}>
-              <Text style={styles.overlayCheck}>✓</Text>
-            </View>
+        {/* Card Image */}
+        <Image
+          source={
+            currentCandidate.photoURL
+              ? { uri: currentCandidate.photoURL }
+              : require("../../assets/images/circle-placeholder.png")
+          }
+          style={styles.cardImage}
+        />
+        {/* Media progress dots */}
+        {(currentCandidate.media?.length || 1) > 1 && (
+          <View style={styles.mediaDots}>
+            {(currentCandidate.media || []).map((_, i) => (
+              <View
+                key={i}
+                style={[
+                  styles.mediaDot,
+                  i === currentMediaIndex && styles.mediaDotActive,
+                ]}
+              />
+            ))}
+          </View>
+        )}
+
+        {/* Navigation Arrows */}
+        <TouchableOpacity
+          style={styles.navArrowLeft}
+          onPress={() =>
+            setCurrentMediaIndex(Math.max(0, currentMediaIndex - 1))
+          }
+        >
+          <ChevronLeft size={24} color="rgba(0,0,0,0.4)" strokeWidth={2.5} />
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.navArrowRight}
+          onPress={() =>
+            setCurrentMediaIndex(
+              Math.min(
+                (currentCandidate.media?.length || 1) - 1,
+                currentMediaIndex + 1,
+              ),
+            )
+          }
+        >
+          <ChevronRight size={24} color="rgba(0,0,0,0.4)" strokeWidth={2.5} />
+        </TouchableOpacity>
+
+        {/* Animated ADD Label (Left) */}
+        {showOverlayLabels && (
+          <Animated.View style={[styles.addLabel, { opacity: overlayOpacity }]}>
+            <Text style={styles.addLabelText}>ADD ✓</Text>
           </Animated.View>
         )}
 
-        <View style={styles.info}>
-          <Text style={styles.name}>
+        {/* Animated SKIP Label (Right) */}
+        {showOverlayLabels && (
+          <Animated.View
+            style={[styles.skipLabel, { opacity: overlayOpacity }]}
+          >
+            <Text style={styles.skipLabelText}>SKIP ✕</Text>
+          </Animated.View>
+        )}
+
+        {/* Bottom Gradient Overlay with User Info */}
+        <LinearGradient
+          colors={["transparent", "rgba(0,0,0,0.75)"]}
+          style={styles.cardOverlay}
+        >
+          <Text style={styles.userName}>
             {currentCandidate.name}, {currentCandidate.age}
           </Text>
-          <Text style={styles.bio}>
+          <Text style={styles.userBio}>
             {currentCandidate.bio || "Looking to make meaningful friendships."}
           </Text>
-          <View style={styles.chipsRow}>
+          <View style={styles.interestChipsRow}>
             {(currentCandidate.interests || [])
               .slice(0, 3)
               .map((interest, idx) => (
-                <Chip
-                  key={`${interest}-${idx}`}
-                  label={interest}
-                  selected={idx === 0}
-                />
+                <View key={`${interest}-${idx}`} style={styles.interestChip}>
+                  <Text style={styles.interestChipText}>{interest}</Text>
+                </View>
               ))}
           </View>
-        </View>
+        </LinearGradient>
       </View>
 
-      <View style={styles.actions}>
+      {/* Action Buttons */}
+      <View style={styles.actionsRow}>
         <TouchableOpacity
           activeOpacity={0.7}
           style={[styles.skipButton, swiping && styles.disabled]}
           onPress={() => handleSwipe(false)}
           disabled={swiping}
         >
-          <Text style={styles.skipIcon}>✕</Text>
+          <X size={28} color={Colors.textSecondary} strokeWidth={2.5} />
         </TouchableOpacity>
         <TouchableOpacity
           activeOpacity={0.7}
-          style={[styles.acceptButton, swiping && styles.disabled]}
+          style={[styles.addButton, swiping && styles.disabled]}
           onPress={() => handleSwipe(true)}
           disabled={swiping}
         >
-          <Text style={styles.acceptIcon}>✓</Text>
+          <Check size={32} color={Colors.textPrimary} strokeWidth={2.5} />
         </TouchableOpacity>
       </View>
 
@@ -354,7 +435,8 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: Colors.background,
-    padding: Spacing.screenPadding,
+    paddingHorizontal: Spacing.screenPadding,
+    paddingVertical: Spacing.screenPadding,
   },
   centerContent: {
     flex: 1,
@@ -382,16 +464,39 @@ const styles = StyleSheet.create({
     width: "100%",
     marginTop: Spacing.xl,
   },
-  topBar: {
+
+  /* Header Section */
+  headerContainer: {
+    marginBottom: Spacing.md,
+  },
+  headerTitleRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
+    marginBottom: Spacing.xs,
   },
-  topTitle: {
-    ...Typography.h3,
+  headerTitle: {
+    ...Typography.h2,
+    flex: 1,
   },
+  badgePill: {
+    backgroundColor: "rgba(255, 255, 255, 0.8)",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: Radius.full,
+  },
+  badgeText: {
+    ...Typography.label,
+    fontWeight: "600",
+    color: Colors.textPrimary,
+  },
+  headerSubtitle: {
+    ...Typography.bodySmall,
+    color: Colors.textSecondary,
+  },
+
+  /* Progress Bar */
   progressTrack: {
-    marginTop: Spacing.md,
     height: 4,
     borderRadius: Radius.pill,
     backgroundColor: Colors.inputBg,
@@ -399,118 +504,172 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.md,
   },
   progressFill: {
-    width: "40%",
     height: "100%",
     backgroundColor: Colors.primary,
+    borderRadius: Radius.pill,
   },
+
+  /* Main Card */
   card: {
     flex: 1,
     borderRadius: 24,
     overflow: "hidden",
     backgroundColor: Colors.white,
+    position: "relative",
+    marginBottom: Spacing.lg,
   },
-  photoPlaceholder: {
-    height: "55%",
-    backgroundColor: Colors.primaryLight,
+  cardImage: {
+    ...StyleSheet.absoluteFillObject,
+    width: "100%",
+    height: "100%",
+    resizeMode: "cover",
   },
-  info: {
+
+  /* Navigation Arrows */
+  navArrowLeft: {
+    position: "absolute",
+    left: Spacing.md,
+    top: "50%",
+    transform: [{ translateY: -12 }],
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: "rgba(255, 255, 255, 0.2)",
+    justifyContent: "center",
+    alignItems: "center",
+    zIndex: 10,
+  },
+  navArrowRight: {
+    position: "absolute",
+    right: Spacing.md,
+    top: "50%",
+    transform: [{ translateY: -12 }],
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: "rgba(255, 255, 255, 0.2)",
+    justifyContent: "center",
+    alignItems: "center",
+    zIndex: 10,
+  },
+
+  /* Animated Labels */
+  addLabel: {
+    position: "absolute",
+    left: Spacing.md,
+    top: "45%",
+    backgroundColor: Colors.primary,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: Radius.md,
+    transform: [{ rotate: "-10deg" }],
+    zIndex: 20,
+  },
+  addLabelText: {
+    ...Typography.label,
+    color: Colors.white,
+    fontWeight: "700",
+    fontSize: 14,
+  },
+  skipLabel: {
+    position: "absolute",
+    right: Spacing.md,
+    top: "45%",
+    backgroundColor: "rgba(255, 255, 255, 0.9)",
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: Radius.md,
+    transform: [{ rotate: "10deg" }],
+    zIndex: 20,
+  },
+  skipLabelText: {
+    ...Typography.label,
+    color: Colors.textSecondary,
+    fontWeight: "700",
+    fontSize: 14,
+  },
+
+  /* Card Bottom Gradient Overlay */
+  cardOverlay: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
     padding: 20,
-    gap: Spacing.sm,
+    gap: 8,
   },
-  name: {
+  userName: {
     ...Typography.h2,
+    color: Colors.white,
+    fontSize: 22,
   },
-  bio: {
+  userBio: {
     ...Typography.bodySmall,
+    color: "rgba(255,255,255,0.85)",
+    lineHeight: 20,
   },
-  chipsRow: {
+  interestChipsRow: {
     flexDirection: "row",
-    gap: Spacing.sm,
+    gap: 6,
+    marginTop: 4,
+    flexWrap: "wrap",
   },
-  actions: {
-    marginTop: Spacing.lg,
-    marginBottom: Spacing.md,
+  interestChip: {
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: Radius.full,
+  },
+  interestChipText: {
+    ...Typography.bodySmall,
+    color: Colors.white,
+    fontSize: 11,
+  },
+
+  /* Action Buttons */
+  actionsRow: {
     flexDirection: "row",
     justifyContent: "center",
     alignItems: "center",
-    gap: 24,
+    gap: 32,
+    marginBottom: Spacing.md,
   },
   skipButton: {
-    width: 64,
-    height: 64,
-    borderRadius: Radius.full,
-    backgroundColor: Colors.inputBg,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  acceptButton: {
     width: 72,
     height: 72,
-    borderRadius: Radius.full,
-    backgroundColor: Colors.primary,
-    alignItems: "center",
+    borderRadius: 36,
+    backgroundColor: Colors.inputBg,
     justifyContent: "center",
+    alignItems: "center",
   },
-  skipIcon: {
-    ...Typography.h2,
+  addButton: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: Colors.primary,
+    justifyContent: "center",
+    alignItems: "center",
+    shadowColor: "rgba(0, 0, 0, 0.2)",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 6,
+  },
+  skipButtonIcon: {
+    fontSize: 28,
     color: Colors.textSecondary,
+    fontWeight: "600",
   },
-  acceptIcon: {
-    ...Typography.h2,
-    color: Colors.textPrimary,
+  addButtonIcon: {
+    fontSize: 32,
+    color: Colors.white,
+    fontWeight: "600",
   },
   disabled: {
     opacity: 0.5,
   },
-  matchOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(0,0,0,0.4)",
-    justifyContent: "center",
-    alignItems: "center",
-    padding: Spacing.lg,
-  },
-  matchCard: {
-    width: "100%",
-    backgroundColor: Colors.white,
-    borderRadius: 24,
-    padding: Spacing.xl,
-    gap: Spacing.md,
-  },
-  matchTitle: {
-    ...Typography.h2,
-    textAlign: "center",
-  },
-  matchSubtitle: {
-    ...Typography.bodySmall,
-    textAlign: "center",
-  },
-  badge: {
-    backgroundColor: Colors.primaryLight,
-    borderRadius: Radius.full,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-  },
-  badgeText: {
-    ...Typography.h3,
-  },
-  progressSub: {
-    ...Typography.bodySmall,
-    textAlign: "center",
-    marginTop: Spacing.xs,
-  },
-  progressTrackTop: {
-    marginTop: Spacing.sm,
-    height: 5,
-    backgroundColor: Colors.inputBg,
-    borderRadius: Radius.pill,
-    overflow: "hidden",
-    marginBottom: Spacing.md,
-  },
-  progressFillTop: {
-    height: "100%",
-    backgroundColor: Colors.primary,
-    borderRadius: Radius.pill,
-  },
+
+  /* Empty State */
   caughtUpCard: {
     flex: 1,
     backgroundColor: "#F3F3F5",
@@ -552,7 +711,53 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginTop: Spacing.md,
   },
-  // Onboarding guide styles
+
+  /* Match Overlay */
+  matchOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(0,0,0,0.7)",
+    justifyContent: "center",
+    alignItems: "center",
+    zIndex: 200,
+  },
+  matchCard: {
+    backgroundColor: Colors.white,
+    padding: Spacing.xl,
+    borderRadius: Radius.xl,
+    alignItems: "center",
+    width: SCREEN_WIDTH - Spacing.xl * 2,
+  },
+  matchTitle: {
+    ...Typography.h1,
+    color: Colors.primary,
+    marginBottom: Spacing.sm,
+  },
+  matchSubtitle: {
+    ...Typography.body,
+    textAlign: "center",
+    marginBottom: Spacing.lg,
+  },
+  mediaDots: {
+    position: "absolute",
+    top: Spacing.md,
+    left: 0,
+    right: 0,
+    flexDirection: "row",
+    justifyContent: "center",
+    gap: 5,
+    zIndex: 10,
+  },
+  mediaDot: {
+    width: 28,
+    height: 3,
+    borderRadius: 2,
+    backgroundColor: "rgba(255,255,255,0.4)",
+  },
+  mediaDotActive: {
+    backgroundColor: Colors.white,
+  },
+
+  /* Guide Overlay */
   guideOverlay: {
     position: "absolute",
     top: 0,
@@ -579,39 +784,5 @@ const styles = StyleSheet.create({
     color: Colors.white,
     textAlign: "center",
     marginTop: Spacing.xs,
-  },
-  // Overlay button styles
-  overlayButtons: {
-    position: "absolute",
-    top: Spacing.md,
-    right: Spacing.md,
-    flexDirection: "column",
-    gap: Spacing.sm,
-  },
-  overlaySkipButton: {
-    width: 40,
-    height: 40,
-    borderRadius: Radius.full,
-    backgroundColor: Colors.inputBg,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  overlayX: {
-    fontSize: 20,
-    color: Colors.textPrimary,
-    fontWeight: "600",
-  },
-  overlayAddButton: {
-    width: 40,
-    height: 40,
-    borderRadius: Radius.full,
-    backgroundColor: Colors.primary,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  overlayCheck: {
-    fontSize: 20,
-    color: Colors.textPrimary,
-    fontWeight: "600",
   },
 });

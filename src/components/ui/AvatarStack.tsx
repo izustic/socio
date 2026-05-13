@@ -4,7 +4,7 @@ import { Colors, Spacing, Typography } from '@/src/constants/theme';
 import Avatar from './Avatar';
 
 interface AvatarStackProps {
-  avatars: Array<{ uri?: string; name?: string }>;
+  avatars: { uri?: string; name?: string }[];
   maxVisible?: number;
   size?: 'sm' | 'md' | 'lg';
   showOverflow?: boolean;

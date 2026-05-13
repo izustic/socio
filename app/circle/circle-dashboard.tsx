@@ -3,11 +3,10 @@ import Button from "@/src/components/ui/Button";
 import { Colors, Radius, Spacing, Typography } from "@/src/constants/theme";
 import { useAuth } from "@/src/context/AuthContext";
 import {
-  getCircleById,
-  getLatestCircleForUser,
-  getUsersByIds,
-  SwipeCandidate,
-} from "@/src/services/swipe";
+  getCircle,
+  getLatestCircleForParticipant,
+} from "@/src/services/circle";
+import { getUsersByIds, SwipeCandidate } from "@/src/services/swipe";
 import { Circle } from "@/src/types";
 import { router, useLocalSearchParams } from "expo-router";
 import React, { useEffect, useMemo, useState } from "react";
@@ -35,8 +34,8 @@ export default function CircleDashboardScreen() {
       setLoading(true);
       try {
         const targetCircle = params.circleId
-          ? await getCircleById(String(params.circleId))
-          : await getLatestCircleForUser(user.id);
+          ? await getCircle(String(params.circleId))
+          : await getLatestCircleForParticipant(user.id);
         setCircle(targetCircle);
         if (targetCircle) {
           const memberProfiles = await getUsersByIds(
@@ -211,7 +210,7 @@ export default function CircleDashboardScreen() {
         ) : (
           <Button
             title="Continue swiping"
-            onPress={() => router.push("/circle/swipe-users")}
+            onPress={() => router.push("/(tabs)/swipe")}
           />
         )}
       </View>

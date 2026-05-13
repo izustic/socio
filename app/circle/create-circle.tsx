@@ -87,7 +87,7 @@ export default function CreateCircleScreen() {
 
       await createCircle(payload);
 
-      router.replace("/circle/swipe-users");
+      router.replace("/(tabs)/swipe");
     } catch (error: any) {
       Alert.alert(
         "Unable to create circle",

@@ -18,7 +18,7 @@ interface ProfileCardProps {
     bio?: string;
     interests: string[];
     photoURL?: string;
-    media?: Array<{ uri: string; type: 'image' | 'video' }>;
+    media?: { uri: string; type: 'image' | 'video' }[];
   };
   onLike?: () => void;
   onPass?: () => void;

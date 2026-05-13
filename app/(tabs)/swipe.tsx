@@ -1,33 +1,57 @@
-import { Colors, Spacing, Typography } from '@/src/constants/theme';
-import React from 'react';
-import { SafeAreaView, StatusBar, StyleSheet, Text, View } from 'react-native';
+import { Colors, Spacing, Typography } from "@/src/constants/theme";
+import { useAuth } from "@/src/context/AuthContext";
+import { getActiveCircleForUser } from "@/src/services/swipe";
+import React, { useEffect, useState } from "react";
+import {
+  ActivityIndicator,
+  SafeAreaView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
+import SwipeCirclesScreen from "../circle/swipe-circles";
+import SwipeUsersScreen from "../circle/swipe-users";
 
-export default function TabTwoScreen() {
-  const notifications = [
-    { icon: '👤', title: 'New match in your circle', sub: 'Maya joined your circle', time: '2m', unread: true },
-    { icon: '⭕', title: 'Circle is almost full', sub: 'You need 1 more member', time: '1h', unread: true },
-    { icon: '⏰', title: 'Meetup reminder', sub: 'Your meetup is in 2 days', time: 'Yesterday', unread: false },
-  ];
+export default function SwipeTabScreen() {
+  const { user } = useAuth();
+  const [loading, setLoading] = useState(true);
+  const [hasCircle, setHasCircle] = useState(false);
 
-  return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" />
-      <Text style={styles.title}>Notifications</Text>
-      <View style={styles.list}>
-        {notifications.map((item) => (
-          <View key={item.title} style={styles.item}>
-            <View style={[styles.dot, !item.unread && styles.readDot]} />
-            <Text style={styles.icon}>{item.icon}</Text>
-            <View style={styles.body}>
-              <Text style={styles.itemTitle}>{item.title}</Text>
-              <Text style={styles.itemSub}>{item.sub}</Text>
-            </View>
-            <Text style={styles.time}>{item.time}</Text>
-          </View>
-        ))}
-      </View>
-    </SafeAreaView>
-  );
+  useEffect(() => {
+    const checkUserStatus = async () => {
+      if (!user) {
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const activeCircle = await getActiveCircleForUser(user.id);
+        setHasCircle(!!activeCircle);
+      } catch (error) {
+        console.error("Error checking circle status:", error);
+        setHasCircle(false);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    checkUserStatus();
+  }, [user]);
+
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <StatusBar barStyle="dark-content" />
+        <View style={styles.centerContent}>
+          <ActivityIndicator size="large" color={Colors.primary} />
+          <Text style={styles.loadingText}>Finding your matches...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  return hasCircle ? <SwipeUsersScreen /> : <SwipeCirclesScreen />;
 }
 
 const styles = StyleSheet.create({
@@ -35,48 +59,14 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: Colors.background,
   },
-  title: {
-    ...Typography.h1,
-    paddingHorizontal: Spacing.screenPadding,
-    paddingTop: Spacing.md,
-    paddingBottom: Spacing.lg,
-  },
-  list: {
+  centerContent: {
     flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
   },
-  item: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 14,
-    paddingHorizontal: Spacing.screenPadding,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.divider,
-  },
-  dot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: Colors.primary,
-    marginRight: Spacing.sm,
-  },
-  readDot: {
-    opacity: 0,
-  },
-  icon: {
-    marginRight: Spacing.sm,
-  },
-  body: {
-    flex: 1,
-    gap: 2,
-  },
-  itemTitle: {
+  loadingText: {
     ...Typography.body,
-    fontWeight: '700',
-  },
-  itemSub: {
-    ...Typography.bodySmall,
-  },
-  time: {
-    ...Typography.bodySmall,
+    marginTop: Spacing.md,
+    color: Colors.textSecondary,
   },
 });

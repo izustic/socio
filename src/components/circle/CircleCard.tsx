@@ -14,7 +14,7 @@ interface CircleCardProps {
     currentMembers: number;
     hostName: string;
     hostPhoto?: string;
-    memberAvatars?: Array<{ uri?: string; name?: string }>;
+    memberAvatars?: { uri?: string; name?: string }[];
     vibe?: string;
     location?: string;
   };

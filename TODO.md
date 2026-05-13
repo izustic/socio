@@ -82,8 +82,8 @@ Legend:
 - [x] App entry redirect based on auth/profile/role status
 - [x] Banned screen
 - [x] Suspended screen
-- [~] Circle home tab
-- [~] Swipe tab
+- [x] Circle home tab
+- [x] Swipe tab
 - [~] Profile tab
 - [ ] Replace placeholder Notifications tab
 - [ ] Consolidate auth/role redirect logic between `app/index.tsx` and layouts
@@ -109,7 +109,7 @@ Legend:
 - [ ] Finish name/vibe/size/radius/meetup details
 - [ ] Finish host preference setup
 - [ ] Persist all Circle fields expected by the schema
-- [ ] Route users correctly after Circle creation
+- [x] Route users correctly after Circle creation
 
 ## Host Swipe Flow
 

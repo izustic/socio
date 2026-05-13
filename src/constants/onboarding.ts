@@ -170,3 +170,24 @@ export const TRAIT_EMOJI: Record<ProfileTrait, string> = {
   'Deep thinker': '🧠',
   Spontaneous: '⚡',
 };
+
+export const JOIN_MEETUP_VIBES = [
+  'Coffee',
+  'Food',
+  'Outdoors',
+  'Film',
+  'Study',
+  'Workout',
+] as const;
+
+export type JoinMeetupVibe = typeof JOIN_MEETUP_VIBES[number];
+
+export const JOIN_MEETUP_VIBE_EMOJI: Record<JoinMeetupVibe, string> = {
+  Coffee: '☕',
+  Food: '🍜',
+  Outdoors: '🏕️',
+  Film: '🎬',
+  Study: '📚',
+  Workout: '🏋️',
+};
+

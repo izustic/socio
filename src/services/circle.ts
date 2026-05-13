@@ -118,6 +118,41 @@ export const getCircle = async (circleId: string): Promise<Circle | null> => {
   }
 };
 
+export const getLatestCircleForParticipant = async (
+  userId: string,
+): Promise<Circle | null> => {
+  try {
+    const { data: creatorData, error: creatorError } = await supabase
+      .from("circles")
+      .select("*")
+      .eq("creator_id", userId)
+      .order("created_at", { ascending: false })
+      .limit(1);
+
+    if (creatorError) throw creatorError;
+    if (creatorData && creatorData.length > 0) {
+      return rowToCircle(creatorData[0] as CircleRow);
+    }
+
+    const { data: memberData, error: memberError } = await supabase
+      .from("circles")
+      .select("*")
+      .contains("members", [userId])
+      .order("created_at", { ascending: false })
+      .limit(1);
+
+    if (memberError) throw memberError;
+    if (memberData && memberData.length > 0) {
+      return rowToCircle(memberData[0] as CircleRow);
+    }
+
+    return null;
+  } catch (error) {
+    console.error("Error getting latest circle for participant:", error);
+    return null;
+  }
+};
+
 export const updateCircle = async (
   circleId: string,
   updates: Partial<Circle>,

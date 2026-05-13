@@ -3,13 +3,14 @@ import {
   ONBOARDING_INTERESTS,
   ONBOARDING_TRAITS,
   TRAIT_EMOJI,
+  EDUCATION_OPTIONS,
 } from "@/src/constants/onboarding";
 import { Colors, Radius, Spacing, Typography } from "@/src/constants/theme";
 import { useAuth } from "@/src/context/AuthContext";
 import { createCircle } from "@/src/services/circle";
 import { Interest, ProfileTrait } from "@/src/types";
 import { router, useLocalSearchParams } from "expo-router";
-import { ChevronLeft } from "lucide-react-native";
+import { ChevronLeft, ChevronDown } from "lucide-react-native";
 import { useMemo, useState } from "react";
 import {
   Alert,
@@ -21,6 +22,8 @@ import {
   Text,
   TouchableOpacity,
   View,
+  Modal,
+  Pressable,
 } from "react-native";
 
 type GenderMix = "Male" | "Female" | "Both";
@@ -68,6 +71,8 @@ export default function CreateCirclePreferencesScreen() {
       ],
   );
   const [saving, setSaving] = useState(false);
+  const [educationLevel, setEducationLevel] = useState<string>("Any");
+  const [educationOpen, setEducationOpen] = useState(false);
 
   const circleBasics = useMemo(
     () => ({
@@ -150,7 +155,7 @@ export default function CreateCirclePreferencesScreen() {
         creatorId: user.id,
         size: circleBasics.size,
         ageRange,
-        educationLevel: "Any",
+        educationLevel,
         locationRadius: circleBasics.radius,
         interests: selectedInterests,
         traits: selectedTraits,
@@ -268,6 +273,18 @@ export default function CreateCirclePreferencesScreen() {
           </View>
         </View>
 
+        <View style={styles.section}>
+          <Text style={styles.label}>EDUCATION</Text>
+          <TouchableOpacity
+            activeOpacity={0.82}
+            style={styles.selectButton}
+            onPress={() => setEducationOpen(true)}
+          >
+            <Text style={styles.selectText}>{educationLevel}</Text>
+            <ChevronDown size={18} color={Colors.textPrimary} strokeWidth={2.2} />
+          </TouchableOpacity>
+        </View>
+
         <ChipSection
           title="INTERESTS"
           countLabel={`${selectedInterests.length} picked`}
@@ -308,6 +325,37 @@ export default function CreateCirclePreferencesScreen() {
           </Text>
         </TouchableOpacity>
       </View>
+
+      <Modal
+        visible={educationOpen}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setEducationOpen(false)}
+      >
+        <Pressable style={styles.modalBackdrop} onPress={() => setEducationOpen(false)}>
+          <Pressable style={styles.menu} onPress={(event) => event.stopPropagation()}>
+            <Text style={styles.menuTitle}>Education</Text>
+            {["Any", ...EDUCATION_OPTIONS].map((option) => {
+              const selected = educationLevel === option;
+              return (
+                <TouchableOpacity
+                  key={option}
+                  activeOpacity={0.82}
+                  style={[styles.menuItem, selected && styles.menuItemSelected]}
+                  onPress={() => {
+                    setEducationLevel(option);
+                    setEducationOpen(false);
+                  }}
+                >
+                  <Text style={[styles.menuItemText, selected && styles.menuItemTextSelected]}>
+                    {option}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </Pressable>
+        </Pressable>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -528,5 +576,52 @@ const styles = StyleSheet.create({
   },
   disabledButtonText: {
     color: Colors.textDisabled,
+  },
+  selectButton: {
+    minHeight: 52,
+    borderRadius: 16,
+    backgroundColor: "#F6F6F6",
+    paddingHorizontal: 16,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  selectText: {
+    ...Typography.body,
+    fontWeight: "700",
+  },
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.28)",
+    justifyContent: "flex-end",
+    padding: Spacing.screenPadding,
+  },
+  menu: {
+    backgroundColor: Colors.white,
+    borderRadius: 24,
+    padding: Spacing.md,
+    gap: 8,
+  },
+  menuTitle: {
+    ...Typography.h2,
+    paddingHorizontal: 4,
+    marginBottom: 4,
+  },
+  menuItem: {
+    minHeight: 48,
+    borderRadius: 14,
+    paddingHorizontal: 14,
+    justifyContent: "center",
+    backgroundColor: "#F6F6F6",
+  },
+  menuItemSelected: {
+    backgroundColor: Colors.primary,
+  },
+  menuItemText: {
+    ...Typography.body,
+    fontWeight: "700",
+  },
+  menuItemTextSelected: {
+    color: Colors.textPrimary,
   },
 });

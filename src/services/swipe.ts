@@ -1,10 +1,10 @@
 import {
-  Circle,
-  EducationLevel,
-  Interest,
-  ProfileMedia,
-  ProfileTrait,
-  User,
+    Circle,
+    EducationLevel,
+    Interest,
+    ProfileMedia,
+    ProfileTrait,
+    User,
 } from "../types";
 import { supabase } from "./supabase";
 
@@ -39,6 +39,7 @@ interface CircleRow {
   meetup_timeframe?: string;
   status: "forming" | "complete";
   created_at: string;
+  image_url?: string;
 }
 
 interface UserRow {
@@ -48,7 +49,7 @@ interface UserRow {
   gender: string;
   interests: Interest[];
   traits: string[];
-  media: Array<{ uri: string; remoteUrl?: string }>;
+  media: { uri: string; remoteUrl?: string }[];
   education: EducationLevel | "";
   location: { lat: number; lng: number; city?: string } | null;
   photo_url: string;
@@ -396,4 +397,203 @@ export const submitSwipe = async (
   }
 
   return { mutualMatch, circleComplete };
+};
+
+export interface JoinCircleFilters {
+  ageRange: [number, number];
+  educationLevel: string;
+  locationRadius: number;
+  interests: Interest[];
+  vibe?: string;
+  genderMix?: "Male" | "Female" | "Both";
+  traits?: ProfileTrait[];
+}
+
+export interface CircleCandidate {
+  id: string;
+  name: string;
+  creatorId: string;
+  size: number;
+  members: string[];
+  filters: JoinCircleFilters;
+  meetupGoal: string;
+  meetupTimeframe?: string;
+  status: "forming" | "complete";
+  createdAt: Date;
+  distance?: number;
+  imageUrl?: string;
+}
+
+export const getCircleCandidates = async (
+  userId: string,
+  userProfile: User | null,
+  filters: JoinCircleFilters,
+): Promise<CircleCandidate[]> => {
+  // Get all forming circles that are not created by this user
+  const { data: circlesData, error } = await supabase
+    .from("circles")
+    .select("*")
+    .eq("status", "forming")
+    .neq("creator_id", userId);
+
+  if (error) {
+    console.error("Error getting circle candidates:", error);
+    return [];
+  }
+
+  const userLocation = userProfile?.location;
+
+  return (circlesData as CircleRow[])
+    .map((row) => ({
+      id: row.id,
+      name: row.name,
+      creatorId: row.creator_id,
+      size: row.size,
+      members: row.members || [],
+      filters: {
+        ageRange: row.filters.age_range,
+        educationLevel: row.filters.education_level,
+        locationRadius: row.filters.location_radius,
+        interests: row.filters.interests || [],
+        vibe: row.filters.vibe,
+        genderMix: row.filters.gender_mix,
+        traits: row.filters.traits || [],
+      },
+      meetupGoal: row.meetup_goal,
+      meetupTimeframe: row.meetup_timeframe,
+      status: row.status,
+      createdAt: new Date(row.created_at),
+      imageUrl: row.image_url,
+    }))
+    .filter((circle) => {
+      // Filter by user's preferences against circle's filters
+      const [minAge, maxAge] = filters.ageRange;
+
+      // Check if user's age is within circle's age range
+      if (
+        userProfile &&
+        (userProfile.age < minAge || userProfile.age > maxAge)
+      ) {
+        return false;
+      }
+
+      // Check education level
+      if (
+        filters.educationLevel !== "Any" &&
+        filters.educationLevel !== circle.filters.educationLevel
+      ) {
+        return false;
+      }
+
+      // Check interests overlap
+      const requiredInterests = new Set<Interest>(filters.interests || []);
+      if (requiredInterests.size > 0) {
+        const circleInterests = circle.filters.interests || [];
+        const hasSharedInterest = circleInterests.some((i) =>
+          requiredInterests.has(i),
+        );
+        if (!hasSharedInterest) return false;
+      }
+
+      // Check gender mix preference
+      if (
+        filters.genderMix &&
+        filters.genderMix !== "Both" &&
+        userProfile &&
+        userProfile.gender !== filters.genderMix
+      ) {
+        return false;
+      }
+
+      // Check traits overlap
+      const requiredTraits = new Set<ProfileTrait>(filters.traits || []);
+      if (requiredTraits.size > 0 && userProfile?.traits) {
+        const userTraits = new Set(userProfile.traits);
+        const hasSharedTrait = Array.from(requiredTraits).some((trait) =>
+          userTraits.has(trait),
+        );
+        if (!hasSharedTrait) return false;
+      }
+
+      // Check distance if user has location
+      if (userLocation && circle.creatorId) {
+        // We need to get creator's location - for now, skip distance check
+        // In production, you'd fetch creator's location from their profile
+        // const distance = getDistanceKm(userLocation, creatorLocation);
+        // if (distance > filters.locationRadius) return false;
+      }
+
+      return true;
+    })
+    .map((circle) => ({
+      ...circle,
+      distance: userLocation ? 0 : undefined, // Placeholder - would calculate actual distance
+    }));
+};
+
+export const submitCircleSwipe = async (
+  circleId: string,
+  userId: string,
+  liked: boolean,
+): Promise<{ mutualMatch: boolean; addedToCircle: boolean }> => {
+  // Get current circle data
+  const { data: circle, error: fetchError } = await supabase
+    .from("circles")
+    .select("*")
+    .eq("id", circleId)
+    .single();
+
+  if (fetchError || !circle) {
+    throw new Error("Circle not found.");
+  }
+
+  const circleRow = circle as CircleRow;
+  const pendingSwipes = { ...(circleRow.pending_swipes || {}) };
+  const skippedSwipes = { ...(circleRow.skipped_swipes || {}) };
+  const members = [...(circleRow.members || [])];
+  const size = circleRow.size || 5;
+
+  let mutualMatch = false;
+  let addedToCircle = false;
+
+  if (liked) {
+    // Add user to pending swipes for this circle
+    const currentPending = new Set(pendingSwipes[circleRow.creator_id] || []);
+    currentPending.add(userId);
+    pendingSwipes[circleRow.creator_id] = Array.from(currentPending);
+
+    // Check if creator already liked this user (mutual match)
+    const creatorPending = new Set(pendingSwipes[circleRow.creator_id] || []);
+    mutualMatch = creatorPending.has(userId);
+
+    // If mutual match and circle not full, add user
+    if (mutualMatch && members.length < size && !members.includes(userId)) {
+      members.push(userId);
+      addedToCircle = true;
+    }
+  } else {
+    // Add to skipped
+    const currentSkipped = new Set(skippedSwipes[circleRow.creator_id] || []);
+    currentSkipped.add(userId);
+    skippedSwipes[circleRow.creator_id] = Array.from(currentSkipped);
+  }
+
+  const circleComplete = members.length >= size;
+
+  const { error } = await supabase
+    .from("circles")
+    .update({
+      pending_swipes: pendingSwipes,
+      skipped_swipes: skippedSwipes,
+      members: members,
+      status: circleComplete ? "complete" : "forming",
+    })
+    .eq("id", circleId);
+
+  if (error) {
+    console.error("Error updating circle:", error);
+    throw error;
+  }
+
+  return { mutualMatch, addedToCircle };
 };

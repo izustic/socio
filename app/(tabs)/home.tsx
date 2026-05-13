@@ -1,5 +1,5 @@
-import NoCircleScreen from '../circle/no-circle';
+import CircleDashboardScreen from "../circle/circle-dashboard";
 
 export default function CircleScreen() {
-  return <NoCircleScreen />;
+  return <CircleDashboardScreen />;
 }

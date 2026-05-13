@@ -262,7 +262,7 @@ export default function SwipeCirclesScreen() {
           </View>
         </View>
         <Text style={styles.footerHint}>
-          We'll notify you when new Circles are created near you
+          We&apos;ll notify you when new Circles are created near you
         </Text>
       </SafeAreaView>
     );
@@ -281,7 +281,7 @@ export default function SwipeCirclesScreen() {
           <View style={styles.guideCard}>
             <Text style={styles.guideTitle}>👆 Swipe to join</Text>
             <Text style={styles.guideText}>
-              Swipe right on Circles you like. If a host likes you back, you'll
+              Swipe right on Circles you like. If a host likes you back, you&apos;ll
               be added to their Circle!
             </Text>
           </View>
@@ -508,8 +508,8 @@ export default function SwipeCirclesScreen() {
       {matchName ? (
         <View style={styles.matchOverlay}>
           <View style={styles.matchCard}>
-            <Text style={styles.matchTitle}>You're in! 🎉</Text>
-            <Text style={styles.matchSubtitle}>You've joined {matchName}</Text>
+            <Text style={styles.matchTitle}>You&apos;re in!</Text>
+            <Text style={styles.matchSubtitle}>You&apos;ve joined {matchName}</Text>
             <Button title="Continue" onPress={() => setMatchName(null)} />
           </View>
         </View>

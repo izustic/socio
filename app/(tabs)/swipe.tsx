@@ -1,7 +1,6 @@
 import { Colors, Spacing, Typography } from "@/src/constants/theme";
 import { useAuth } from "@/src/context/AuthContext";
 import { getActiveCircleForUser } from "@/src/services/swipe";
-import { router } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -11,6 +10,8 @@ import {
   Text,
   View,
 } from "react-native";
+import SwipeCirclesScreen from "../circle/swipe-circles";
+import SwipeUsersScreen from "../circle/swipe-users";
 
 export default function SwipeTabScreen() {
   const { user } = useAuth();
@@ -38,16 +39,6 @@ export default function SwipeTabScreen() {
     checkUserStatus();
   }, [user]);
 
-  useEffect(() => {
-    if (!loading) {
-      if (hasCircle) {
-        router.replace("/circle/swipe-users");
-      } else {
-        router.replace("/circle/swipe-circles");
-      }
-    }
-  }, [loading, hasCircle]);
-
   if (loading) {
     return (
       <SafeAreaView style={styles.container}>
@@ -60,14 +51,7 @@ export default function SwipeTabScreen() {
     );
   }
 
-  return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" />
-      <View style={styles.centerContent}>
-        <ActivityIndicator size="large" color={Colors.primary} />
-      </View>
-    </SafeAreaView>
-  );
+  return hasCircle ? <SwipeUsersScreen /> : <SwipeCirclesScreen />;
 }
 
 const styles = StyleSheet.create({

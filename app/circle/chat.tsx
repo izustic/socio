@@ -161,7 +161,7 @@ export default function ChatScreen() {
         ) : (
           <Button
             title="Continue swiping"
-            onPress={() => router.push("/circle/swipe-users")}
+            onPress={() => router.push("/(tabs)/swipe")}
           />
         )}
       </View>

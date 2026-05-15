@@ -1,7 +1,11 @@
 import { Colors, Spacing, Typography } from "@/src/constants/theme";
 import { useAuth } from "@/src/context/AuthContext";
-import { getActiveCircleForUser } from "@/src/services/swipe";
-import React, { useEffect, useState } from "react";
+import {
+  getActiveCircleForUser,
+  JoinCircleFilters,
+} from "@/src/services/swipe";
+import { useLocalSearchParams } from "expo-router";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   SafeAreaView,
@@ -17,6 +21,31 @@ export default function SwipeTabScreen() {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [hasCircle, setHasCircle] = useState(false);
+  const params = useLocalSearchParams<{
+    distance?: string;
+    ageMin?: string;
+    ageMax?: string;
+    genderMix?: string;
+    educationLevel?: string;
+    vibes?: string;
+    interests?: string;
+    traits?: string;
+  }>();
+
+  const filters = useMemo((): JoinCircleFilters => {
+    return {
+      ageRange: [
+        parseInt(params.ageMin || "18", 10),
+        parseInt(params.ageMax || "50", 10),
+      ],
+      educationLevel: params.educationLevel || "Any",
+      locationRadius: parseInt(params.distance || "25", 10),
+      interests: params.interests ? (params.interests.split(",") as any) : [],
+      vibe: params.vibes || undefined,
+      genderMix: (params.genderMix as any) || "Both",
+      traits: params.traits ? (params.traits.split(",") as any) : [],
+    };
+  }, [params]);
 
   useEffect(() => {
     const checkUserStatus = async () => {
@@ -51,7 +80,11 @@ export default function SwipeTabScreen() {
     );
   }
 
-  return hasCircle ? <SwipeUsersScreen /> : <SwipeCirclesScreen />;
+  return hasCircle ? (
+    <SwipeUsersScreen />
+  ) : (
+    <SwipeCirclesScreen filters={filters} />
+  );
 }
 
 const styles = StyleSheet.create({

@@ -1,3 +1,4 @@
+import AlertModal from "@/src/components/ui/AlertModal";
 import Button from "@/src/components/ui/Button";
 import Chip from "@/src/components/ui/Chip";
 import Input from "@/src/components/ui/Input";
@@ -8,7 +9,6 @@ import { Interest } from "@/src/types";
 import { router } from "expo-router";
 import React, { useState } from "react";
 import {
-  Alert,
   SafeAreaView,
   ScrollView,
   StatusBar,
@@ -37,6 +37,16 @@ const interests = [
 ];
 const goals = ["Coffee ☕", "Study 📚", "Gym 💪", "Food 🍜", "Walk 🚶"];
 
+type AlertState = {
+  visible: boolean;
+  title: string;
+  message: string;
+  primaryLabel?: string;
+  secondaryLabel?: string;
+  onConfirm?: () => void;
+  onCancel?: () => void;
+};
+
 export default function CreateCircleScreen() {
   const { user } = useAuth();
   const [circleName, setCircleName] = useState("");
@@ -46,6 +56,39 @@ export default function CreateCircleScreen() {
   const [selectedInterests, setSelectedInterests] = useState<string[]>([]);
   const [selectedGoal, setSelectedGoal] = useState("Coffee ☕");
   const [loading, setLoading] = useState(false);
+  const [alertState, setAlertState] = useState<AlertState>({
+    visible: false,
+    title: "",
+    message: "",
+  });
+
+  const showAlert = (
+    title: string,
+    message: string,
+    options: Omit<AlertState, "visible" | "title" | "message"> = {},
+  ) => {
+    setAlertState({
+      visible: true,
+      title,
+      message,
+      ...options,
+    });
+  };
+
+  const closeAlert = () => {
+    setAlertState((prev) => ({
+      ...prev,
+      visible: false,
+      onConfirm: undefined,
+      onCancel: undefined,
+    }));
+  };
+
+  const handleConfirm = () => {
+    const callback = alertState.onConfirm;
+    closeAlert();
+    callback?.();
+  };
 
   const toggleInterest = (interest: string) => {
     setSelectedInterests((prev) =>
@@ -57,15 +100,15 @@ export default function CreateCircleScreen() {
 
   const handleCreateCircle = async () => {
     if (!user) {
-      Alert.alert("Not signed in", "Please sign in again to create a circle.");
+      showAlert("Not signed in", "Please sign in again to create a circle.");
       return;
     }
     if (!circleName.trim()) {
-      Alert.alert("Missing Circle Name", "Please enter a circle name.");
+      showAlert("Missing Circle Name", "Please enter a circle name.");
       return;
     }
     if (selectedInterests.length === 0) {
-      Alert.alert("Add Interests", "Please choose at least one interest.");
+      showAlert("Add Interests", "Please choose at least one interest.");
       return;
     }
 
@@ -75,7 +118,7 @@ export default function CreateCircleScreen() {
         name: circleName.trim(),
         creatorId: user.id,
         size,
-        ageRange: [18, 28],
+        ageRange: [18, 28] as [number, number],
         educationLevel: education,
         locationRadius: 10,
         interests: selectedInterests as Interest[],
@@ -89,7 +132,7 @@ export default function CreateCircleScreen() {
 
       router.replace("/(tabs)/swipe");
     } catch (error: any) {
-      Alert.alert(
+      showAlert(
         "Unable to create circle",
         error?.message || "Please try again.",
       );
@@ -208,6 +251,16 @@ export default function CreateCircleScreen() {
           disabled={loading}
         />
       </View>
+
+      <AlertModal
+        visible={alertState.visible}
+        title={alertState.title}
+        message={alertState.message}
+        primaryLabel={alertState.primaryLabel}
+        secondaryLabel={alertState.secondaryLabel}
+        onConfirm={handleConfirm}
+        onCancel={alertState.onCancel ?? closeAlert}
+      />
     </SafeAreaView>
   );
 }

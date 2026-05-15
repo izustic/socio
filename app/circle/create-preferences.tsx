@@ -1,20 +1,22 @@
+import AlertModal from "@/src/components/ui/AlertModal";
 import {
+  EDUCATION_OPTIONS,
   INTEREST_EMOJI,
   ONBOARDING_INTERESTS,
   ONBOARDING_TRAITS,
   TRAIT_EMOJI,
-  EDUCATION_OPTIONS,
 } from "@/src/constants/onboarding";
 import { Colors, Radius, Spacing, Typography } from "@/src/constants/theme";
 import { useAuth } from "@/src/context/AuthContext";
 import { createCircle } from "@/src/services/circle";
 import { Interest, ProfileTrait } from "@/src/types";
 import { router, useLocalSearchParams } from "expo-router";
-import { ChevronLeft, ChevronDown } from "lucide-react-native";
+import { ChevronDown, ChevronLeft } from "lucide-react-native";
 import { useMemo, useState } from "react";
 import {
-  Alert,
   GestureResponderEvent,
+  Modal,
+  Pressable,
   SafeAreaView,
   ScrollView,
   StatusBar,
@@ -22,8 +24,6 @@ import {
   Text,
   TouchableOpacity,
   View,
-  Modal,
-  Pressable,
 } from "react-native";
 
 type GenderMix = "Male" | "Female" | "Both";
@@ -39,6 +39,16 @@ const MAX_AGE = 50;
 
 const clamp = (value: number, min: number, max: number) =>
   Math.max(min, Math.min(max, value));
+
+type AlertState = {
+  visible: boolean;
+  title: string;
+  message: string;
+  primaryLabel?: string;
+  secondaryLabel?: string;
+  onConfirm?: () => void;
+  onCancel?: () => void;
+};
 
 const asString = (value: string | string[] | undefined, fallback = "") =>
   Array.isArray(value) ? (value[0] ?? fallback) : (value ?? fallback);
@@ -73,6 +83,39 @@ export default function CreateCirclePreferencesScreen() {
   const [saving, setSaving] = useState(false);
   const [educationLevel, setEducationLevel] = useState<string>("Any");
   const [educationOpen, setEducationOpen] = useState(false);
+  const [alertState, setAlertState] = useState<AlertState>({
+    visible: false,
+    title: "",
+    message: "",
+  });
+
+  const showAlert = (
+    title: string,
+    message: string,
+    options: Omit<AlertState, "visible" | "title" | "message"> = {},
+  ) => {
+    setAlertState({
+      visible: true,
+      title,
+      message,
+      ...options,
+    });
+  };
+
+  const closeAlert = () => {
+    setAlertState((prev) => ({
+      ...prev,
+      visible: false,
+      onConfirm: undefined,
+      onCancel: undefined,
+    }));
+  };
+
+  const handleAlertConfirm = () => {
+    const callback = alertState.onConfirm;
+    closeAlert();
+    callback?.();
+  };
 
   const circleBasics = useMemo(
     () => ({
@@ -127,21 +170,21 @@ export default function CreateCirclePreferencesScreen() {
 
   const handleCreateCircle = async () => {
     if (!user) {
-      Alert.alert(
+      showAlert(
         "You are signed out",
         "Please sign in again to create a Circle.",
       );
       return;
     }
     if (!circleBasics.name) {
-      Alert.alert(
+      showAlert(
         "Circle details missing",
         "Please go back and name your Circle.",
       );
       return;
     }
     if (selectedInterests.length < 3) {
-      Alert.alert(
+      showAlert(
         "Pick at least 3 interests",
         "This helps us find people who fit your Circle.",
       );
@@ -165,12 +208,9 @@ export default function CreateCirclePreferencesScreen() {
         meetupTimeframe: "Within 3 days",
       });
 
-      router.replace({
-        pathname: "/circle/swipe-users",
-        params: { circleId },
-      });
+      router.replace("/(tabs)/swipe");
     } catch (error: any) {
-      Alert.alert(
+      showAlert(
         "Unable to create Circle",
         error?.message || "Please try again.",
       );
@@ -281,7 +321,11 @@ export default function CreateCirclePreferencesScreen() {
             onPress={() => setEducationOpen(true)}
           >
             <Text style={styles.selectText}>{educationLevel}</Text>
-            <ChevronDown size={18} color={Colors.textPrimary} strokeWidth={2.2} />
+            <ChevronDown
+              size={18}
+              color={Colors.textPrimary}
+              strokeWidth={2.2}
+            />
           </TouchableOpacity>
         </View>
 
@@ -332,8 +376,14 @@ export default function CreateCirclePreferencesScreen() {
         animationType="fade"
         onRequestClose={() => setEducationOpen(false)}
       >
-        <Pressable style={styles.modalBackdrop} onPress={() => setEducationOpen(false)}>
-          <Pressable style={styles.menu} onPress={(event) => event.stopPropagation()}>
+        <Pressable
+          style={styles.modalBackdrop}
+          onPress={() => setEducationOpen(false)}
+        >
+          <Pressable
+            style={styles.menu}
+            onPress={(event) => event.stopPropagation()}
+          >
             <Text style={styles.menuTitle}>Education</Text>
             {["Any", ...EDUCATION_OPTIONS].map((option) => {
               const selected = educationLevel === option;
@@ -347,7 +397,12 @@ export default function CreateCirclePreferencesScreen() {
                     setEducationOpen(false);
                   }}
                 >
-                  <Text style={[styles.menuItemText, selected && styles.menuItemTextSelected]}>
+                  <Text
+                    style={[
+                      styles.menuItemText,
+                      selected && styles.menuItemTextSelected,
+                    ]}
+                  >
                     {option}
                   </Text>
                 </TouchableOpacity>
@@ -356,6 +411,16 @@ export default function CreateCirclePreferencesScreen() {
           </Pressable>
         </Pressable>
       </Modal>
+
+      <AlertModal
+        visible={alertState.visible}
+        title={alertState.title}
+        message={alertState.message}
+        primaryLabel={alertState.primaryLabel}
+        secondaryLabel={alertState.secondaryLabel}
+        onConfirm={handleAlertConfirm}
+        onCancel={alertState.onCancel ?? closeAlert}
+      />
     </SafeAreaView>
   );
 }

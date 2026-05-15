@@ -1,3 +1,4 @@
+import AlertModal from "@/src/components/ui/AlertModal";
 import Button from "@/src/components/ui/Button";
 import Toast from "@/src/components/ui/Toast";
 import { Colors, Radius, Spacing, Typography } from "@/src/constants/theme";
@@ -15,7 +16,6 @@ import { Check, ChevronLeft, ChevronRight, X } from "lucide-react-native";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
   Animated,
   Dimensions,
   Image,
@@ -41,7 +41,48 @@ export default function SwipeUsersScreen() {
     name: string;
     age: number;
   } | null>(null);
+  const [alertState, setAlertState] = useState<{
+    visible: boolean;
+    title: string;
+    message: string;
+    primaryLabel?: string;
+    secondaryLabel?: string;
+    onConfirm?: () => void;
+    onCancel?: () => void;
+  }>({
+    visible: false,
+    title: "",
+    message: "",
+  });
   const [currentMediaIndex, setCurrentMediaIndex] = useState(0);
+
+  const showAlert = (
+    title: string,
+    message: string,
+    options: Omit<typeof alertState, "visible" | "title" | "message"> = {},
+  ) => {
+    setAlertState({
+      visible: true,
+      title,
+      message,
+      ...options,
+    });
+  };
+
+  const closeAlert = () => {
+    setAlertState((prev) => ({
+      ...prev,
+      visible: false,
+      onConfirm: undefined,
+      onCancel: undefined,
+    }));
+  };
+
+  const handleAlertConfirm = () => {
+    const callback = alertState.onConfirm;
+    closeAlert();
+    callback?.();
+  };
 
   // Onboarding guide animation
   const [showGuide, setShowGuide] = useState(true);
@@ -100,10 +141,7 @@ export default function SwipeUsersScreen() {
       setCircle(activeCircle);
       setCandidates(nextCandidates);
     } catch (error: any) {
-      Alert.alert(
-        "Unable to load swipes",
-        error?.message || "Please try again.",
-      );
+      showAlert("Unable to load swipes", error?.message || "Please try again.");
     } finally {
       setLoading(false);
     }
@@ -160,17 +198,19 @@ export default function SwipeUsersScreen() {
       }
 
       if (result.circleComplete) {
-        Alert.alert(
+        showAlert(
           "Circle complete!",
           "Your circle is now full. Opening your Circle tab.",
+          {
+            onConfirm: () => router.replace("/circle/chat"),
+          },
         );
-        router.replace("/circle/chat");
         return;
       }
 
       await loadSwipeData();
     } catch (error: any) {
-      Alert.alert("Swipe failed", error?.message || "Please try again.");
+      showAlert("Swipe failed", error?.message || "Please try again.");
     } finally {
       setSwiping(false);
     }
@@ -426,6 +466,16 @@ export default function SwipeUsersScreen() {
         userName={toastUser?.name}
         userAge={toastUser?.age}
         onDismiss={() => setShowToast(false)}
+      />
+
+      <AlertModal
+        visible={alertState.visible}
+        title={alertState.title}
+        message={alertState.message}
+        primaryLabel={alertState.primaryLabel}
+        secondaryLabel={alertState.secondaryLabel}
+        onConfirm={handleAlertConfirm}
+        onCancel={alertState.onCancel ?? closeAlert}
       />
     </SafeAreaView>
   );

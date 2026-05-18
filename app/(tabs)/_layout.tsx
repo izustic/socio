@@ -1,10 +1,12 @@
 import { Colors } from '@/src/constants/theme';
+import { useSwipeTabVisible } from '@/src/hooks/useSwipeTabVisible';
 import { Tabs } from 'expo-router';
 import { Bell, Layers, User, Users } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function TabLayout() {
   const insets = useSafeAreaInsets();
+  const { swipeTabVisible } = useSwipeTabVisible();
 
   return (
     <Tabs
@@ -32,6 +34,7 @@ export default function TabLayout() {
         name="swipe"
         options={{
           title: 'Swipe',
+          href: swipeTabVisible ? undefined : null,
           tabBarIcon: ({ color, size }) => <Layers size={size} color={color} strokeWidth={2.2} />,
         }}
       />

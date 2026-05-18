@@ -122,6 +122,8 @@ export default function CircleProgressScreen() {
   const isReadOnlyComplete = Boolean(
     circle && (circle.status === "complete" || membersCount >= size),
   );
+  const isHost = Boolean(circle && user && circle.creatorId === user.id);
+  const showContinueSwiping = isHost && !isReadOnlyComplete;
   const progressWidth = useMemo<DimensionValue>(() => {
     if (!size) return "0%";
     return `${Math.min(100, (membersCount / size) * 100)}%`;
@@ -208,16 +210,18 @@ export default function CircleProgressScreen() {
         </View>
       </View>
 
-      <View style={styles.footer}>
-        <Button
-          title={isReadOnlyComplete ? "Back to Circle" : "Continue swiping"}
-          onPress={() =>
-            isReadOnlyComplete
-              ? router.push("/(tabs)/home?circleView=complete")
-              : router.push("/(tabs)/swipe")
-          }
-        />
-      </View>
+      {(showContinueSwiping || isReadOnlyComplete) && (
+        <View style={styles.footer}>
+          <Button
+            title={isReadOnlyComplete ? "Back to Circle" : "Continue swiping"}
+            onPress={() =>
+              isReadOnlyComplete
+                ? router.push("/(tabs)/home?circleView=complete")
+                : router.push("/(tabs)/swipe")
+            }
+          />
+        </View>
+      )}
     </SafeAreaView>
   );
 }

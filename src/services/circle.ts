@@ -120,6 +120,22 @@ export const getCircle = async (circleId: string): Promise<Circle | null> => {
 
 export type CircleParticipationRole = "host" | "joiner";
 
+/** Hide Swipe tab when user has joined a circle or their hosted circle is full. */
+export const shouldHideSwipeTab = async (userId: string): Promise<boolean> => {
+  const circle = await getLatestCircleForParticipant(userId);
+  if (!circle) return false;
+
+  const isMember = circle.members.includes(userId);
+  const isHost = circle.creatorId === userId;
+  const isFull =
+    circle.status === "complete" || circle.members.length >= circle.size;
+
+  if (isMember && !isHost) return true;
+  if (isHost && isFull) return true;
+
+  return false;
+};
+
 /** Circle the user hosts (forming) or has joined as a member. */
 export const getUserCircleParticipation = async (
   userId: string,

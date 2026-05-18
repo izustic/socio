@@ -1,11 +1,11 @@
 import { Colors, Spacing, Typography } from "@/src/constants/theme";
 import { useAuth } from "@/src/context/AuthContext";
-import CircleProgressScreen from "@/src/screens/circle/CircleProgressScreen";
+import { useSwipeTabVisible } from "@/src/hooks/useSwipeTabVisible";
 import SwipeCirclesScreen from "@/src/screens/circle/SwipeCirclesScreen";
 import SwipeUsersScreen from "@/src/screens/circle/SwipeUsersScreen";
 import { getUserCircleParticipation } from "@/src/services/circle";
 import { JoinCircleFilters } from "@/src/services/swipe";
-import { useLocalSearchParams } from "expo-router";
+import { Redirect, useLocalSearchParams } from "expo-router";
 import React, { useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
@@ -18,6 +18,8 @@ import {
 
 export default function SwipeTabScreen() {
   const { user } = useAuth();
+  const { swipeTabVisible, loading: tabVisibilityLoading } =
+    useSwipeTabVisible();
   const [loading, setLoading] = useState(true);
   const [participationRole, setParticipationRole] = useState<
     "host" | "joiner" | null
@@ -69,7 +71,7 @@ export default function SwipeTabScreen() {
     checkUserStatus();
   }, [user]);
 
-  if (loading) {
+  if (loading || tabVisibilityLoading) {
     return (
       <SafeAreaView style={styles.container}>
         <StatusBar barStyle="dark-content" />
@@ -81,12 +83,12 @@ export default function SwipeTabScreen() {
     );
   }
 
-  if (participationRole === "host") {
-    return <SwipeUsersScreen />;
+  if (!swipeTabVisible) {
+    return <Redirect href="/(tabs)/home" />;
   }
 
-  if (participationRole === "joiner") {
-    return <CircleProgressScreen />;
+  if (participationRole === "host") {
+    return <SwipeUsersScreen />;
   }
 
   return <SwipeCirclesScreen filters={filters} />;

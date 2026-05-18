@@ -15,9 +15,12 @@ interface MessageRow {
 
 const rowToMessage = (row: MessageRow): Message => ({
   id: row.id,
+  circleId: row.circle_id,
   senderId: row.sender_id,
   senderName: row.sender_name,
   text: row.text,
+  mediaUrl: row.media_url,
+  mediaType: row.media_type,
   timestamp: new Date(row.created_at),
 });
 
@@ -53,14 +56,19 @@ export const sendMessage = async (
   }
 };
 
-export const getMessages = async (circleId: string, limit = 50): Promise<Message[]> => {
+export const getMessages = async (circleId: string, limit?: number): Promise<Message[]> => {
   try {
-    const { data, error } = await supabase
+    let query = supabase
       .from('messages')
       .select('*')
       .eq('circle_id', circleId)
-      .order('created_at', { ascending: true })
-      .limit(limit);
+      .order('created_at', { ascending: true });
+
+    if (limit) {
+      query = query.limit(limit);
+    }
+
+    const { data, error } = await query;
 
     if (error) throw error;
     return data?.map((row) => rowToMessage(row as MessageRow)) ?? [];
@@ -75,7 +83,7 @@ export const subscribeToMessages = (
   callback: (payload: { new: MessageRow; eventType: string }) => void
 ): RealtimeChannel => {
   const channel = supabase
-    .channel(`messages:${circleId}`)
+    .channel(`messages:${circleId}:${Date.now()}:${Math.random().toString(36).slice(2)}`)
     .on(
       'postgres_changes',
       {

@@ -364,7 +364,7 @@ export const subscribeToCircle = (
   callback: (payload: unknown) => void,
 ): RealtimeChannel => {
   const channel = supabase
-    .channel(`circle:${circleId}`)
+    .channel(`circle:${circleId}:${Date.now()}:${Math.random().toString(36).slice(2)}`)
     .on(
       "postgres_changes",
       {

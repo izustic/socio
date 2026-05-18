@@ -1,20 +1,22 @@
 import {
-  INTEREST_EMOJI,
-  ONBOARDING_INTERESTS,
-  ONBOARDING_TRAITS,
-  TRAIT_EMOJI,
   EDUCATION_OPTIONS,
+  INTEREST_EMOJI,
   JOIN_MEETUP_VIBES,
   JOIN_MEETUP_VIBE_EMOJI,
   JoinMeetupVibe,
+  ONBOARDING_INTERESTS,
+  ONBOARDING_TRAITS,
+  TRAIT_EMOJI,
 } from "@/src/constants/onboarding";
 import { Colors, Radius, Spacing, Typography } from "@/src/constants/theme";
 import { Interest, ProfileTrait } from "@/src/types";
 import { router } from "expo-router";
-import { ChevronLeft, ChevronDown } from "lucide-react-native";
+import { ChevronDown, ChevronLeft } from "lucide-react-native";
 import { useState } from "react";
 import {
   GestureResponderEvent,
+  Modal,
+  Pressable,
   SafeAreaView,
   ScrollView,
   StatusBar,
@@ -22,8 +24,6 @@ import {
   Text,
   TouchableOpacity,
   View,
-  Modal,
-  Pressable,
 } from "react-native";
 
 type GenderMix = "Male" | "Female" | "Both";
@@ -84,7 +84,9 @@ export default function JoinCirclePreferencesScreen() {
 
   const toggleVibe = (vibe: JoinMeetupVibe) => {
     setSelectedVibes((prev) =>
-      prev.includes(vibe) ? prev.filter((item) => item !== vibe) : [...prev, vibe],
+      prev.includes(vibe)
+        ? prev.filter((item) => item !== vibe)
+        : [...prev, vibe],
     );
   };
 
@@ -106,7 +108,7 @@ export default function JoinCirclePreferencesScreen() {
 
   const handleShowCircles = () => {
     router.replace({
-      pathname: "/circle/swipe-circles",
+      pathname: "/(tabs)/swipe",
       params: {
         distance,
         ageMin: ageRange[0],
@@ -142,7 +144,7 @@ export default function JoinCirclePreferencesScreen() {
         <Text style={styles.stepLabel}>FIND YOUR FIT</Text>
         <Text style={styles.title}>What kind of Circle?</Text>
         <Text style={styles.subtitle}>
-          We'll only show Circles that match these preferences.
+          We&apos;ll only show Circles that match these preferences.
         </Text>
 
         <View style={styles.section}>
@@ -155,10 +157,17 @@ export default function JoinCirclePreferencesScreen() {
           <TouchableOpacity
             activeOpacity={0.95}
             style={styles.ageTrack}
-            onLayout={(event) => setDistTrackWidth(event.nativeEvent.layout.width)}
+            onLayout={(event) =>
+              setDistTrackWidth(event.nativeEvent.layout.width)
+            }
             onPress={handleDistPress}
           >
-            <View style={[styles.ageFill, { left: "0%", width: `${distFillWidth}%` }]} />
+            <View
+              style={[
+                styles.ageFill,
+                { left: "0%", width: `${distFillWidth}%` },
+              ]}
+            />
             <View style={[styles.ageThumb, { left: `${distFillWidth}%` }]} />
           </TouchableOpacity>
           <View style={styles.ageLabels}>
@@ -237,13 +246,19 @@ export default function JoinCirclePreferencesScreen() {
             onPress={() => setEducationOpen(true)}
           >
             <Text style={styles.selectText}>{educationLevel}</Text>
-            <ChevronDown size={18} color={Colors.textPrimary} strokeWidth={2.2} />
+            <ChevronDown
+              size={18}
+              color={Colors.textPrimary}
+              strokeWidth={2.2}
+            />
           </TouchableOpacity>
         </View>
 
         <ChipSection
           title="MEETUP VIBE"
-          countLabel={selectedVibes.length > 0 ? `${selectedVibes.length} picked` : ""}
+          countLabel={
+            selectedVibes.length > 0 ? `${selectedVibes.length} picked` : ""
+          }
           items={JOIN_MEETUP_VIBES as unknown as JoinMeetupVibe[]}
           selectedItems={selectedVibes}
           emojiMap={JOIN_MEETUP_VIBE_EMOJI}
@@ -252,7 +267,11 @@ export default function JoinCirclePreferencesScreen() {
 
         <ChipSection
           title="INTERESTS"
-          countLabel={selectedInterests.length > 0 ? `${selectedInterests.length} picked` : ""}
+          countLabel={
+            selectedInterests.length > 0
+              ? `${selectedInterests.length} picked`
+              : ""
+          }
           items={ONBOARDING_INTERESTS}
           selectedItems={selectedInterests}
           emojiMap={INTEREST_EMOJI}
@@ -261,7 +280,9 @@ export default function JoinCirclePreferencesScreen() {
 
         <ChipSection
           title="PERSONALITY"
-          countLabel={selectedTraits.length > 0 ? `${selectedTraits.length} picked` : ""}
+          countLabel={
+            selectedTraits.length > 0 ? `${selectedTraits.length} picked` : ""
+          }
           items={ONBOARDING_TRAITS}
           selectedItems={selectedTraits}
           emojiMap={TRAIT_EMOJI}
@@ -285,8 +306,14 @@ export default function JoinCirclePreferencesScreen() {
         animationType="fade"
         onRequestClose={() => setEducationOpen(false)}
       >
-        <Pressable style={styles.modalBackdrop} onPress={() => setEducationOpen(false)}>
-          <Pressable style={styles.menu} onPress={(event) => event.stopPropagation()}>
+        <Pressable
+          style={styles.modalBackdrop}
+          onPress={() => setEducationOpen(false)}
+        >
+          <Pressable
+            style={styles.menu}
+            onPress={(event) => event.stopPropagation()}
+          >
             <Text style={styles.menuTitle}>Education</Text>
             {["Any", ...EDUCATION_OPTIONS].map((option) => {
               const selected = educationLevel === option;
@@ -300,7 +327,12 @@ export default function JoinCirclePreferencesScreen() {
                     setEducationOpen(false);
                   }}
                 >
-                  <Text style={[styles.menuItemText, selected && styles.menuItemTextSelected]}>
+                  <Text
+                    style={[
+                      styles.menuItemText,
+                      selected && styles.menuItemTextSelected,
+                    ]}
+                  >
                     {option}
                   </Text>
                 </TouchableOpacity>

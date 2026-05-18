@@ -1,3 +1,4 @@
+import AlertModal from "@/src/components/ui/AlertModal";
 import Button from "@/src/components/ui/Button";
 import Chip from "@/src/components/ui/Chip";
 import { Colors, Radius, Spacing, Typography } from "@/src/constants/theme";
@@ -10,12 +11,11 @@ import {
 } from "@/src/services/swipe";
 import { getUserProfile } from "@/src/services/user";
 import { LinearGradient } from "expo-linear-gradient";
-import { router, useLocalSearchParams } from "expo-router";
+import { router } from "expo-router";
 import { Check, MapPin, Users, X } from "lucide-react-native";
 import React, { useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
   Animated,
   Dimensions,
   Image,
@@ -30,19 +30,14 @@ import Toast from "../../src/components/ui/Toast";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
-export default function SwipeCirclesScreen() {
-  const { user, profile } = useAuth();
-  const params = useLocalSearchParams<{
-    distance?: string;
-    ageMin?: string;
-    ageMax?: string;
-    genderMix?: string;
-    educationLevel?: string;
-    vibes?: string;
-    interests?: string;
-    traits?: string;
-  }>();
+interface SwipeCirclesScreenProps {
+  filters: JoinCircleFilters;
+}
 
+export default function SwipeCirclesScreen({
+  filters,
+}: SwipeCirclesScreenProps) {
+  const { user, profile } = useAuth();
   const [circles, setCircles] = useState<CircleCandidate[]>([]);
   const [loading, setLoading] = useState(true);
   const [swiping, setSwiping] = useState(false);
@@ -55,6 +50,47 @@ export default function SwipeCirclesScreen() {
   } | null>(null);
   const [memberProfiles, setMemberProfiles] = useState<any[]>([]);
   const [hostProfile, setHostProfile] = useState<any>(null);
+  const [alertState, setAlertState] = useState<{
+    visible: boolean;
+    title: string;
+    message: string;
+    primaryLabel?: string;
+    secondaryLabel?: string;
+    onConfirm?: () => void;
+    onCancel?: () => void;
+  }>({
+    visible: false,
+    title: "",
+    message: "",
+  });
+
+  const showAlert = (
+    title: string,
+    message: string,
+    options: Omit<typeof alertState, "visible" | "title" | "message"> = {},
+  ) => {
+    setAlertState({
+      visible: true,
+      title,
+      message,
+      ...options,
+    });
+  };
+
+  const closeAlert = () => {
+    setAlertState((prev) => ({
+      ...prev,
+      visible: false,
+      onConfirm: undefined,
+      onCancel: undefined,
+    }));
+  };
+
+  const handleAlertConfirm = () => {
+    const callback = alertState.onConfirm;
+    closeAlert();
+    callback?.();
+  };
 
   // Onboarding guide animation
   const [showGuide, setShowGuide] = useState(true);
@@ -109,20 +145,20 @@ export default function SwipeCirclesScreen() {
   }, [circles, currentIndex]);
 
   // Parse filters from params
-  const filters = useMemo((): JoinCircleFilters => {
-    return {
-      ageRange: [
-        parseInt(params.ageMin || "18", 10),
-        parseInt(params.ageMax || "50", 10),
-      ],
-      educationLevel: params.educationLevel || "Any",
-      locationRadius: parseInt(params.distance || "25", 10),
-      interests: params.interests ? (params.interests.split(",") as any) : [],
-      vibe: params.vibes || undefined,
-      genderMix: (params.genderMix as any) || "Both",
-      traits: params.traits ? (params.traits.split(",") as any) : [],
-    };
-  }, [params]);
+  // const parsedFilters = useMemo((): JoinCircleFilters => {
+  //   return {
+  //     ageRange: [
+  //       parseInt(params.ageMin || "18", 10),
+  //       parseInt(params.ageMax || "50", 10),
+  //     ],
+  //     educationLevel: params.educationLevel || "Any",
+  //     locationRadius: parseInt(params.distance || "25", 10),
+  //     interests: params.interests ? (params.interests.split(",") as any) : [],
+  //     vibe: params.vibes || undefined,
+  //     genderMix: (params.genderMix as any) || "Both",
+  //     traits: params.traits ? (params.traits.split(",") as any) : [],
+  //   };
+  // }, [params]);
 
   const currentCircle = useMemo(
     () => circles[currentIndex] || null,
@@ -136,7 +172,7 @@ export default function SwipeCirclesScreen() {
       const candidates = await getCircleCandidates(user.id, profile, filters);
       setCircles(candidates);
     } catch (error: any) {
-      Alert.alert(
+      showAlert(
         "Unable to load circles",
         error?.message || "Please try again.",
       );
@@ -170,7 +206,7 @@ export default function SwipeCirclesScreen() {
 
   useEffect(() => {
     loadCircles();
-  }, [user?.id]);
+  }, [user?.id, filters]);
 
   const handleSwipe = async (liked: boolean) => {
     if (!user || !currentCircle || swiping) return;
@@ -191,18 +227,20 @@ export default function SwipeCirclesScreen() {
       }
 
       if (result.mutualMatch && result.addedToCircle) {
-        Alert.alert(
+        showAlert(
           "Circle complete!",
           `You've joined ${currentCircle.name}! Opening your Circle tab.`,
+          {
+            onConfirm: () => router.replace("/(tabs)/home?circleView=chat"),
+          },
         );
-        router.replace("/circle/chat");
         return;
       }
 
       // Move to next circle
       setCurrentIndex((prev) => prev + 1);
     } catch (error: any) {
-      Alert.alert("Swipe failed", error?.message || "Please try again.");
+      showAlert("Swipe failed", error?.message || "Please try again.");
     } finally {
       setSwiping(false);
     }
@@ -281,8 +319,8 @@ export default function SwipeCirclesScreen() {
           <View style={styles.guideCard}>
             <Text style={styles.guideTitle}>👆 Swipe to join</Text>
             <Text style={styles.guideText}>
-              Swipe right on Circles you like. If a host likes you back, you&apos;ll
-              be added to their Circle!
+              Swipe right on Circles you like. If a host likes you back,
+              you&apos;ll be added to their Circle!
             </Text>
           </View>
         </Animated.View>
@@ -509,7 +547,9 @@ export default function SwipeCirclesScreen() {
         <View style={styles.matchOverlay}>
           <View style={styles.matchCard}>
             <Text style={styles.matchTitle}>You&apos;re in!</Text>
-            <Text style={styles.matchSubtitle}>You&apos;ve joined {matchName}</Text>
+            <Text style={styles.matchSubtitle}>
+              You&apos;ve joined {matchName}
+            </Text>
             <Button title="Continue" onPress={() => setMatchName(null)} />
           </View>
         </View>
@@ -522,6 +562,16 @@ export default function SwipeCirclesScreen() {
         circleName={toastData?.circleName}
         userName={toastData?.userName}
         onDismiss={() => setShowToast(false)}
+      />
+
+      <AlertModal
+        visible={alertState.visible}
+        title={alertState.title}
+        message={alertState.message}
+        primaryLabel={alertState.primaryLabel}
+        secondaryLabel={alertState.secondaryLabel}
+        onConfirm={handleAlertConfirm}
+        onCancel={alertState.onCancel ?? closeAlert}
       />
     </SafeAreaView>
   );

@@ -3,6 +3,7 @@ import Button from "@/src/components/ui/Button";
 import Toast from "@/src/components/ui/Toast";
 import { Colors, Radius, Spacing, Typography } from "@/src/constants/theme";
 import { useAuth } from "@/src/context/AuthContext";
+import { useSwipeTabVisibility } from "@/src/context/SwipeTabVisibilityContext";
 import {
   getActiveCircleForUser,
   getSwipeCandidates,
@@ -38,6 +39,7 @@ const replaceAfterInteractions = (href: Parameters<typeof router.replace>[0]) =>
 
 export default function SwipeUsersScreen() {
   const { user, profile } = useAuth();
+  const { refreshSwipeTabVisibility } = useSwipeTabVisibility();
   const [circle, setCircle] = useState<(Circle & { id: string }) | null>(null);
   const [candidates, setCandidates] = useState<SwipeCandidate[]>([]);
   const [loading, setLoading] = useState(true);
@@ -222,6 +224,7 @@ export default function SwipeUsersScreen() {
       }
 
       if (result.circleComplete) {
+        await refreshSwipeTabVisibility();
         showAlert(
           "Circle complete!",
           "Your circle is now full. Opening your Circle tab.",

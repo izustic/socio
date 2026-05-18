@@ -4,6 +4,7 @@ import Chip from "@/src/components/ui/Chip";
 import Toast from "@/src/components/ui/Toast";
 import { Colors, Radius, Spacing, Typography } from "@/src/constants/theme";
 import { useAuth } from "@/src/context/AuthContext";
+import { useSwipeTabVisibility } from "@/src/context/SwipeTabVisibilityContext";
 import {
   CircleCandidate,
   getCircleCandidates,
@@ -45,6 +46,7 @@ export default function SwipeCirclesScreen({
   filters,
 }: SwipeCirclesScreenProps) {
   const { user, profile } = useAuth();
+  const { refreshSwipeTabVisibility } = useSwipeTabVisibility();
   const [circles, setCircles] = useState<CircleCandidate[]>([]);
   const [loading, setLoading] = useState(true);
   const [swiping, setSwiping] = useState(false);
@@ -225,6 +227,7 @@ export default function SwipeCirclesScreen({
       const result = await submitCircleSwipe(currentCircle.id, user.id, liked);
 
       if (liked && result.mutualMatch && result.addedToCircle) {
+        await refreshSwipeTabVisibility();
         showAlert(
           `You've been added to ${currentCircle.name}`,
           `${currentCircle.name} now includes you as a member.`,

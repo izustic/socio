@@ -1,12 +1,12 @@
 import { Colors, Spacing, Typography } from "@/src/constants/theme";
 import { useAuth } from "@/src/context/AuthContext";
-import { useSwipeTabVisible } from "@/src/hooks/useSwipeTabVisible";
+import { useSwipeTabVisibility } from "@/src/context/SwipeTabVisibilityContext";
 import SwipeCirclesScreen from "@/src/screens/circle/SwipeCirclesScreen";
 import SwipeUsersScreen from "@/src/screens/circle/SwipeUsersScreen";
 import { getUserCircleParticipation } from "@/src/services/circle";
 import { JoinCircleFilters } from "@/src/services/swipe";
-import { Redirect, useLocalSearchParams } from "expo-router";
-import React, { useEffect, useMemo, useState } from "react";
+import { router, useLocalSearchParams } from "expo-router";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   SafeAreaView,
@@ -19,11 +19,12 @@ import {
 export default function SwipeTabScreen() {
   const { user } = useAuth();
   const { swipeTabVisible, loading: tabVisibilityLoading } =
-    useSwipeTabVisible();
+    useSwipeTabVisibility();
   const [loading, setLoading] = useState(true);
   const [participationRole, setParticipationRole] = useState<
     "host" | "joiner" | null
   >(null);
+  const hasResolvedInitialVisibility = useRef(false);
   const params = useLocalSearchParams<{
     distance?: string;
     ageMin?: string;
@@ -71,6 +72,22 @@ export default function SwipeTabScreen() {
     checkUserStatus();
   }, [user]);
 
+  useEffect(() => {
+    if (tabVisibilityLoading || loading) return;
+
+    if (!hasResolvedInitialVisibility.current) {
+      hasResolvedInitialVisibility.current = true;
+      if (!swipeTabVisible) {
+        router.replace("/(tabs)/home");
+      }
+      return;
+    }
+
+    if (!swipeTabVisible) {
+      return;
+    }
+  }, [swipeTabVisible, tabVisibilityLoading, loading]);
+
   if (loading || tabVisibilityLoading) {
     return (
       <SafeAreaView style={styles.container}>
@@ -81,10 +98,6 @@ export default function SwipeTabScreen() {
         </View>
       </SafeAreaView>
     );
-  }
-
-  if (!swipeTabVisible) {
-    return <Redirect href="/(tabs)/home" />;
   }
 
   if (participationRole === "host") {

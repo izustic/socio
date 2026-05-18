@@ -1,5 +1,4 @@
--- Joiners cannot UPDATE circles directly (RLS: creator-only).
--- Host swipes use submitSwipe from the client; joiner swipes use this RPC.
+-- Live DB uses circle_status enum; function was assigning plain text.
 
 create or replace function public.submit_circle_swipe(
   p_circle_id text,

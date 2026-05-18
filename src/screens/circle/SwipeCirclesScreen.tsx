@@ -1,6 +1,7 @@
 import AlertModal from "@/src/components/ui/AlertModal";
 import Button from "@/src/components/ui/Button";
 import Chip from "@/src/components/ui/Chip";
+import Toast from "@/src/components/ui/Toast";
 import { Colors, Radius, Spacing, Typography } from "@/src/constants/theme";
 import { useAuth } from "@/src/context/AuthContext";
 import {
@@ -27,7 +28,6 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import Toast from "@/src/components/ui/Toast";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
@@ -324,7 +324,7 @@ export default function SwipeCirclesScreen({
       <StatusBar barStyle="dark-content" />
 
       {/* Onboarding Guide Overlay */}
-      {showGuide && (
+      {/* {showGuide && (
         <Animated.View
           style={[styles.guideOverlay, { opacity: guideOpacity }]}
           pointerEvents="none"
@@ -337,7 +337,7 @@ export default function SwipeCirclesScreen({
             </Text>
           </View>
         </Animated.View>
-      )}
+      )} */}
 
       <View style={styles.topBar}>
         <Text style={styles.topTitle}>Find a Circle</Text>
@@ -379,7 +379,14 @@ export default function SwipeCirclesScreen({
             {currentCircle.members.length} / {currentCircle.size} spots
           </Text>
         </View>
-
+ {/* Top-right: SKIP label */}
+ {showOverlayButtons && (
+          <Animated.View
+            style={[styles.skipLabel, { opacity: overlayOpacity }]}
+          >
+            <Text style={styles.skipLabelText}>SKIP ✕</Text>
+          </Animated.View>
+        )}
         {/* Top-left: JOIN label (bottom-left of top area) */}
         {showOverlayButtons && (
           <Animated.View
@@ -388,14 +395,7 @@ export default function SwipeCirclesScreen({
             <Text style={styles.joinLabelText}>JOIN ✓</Text>
           </Animated.View>
         )}
-        {/* Top-right: SKIP label */}
-        {showOverlayButtons && (
-          <Animated.View
-            style={[styles.skipLabel, { opacity: overlayOpacity }]}
-          >
-            <Text style={styles.skipLabelText}>SKIP ✕</Text>
-          </Animated.View>
-        )}
+       
         {/* Bottom overlay: circle info */}
         <LinearGradient
           colors={["transparent", "rgba(0,0,0,0.75)"]}
@@ -941,11 +941,11 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     color: Colors.textPrimary,
   },
-  joinLabel: {
+  skipLabel: {
     position: "absolute",
     top: 50,
     left: Spacing.md,
-    backgroundColor: Colors.primary,
+    backgroundColor: "rgba(255,255,255,0.9)",
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: Radius.md,
@@ -956,11 +956,11 @@ const styles = StyleSheet.create({
     color: Colors.white,
     fontWeight: "700",
   },
-  skipLabel: {
+  joinLabel: {
     position: "absolute",
     top: 50,
     right: Spacing.md,
-    backgroundColor: "rgba(255,255,255,0.9)",
+    backgroundColor: Colors.primary,
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: Radius.md,

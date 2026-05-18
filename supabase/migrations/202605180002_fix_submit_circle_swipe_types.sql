@@ -1,5 +1,4 @@
--- Joiners cannot UPDATE circles directly (RLS: creator-only).
--- Host swipes use submitSwipe from the client; joiner swipes use this RPC.
+-- Fix uuid/text mismatches (live DB uses uuid for ids; function used text comparisons).
 
 create or replace function public.submit_circle_swipe(
   p_circle_id text,

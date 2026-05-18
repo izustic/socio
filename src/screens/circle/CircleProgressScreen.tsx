@@ -2,6 +2,7 @@ import Avatar from "@/src/components/ui/Avatar";
 import Button from "@/src/components/ui/Button";
 import { Colors, Radius, Spacing, Typography } from "@/src/constants/theme";
 import { useAuth } from "@/src/context/AuthContext";
+import { useSwipeTabVisibility } from "@/src/context/SwipeTabVisibilityContext";
 import {
   getCircle,
   getLatestCircleForParticipant,
@@ -9,8 +10,8 @@ import {
 } from "@/src/services/circle";
 import { getUsersByIds, SwipeCandidate } from "@/src/services/swipe";
 import { Circle } from "@/src/types";
-import { router, useLocalSearchParams } from "expo-router";
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { DimensionValue } from "react-native";
 import {
   ActivityIndicator,
@@ -33,6 +34,7 @@ const arrangeMembers = (
 
 export default function CircleProgressScreen() {
   const { user } = useAuth();
+  const { refreshSwipeTabVisibility } = useSwipeTabVisibility();
   const params = useLocalSearchParams<{ circleId?: string }>();
   const [circle, setCircle] = useState<Circle | null>(null);
   const [members, setMembers] = useState<SwipeCandidate[]>([]);
@@ -40,28 +42,27 @@ export default function CircleProgressScreen() {
   const subscribedCircleId = circle?.id;
   const previousStatusRef = useRef<Circle["status"] | null>(null);
 
-  useEffect(() => {
-    let active = true;
+  const loadCircle = useCallback(async () => {
+    if (!user) return;
 
-    const loadCircle = async () => {
-      if (!user) return;
+    setLoading(true);
+    const targetCircle = params.circleId
+      ? await getCircle(String(params.circleId))
+      : await getLatestCircleForParticipant(user.id);
 
-      setLoading(true);
-      const targetCircle = params.circleId
-        ? await getCircle(String(params.circleId))
-        : await getLatestCircleForParticipant(user.id);
-
-      if (!active) return;
-      setCircle(targetCircle);
-      setLoading(false);
-    };
-
-    loadCircle();
-
-    return () => {
-      active = false;
-    };
+    setCircle(targetCircle);
+    setLoading(false);
   }, [params.circleId, user]);
+
+  useEffect(() => {
+    loadCircle();
+  }, [loadCircle]);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadCircle();
+    }, [loadCircle]),
+  );
 
   useEffect(() => {
     let active = true;
@@ -110,11 +111,12 @@ export default function CircleProgressScreen() {
       circle.status === "forming" && circle.members.length >= circle.size;
 
     previousStatusRef.current = circle.status;
-    console.log("CIRCLE: ", circle)
+
     if (becameComplete || fullWhileForming) {
+      refreshSwipeTabVisibility();
       router.replace("/(tabs)/home?circleView=complete");
     }
-  }, [circle]);
+  }, [circle, refreshSwipeTabVisibility]);
 
   const membersCount = circle?.members.length ?? 0;
   const size = circle?.size ?? 0;

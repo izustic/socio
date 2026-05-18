@@ -4,6 +4,7 @@ import Toast from "@/src/components/ui/Toast";
 import { Colors, Radius, Spacing, Typography } from "@/src/constants/theme";
 import { useAuth } from "@/src/context/AuthContext";
 import { useSwipeTabVisibility } from "@/src/context/SwipeTabVisibilityContext";
+import { getCircle } from "@/src/services/circle";
 import {
   getActiveCircleForUser,
   getSwipeCandidates,
@@ -185,17 +186,51 @@ export default function SwipeUsersScreen() {
     };
   }, [showGuide]);
 
+  const syncCircleAfterSwipe = async (circleId: string) => {
+    const updatedCircle = await getCircle(circleId);
+    if (updatedCircle) {
+      setCircle({ ...updatedCircle, id: updatedCircle.id });
+    }
+    return updatedCircle;
+  };
+
   const handleSwipe = async (liked: boolean) => {
     if (!user || !circle || !currentCandidate || swiping) return;
+    const swipedCandidate = currentCandidate;
+    const swipedCandidateName = swipedCandidate.name;
     setSwiping(true);
+
     try {
       const result = await submitSwipe(
         circle.id,
         user.id,
-        currentCandidate.uid,
+        swipedCandidate.uid,
         liked,
       );
-      const swipedCandidateName = currentCandidate.name;
+
+      setCandidates((prev) =>
+        prev.filter((candidate) => candidate.uid !== swipedCandidate.uid),
+      );
+
+      if (liked && (result.addedToCircle || result.circleComplete)) {
+        await syncCircleAfterSwipe(circle.id);
+      }
+
+      await refreshSwipeTabVisibility();
+
+      if (result.circleComplete) {
+        showAlert(
+          "Circle complete!",
+          "Your circle is now full. Opening your Circle tab.",
+          {
+            primaryLabel: "View Circle",
+            onConfirm: () => {
+              replaceAfterInteractions("/(tabs)/home?circleView=complete");
+            },
+          },
+        );
+        return;
+      }
 
       if (liked && result.mutualMatch && result.addedToCircle) {
         showAlert(
@@ -203,9 +238,9 @@ export default function SwipeUsersScreen() {
           `${swipedCandidateName} is now listed as a member of ${circle.name}.`,
           {
             primaryLabel: "View Circle",
-            imageUri: currentCandidate.photoURL || undefined,
-            detail: `${currentCandidate.age} · ${
-              currentCandidate.bio || "Ready to meet the Circle."
+            imageUri: swipedCandidate.photoURL || undefined,
+            detail: `${swipedCandidate.age} · ${
+              swipedCandidate.bio || "Ready to meet the Circle."
             }`,
             onConfirm: () => {
               replaceAfterInteractions("/(tabs)/home?circleView=progress");
@@ -217,27 +252,15 @@ export default function SwipeUsersScreen() {
 
       if (liked) {
         setToastUser({
-          name: currentCandidate.name,
-          age: currentCandidate.age,
+          name: swipedCandidate.name,
+          age: swipedCandidate.age,
         });
         setShowToast(true);
       }
 
-      if (result.circleComplete) {
-        await refreshSwipeTabVisibility();
-        showAlert(
-          "Circle complete!",
-          "Your circle is now full. Opening your Circle tab.",
-          {
-            onConfirm: () => {
-              replaceAfterInteractions("/(tabs)/home?circleView=chat");
-            },
-          },
-        );
-        return;
+      if (!result.addedToCircle) {
+        await syncCircleAfterSwipe(circle.id);
       }
-
-      await loadSwipeData();
     } catch (error: any) {
       showAlert("Swipe failed", error?.message || "Please try again.");
     } finally {

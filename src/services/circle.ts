@@ -42,12 +42,17 @@ interface CircleRow {
   created_at: string;
 }
 
+const normalizeMemberIds = (members: unknown): string[] => {
+  if (!Array.isArray(members)) return [];
+  return members.map((id) => String(id));
+};
+
 const rowToCircle = (row: CircleRow): Circle => ({
   id: row.id,
   name: row.name,
-  creatorId: row.creator_id,
+  creatorId: String(row.creator_id),
   size: row.size,
-  members: row.members,
+  members: normalizeMemberIds(row.members),
   pendingSwipes: row.pending_swipes,
   filters: row.filters,
   meetupGoal: row.meetup_goal,

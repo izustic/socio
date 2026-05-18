@@ -17,7 +17,7 @@ import { Circle, Message } from "@/src/types";
 import * as Crypto from "expo-crypto";
 import * as ImagePicker from "expo-image-picker";
 import { router, useLocalSearchParams } from "expo-router";
-import { MoreHorizontal, Phone } from "lucide-react-native";
+import { ChevronLeft, MoreHorizontal, Phone } from "lucide-react-native";
 import React, { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
@@ -266,6 +266,14 @@ export default function CircleChatRoute() {
         <StatusBar barStyle="dark-content" />
 
         <View style={styles.header}>
+          <TouchableOpacity
+            activeOpacity={0.76}
+            style={styles.iconButton}
+            onPress={() => router.replace("/(tabs)/home")}
+            accessibilityLabel="Back to Circle"
+          >
+            <ChevronLeft size={24} color={Colors.textPrimary} strokeWidth={2.2} />
+          </TouchableOpacity>
           <View style={styles.headerCopy}>
             <Text numberOfLines={1} style={styles.title}>
               {circle.name}
@@ -336,14 +344,14 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
+    gap: Spacing.sm,
     paddingHorizontal: Spacing.screenPadding,
     paddingTop: Spacing.md,
     paddingBottom: Spacing.md,
   },
   headerCopy: {
     flex: 1,
-    paddingRight: Spacing.md,
+    minWidth: 0,
   },
   title: {
     ...Typography.h3,

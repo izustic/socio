@@ -53,7 +53,7 @@ export default function CircleTabScreen() {
       return () => {
         active = false;
       };
-    }, [authLoading, user]),
+    }, [authLoading, user, params.circleView]),
   );
 
   if (requestedView === "chat") {

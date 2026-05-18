@@ -567,68 +567,32 @@ export const submitCircleSwipe = async (
   addedToCircle: boolean;
   circleComplete: boolean;
 }> => {
-  // Get current circle data
-  const { data: circle, error: fetchError } = await supabase
-    .from("circles")
-    .select("*")
-    .eq("id", circleId)
-    .single();
-
-  if (fetchError || !circle) {
-    throw new Error("Circle not found.");
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user || user.id !== userId) {
+    throw new Error("Not authenticated");
   }
 
-  const circleRow = circle as CircleRow;
-  const pendingSwipes = { ...(circleRow.pending_swipes || {}) };
-  const skippedSwipes = { ...(circleRow.skipped_swipes || {}) };
-  const members = [...(circleRow.members || [])];
-  const size = circleRow.size || 5;
-
-  let mutualMatch = false;
-  let addedToCircle = false;
-
-  const upsertUserArray = (
-    obj: Record<string, string[]>,
-    uid: string,
-    value: string,
-  ) => {
-    const current = new Set(obj[uid] || []);
-    current.add(value);
-    obj[uid] = Array.from(current);
-  };
-
-  if (liked) {
-    upsertUserArray(pendingSwipes, userId, circleId);
-
-    const hostSwipes = new Set(pendingSwipes[circleRow.creator_id] || []);
-    mutualMatch = hostSwipes.has(userId);
-
-    if (mutualMatch && members.length < size && !members.includes(userId)) {
-      members.push(userId);
-      addedToCircle = true;
-    } else if (mutualMatch && members.includes(userId)) {
-      addedToCircle = true;
-    }
-  } else {
-    upsertUserArray(skippedSwipes, userId, circleId);
-  }
-
-  const circleComplete = members.length >= size;
-
-  const { error } = await supabase
-    .from("circles")
-    .update({
-      pending_swipes: pendingSwipes,
-      skipped_swipes: skippedSwipes,
-      members: members,
-      status: circleComplete ? "complete" : "forming",
-    })
-    .eq("id", circleId);
+  const { data, error } = await supabase.rpc("submit_circle_swipe", {
+    p_circle_id: circleId,
+    p_liked: liked,
+  });
 
   if (error) {
-    console.error("Error updating circle:", error);
+    console.error("Error submitting circle swipe:", error);
     throw error;
   }
 
-  return { mutualMatch, addedToCircle, circleComplete };
+  const result = data as {
+    mutualMatch?: boolean;
+    addedToCircle?: boolean;
+    circleComplete?: boolean;
+  } | null;
+
+  return {
+    mutualMatch: Boolean(result?.mutualMatch),
+    addedToCircle: Boolean(result?.addedToCircle),
+    circleComplete: Boolean(result?.circleComplete),
+  };
 };

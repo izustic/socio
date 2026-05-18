@@ -118,6 +118,41 @@ export const getCircle = async (circleId: string): Promise<Circle | null> => {
   }
 };
 
+export type CircleParticipationRole = "host" | "joiner";
+
+/** Circle the user hosts (forming) or has joined as a member. */
+export const getUserCircleParticipation = async (
+  userId: string,
+): Promise<{ circle: Circle | null; role: CircleParticipationRole | null }> => {
+  try {
+    const { data: hostData, error: hostError } = await supabase
+      .from("circles")
+      .select("*")
+      .eq("creator_id", userId)
+      .eq("status", "forming")
+      .order("created_at", { ascending: false })
+      .limit(1);
+
+    if (hostError) throw hostError;
+    if (hostData && hostData.length > 0) {
+      return {
+        circle: rowToCircle(hostData[0] as CircleRow),
+        role: "host",
+      };
+    }
+
+    const participantCircle = await getLatestCircleForParticipant(userId);
+    if (participantCircle?.members.includes(userId)) {
+      return { circle: participantCircle, role: "joiner" };
+    }
+
+    return { circle: null, role: null };
+  } catch (error) {
+    console.error("Error getting user circle participation:", error);
+    return { circle: null, role: null };
+  }
+};
+
 export const getLatestCircleForParticipant = async (
   userId: string,
 ): Promise<Circle | null> => {

@@ -402,10 +402,6 @@ export default function SwipeCirclesScreen({
           style={styles.cardOverlay}
         >
           <Text style={styles.overlayName}>{currentCircle.name}</Text>
-          {/* <View style={styles.overlayMeta}>
-      <Text style={styles.overlayMetaText}>📍 {currentCircle.distance?.toFixed(1)} km away</Text>
-      <Text style={styles.overlayMetaText}> · Ages {currentCircle.filters.ageRange[0]}-{currentCircle.filters.ageRange[1]}</Text>
-    </View> */}
           <View style={styles.overlayMeta}>
             <MapPin size={13} color="rgba(255,255,255,0.85)" />
             <Text style={styles.overlayMetaText}>
@@ -538,22 +534,6 @@ export default function SwipeCirclesScreen({
         >
           <Check size={28} color={Colors.textPrimary} />
         </TouchableOpacity>
-        {/* <TouchableOpacity
-          activeOpacity={0.7}
-          style={[styles.skipButton, swiping && styles.disabled]}
-          onPress={() => handleSwipe(false)}
-          disabled={swiping}
-        >
-          <Text style={styles.skipIcon}>✕</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          activeOpacity={0.7}
-          style={[styles.acceptButton, swiping && styles.disabled]}
-          onPress={() => handleSwipe(true)}
-          disabled={swiping}
-        >
-          <Text style={styles.acceptIcon}>✓</Text>
-        </TouchableOpacity> */}
       </View>
 
       {/* Toast Notification */}

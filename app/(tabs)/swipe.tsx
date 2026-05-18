@@ -1,9 +1,10 @@
 import { Colors, Spacing, Typography } from "@/src/constants/theme";
 import { useAuth } from "@/src/context/AuthContext";
-import {
-  getActiveCircleForUser,
-  JoinCircleFilters,
-} from "@/src/services/swipe";
+import CircleProgressScreen from "@/src/screens/circle/CircleProgressScreen";
+import SwipeCirclesScreen from "@/src/screens/circle/SwipeCirclesScreen";
+import SwipeUsersScreen from "@/src/screens/circle/SwipeUsersScreen";
+import { getUserCircleParticipation } from "@/src/services/circle";
+import { JoinCircleFilters } from "@/src/services/swipe";
 import { useLocalSearchParams } from "expo-router";
 import React, { useEffect, useMemo, useState } from "react";
 import {
@@ -14,13 +15,13 @@ import {
   Text,
   View,
 } from "react-native";
-import SwipeCirclesScreen from "@/src/screens/circle/SwipeCirclesScreen";
-import SwipeUsersScreen from "@/src/screens/circle/SwipeUsersScreen";
 
 export default function SwipeTabScreen() {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
-  const [hasCircle, setHasCircle] = useState(false);
+  const [participationRole, setParticipationRole] = useState<
+    "host" | "joiner" | null
+  >(null);
   const params = useLocalSearchParams<{
     distance?: string;
     ageMin?: string;
@@ -55,11 +56,11 @@ export default function SwipeTabScreen() {
       }
 
       try {
-        const activeCircle = await getActiveCircleForUser(user.id);
-        setHasCircle(!!activeCircle);
+        const { role } = await getUserCircleParticipation(user.id);
+        setParticipationRole(role);
       } catch (error) {
         console.error("Error checking circle status:", error);
-        setHasCircle(false);
+        setParticipationRole(null);
       } finally {
         setLoading(false);
       }
@@ -80,11 +81,15 @@ export default function SwipeTabScreen() {
     );
   }
 
-  return hasCircle ? (
-    <SwipeUsersScreen />
-  ) : (
-    <SwipeCirclesScreen filters={filters} />
-  );
+  if (participationRole === "host") {
+    return <SwipeUsersScreen />;
+  }
+
+  if (participationRole === "joiner") {
+    return <CircleProgressScreen />;
+  }
+
+  return <SwipeCirclesScreen filters={filters} />;
 }
 
 const styles = StyleSheet.create({

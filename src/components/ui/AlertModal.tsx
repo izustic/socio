@@ -1,6 +1,13 @@
 import { Colors, Radius, Spacing, Typography } from "@/src/constants/theme";
 import React from "react";
-import { Modal, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import {
+  Image,
+  Modal,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 
 type AlertModalProps = {
   visible: boolean;
@@ -8,6 +15,8 @@ type AlertModalProps = {
   message: string;
   primaryLabel?: string;
   secondaryLabel?: string;
+  imageUri?: string;
+  detail?: string;
   onConfirm: () => void;
   onCancel?: () => void;
 };
@@ -18,6 +27,8 @@ export default function AlertModal({
   message,
   primaryLabel = "OK",
   secondaryLabel,
+  imageUri,
+  detail,
   onConfirm,
   onCancel,
 }: AlertModalProps) {
@@ -30,8 +41,12 @@ export default function AlertModal({
     >
       <View style={styles.overlay}>
         <View style={styles.dialog}>
+          {imageUri ? (
+            <Image source={{ uri: imageUri }} style={styles.image} />
+          ) : null}
           <Text style={styles.title}>{title}</Text>
           <Text style={styles.message}>{message}</Text>
+          {detail ? <Text style={styles.detail}>{detail}</Text> : null}
 
           <View style={styles.actions}>
             {secondaryLabel ? (
@@ -92,11 +107,26 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginBottom: Spacing.sm,
   },
+  image: {
+    width: 88,
+    height: 88,
+    borderRadius: Radius.full,
+    backgroundColor: Colors.placeholder,
+    marginBottom: Spacing.md,
+  },
   message: {
     ...Typography.body,
     color: Colors.textSecondary,
     textAlign: "center",
     lineHeight: 24,
+    marginBottom: Spacing.lg,
+    maxWidth: 320,
+  },
+  detail: {
+    ...Typography.bodySmall,
+    color: Colors.textSecondary,
+    textAlign: "center",
+    marginTop: -Spacing.md,
     marginBottom: Spacing.lg,
     maxWidth: 320,
   },

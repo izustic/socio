@@ -330,6 +330,15 @@ export const getSwipeCandidates = async ({
       }
 
       return true;
+    })
+    .sort((a, b) => {
+      const aAlreadyLikedCircle = circle.pendingSwipes?.[a.uid]?.includes(circle.id)
+        ? 1
+        : 0;
+      const bAlreadyLikedCircle = circle.pendingSwipes?.[b.uid]?.includes(circle.id)
+        ? 1
+        : 0;
+      return bAlreadyLikedCircle - aAlreadyLikedCircle;
     });
 };
 
@@ -338,7 +347,11 @@ export const submitSwipe = async (
   currentUserId: string,
   targetUserId: string,
   liked: boolean,
-): Promise<{ mutualMatch: boolean; circleComplete: boolean }> => {
+): Promise<{
+  mutualMatch: boolean;
+  addedToCircle: boolean;
+  circleComplete: boolean;
+}> => {
   // Get current circle data
   const { data: circle, error: fetchError } = await supabase
     .from("circles")
@@ -367,13 +380,21 @@ export const submitSwipe = async (
   };
 
   let mutualMatch = false;
+  let addedToCircle = false;
   if (liked) {
     upsertUserArray(pendingSwipes, currentUserId, targetUserId);
-    const targetSwipes = new Set(pendingSwipes[targetUserId] || []);
-    mutualMatch = targetSwipes.has(currentUserId);
+    const candidateSwipes = new Set(pendingSwipes[targetUserId] || []);
+    mutualMatch = candidateSwipes.has(circleId);
 
-    if (mutualMatch && !members.includes(targetUserId)) {
+    if (
+      mutualMatch &&
+      members.length < size &&
+      !members.includes(targetUserId)
+    ) {
       members.push(targetUserId);
+      addedToCircle = true;
+    } else if (mutualMatch && members.includes(targetUserId)) {
+      addedToCircle = true;
     }
   } else {
     upsertUserArray(skippedSwipes, currentUserId, targetUserId);
@@ -396,7 +417,7 @@ export const submitSwipe = async (
     throw error;
   }
 
-  return { mutualMatch, circleComplete };
+  return { mutualMatch, addedToCircle, circleComplete };
 };
 
 export interface JoinCircleFilters {
@@ -444,6 +465,12 @@ export const getCircleCandidates = async (
   const userLocation = userProfile?.location;
 
   return (circlesData as CircleRow[])
+    .filter((row) => {
+      if ((row.members || []).includes(userId)) return false;
+      if ((row.pending_swipes?.[userId] || []).includes(row.id)) return false;
+      if ((row.skipped_swipes?.[userId] || []).includes(row.id)) return false;
+      return true;
+    })
     .map((row) => ({
       id: row.id,
       name: row.name,
@@ -535,7 +562,11 @@ export const submitCircleSwipe = async (
   circleId: string,
   userId: string,
   liked: boolean,
-): Promise<{ mutualMatch: boolean; addedToCircle: boolean }> => {
+): Promise<{
+  mutualMatch: boolean;
+  addedToCircle: boolean;
+  circleComplete: boolean;
+}> => {
   // Get current circle data
   const { data: circle, error: fetchError } = await supabase
     .from("circles")
@@ -556,26 +587,30 @@ export const submitCircleSwipe = async (
   let mutualMatch = false;
   let addedToCircle = false;
 
+  const upsertUserArray = (
+    obj: Record<string, string[]>,
+    uid: string,
+    value: string,
+  ) => {
+    const current = new Set(obj[uid] || []);
+    current.add(value);
+    obj[uid] = Array.from(current);
+  };
+
   if (liked) {
-    // Add user to pending swipes for this circle
-    const currentPending = new Set(pendingSwipes[circleRow.creator_id] || []);
-    currentPending.add(userId);
-    pendingSwipes[circleRow.creator_id] = Array.from(currentPending);
+    upsertUserArray(pendingSwipes, userId, circleId);
 
-    // Check if creator already liked this user (mutual match)
-    const creatorPending = new Set(pendingSwipes[circleRow.creator_id] || []);
-    mutualMatch = creatorPending.has(userId);
+    const hostSwipes = new Set(pendingSwipes[circleRow.creator_id] || []);
+    mutualMatch = hostSwipes.has(userId);
 
-    // If mutual match and circle not full, add user
     if (mutualMatch && members.length < size && !members.includes(userId)) {
       members.push(userId);
       addedToCircle = true;
+    } else if (mutualMatch && members.includes(userId)) {
+      addedToCircle = true;
     }
   } else {
-    // Add to skipped
-    const currentSkipped = new Set(skippedSwipes[circleRow.creator_id] || []);
-    currentSkipped.add(userId);
-    skippedSwipes[circleRow.creator_id] = Array.from(currentSkipped);
+    upsertUserArray(skippedSwipes, userId, circleId);
   }
 
   const circleComplete = members.length >= size;
@@ -595,5 +630,5 @@ export const submitCircleSwipe = async (
     throw error;
   }
 
-  return { mutualMatch, addedToCircle };
+  return { mutualMatch, addedToCircle, circleComplete };
 };

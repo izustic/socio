@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { supabase, getDefaultUserRole, getUserRole, syncUserToSupabase } from '../services/supabase';
 import { getUserProfile } from '../services/user';
+import { getLatestCircleForParticipant } from '../services/circle';
 import { User } from '../types';
 import type { User as SupabaseUser } from '@supabase/supabase-js';
 
@@ -68,6 +69,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // Get profile from Supabase
         const userProfile = await getUserProfile(supabaseUser.id);
         setProfile(userProfile);
+        const latestCircle = await getLatestCircleForParticipant(supabaseUser.id);
+        console.log('Logged in app user data:', { profile: userProfile, latestCircle });
 
         // Sync to Supabase and get role
         try {

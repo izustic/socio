@@ -14,8 +14,8 @@ import {
   Text,
   View,
 } from "react-native";
-import SwipeCirclesScreen from "../circle/swipe-circles";
-import SwipeUsersScreen from "../circle/swipe-users";
+import SwipeCirclesScreen from "@/src/screens/circle/SwipeCirclesScreen";
+import SwipeUsersScreen from "@/src/screens/circle/SwipeUsersScreen";
 
 export default function SwipeTabScreen() {
   const { user } = useAuth();

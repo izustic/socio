@@ -1,66 +1,245 @@
-import Avatar from "@/src/components/ui/Avatar";
-import Button from "@/src/components/ui/Button";
+import ChatInput from "@/src/components/chat/ChatInput";
+import MediaMessage from "@/src/components/chat/MediaMessage";
+import MessageBubble from "@/src/components/chat/MessageBubble";
 import { Colors, Radius, Spacing, Typography } from "@/src/constants/theme";
 import { useAuth } from "@/src/context/AuthContext";
 import {
   getCircle,
   getLatestCircleForParticipant,
 } from "@/src/services/circle";
-import { getUsersByIds, SwipeCandidate } from "@/src/services/swipe";
-import { Circle } from "@/src/types";
+import {
+  getMessages,
+  sendMessage,
+  subscribeToMessages,
+} from "@/src/services/messages";
+import { uploadChatMedia } from "@/src/services/supabase";
+import { Circle, Message } from "@/src/types";
+import * as Crypto from "expo-crypto";
+import * as ImagePicker from "expo-image-picker";
 import { router, useLocalSearchParams } from "expo-router";
-import React, { useEffect, useMemo, useState } from "react";
+import { MoreHorizontal, Phone } from "lucide-react-native";
+import React, { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
-  SafeAreaView,
+  Alert,
+  FlatList,
+  KeyboardAvoidingView,
+  Platform,
   StatusBar,
   StyleSheet,
   Text,
+  TouchableOpacity,
   View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
-export default function ChatScreen() {
-  const { user } = useAuth();
+type MessageRow = {
+  id: string;
+  circle_id: string;
+  sender_id: string;
+  sender_name: string;
+  text: string;
+  media_url: string | null;
+  media_type: "image" | "video" | null;
+  created_at: string;
+};
+
+const rowToMessage = (row: MessageRow): Message => ({
+  id: row.id,
+  circleId: row.circle_id,
+  senderId: row.sender_id,
+  senderName: row.sender_name,
+  text: row.text,
+  mediaUrl: row.media_url,
+  mediaType: row.media_type,
+  timestamp: new Date(row.created_at),
+});
+
+const getDisplayName = (
+  profileName?: string,
+  metadataName?: unknown,
+  email?: string,
+) => {
+  if (profileName) return profileName;
+  if (typeof metadataName === "string" && metadataName.trim()) {
+    return metadataName.trim();
+  }
+  return email?.split("@")[0] || "Someone";
+};
+
+export default function CircleChatRoute() {
+  const { user, profile } = useAuth();
   const params = useLocalSearchParams<{ circleId?: string }>();
-  const [circle, setCircle] = useState<(Circle & { id: string }) | null>(null);
-  const [members, setMembers] = useState<SwipeCandidate[]>([]);
+  const listRef = useRef<FlatList<Message>>(null);
+  const [circle, setCircle] = useState<Circle | null>(null);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(true);
+  const [sending, setSending] = useState(false);
+  const subscribedCircleId = circle?.id;
 
   useEffect(() => {
-    const load = async () => {
+    let active = true;
+
+    const loadCircle = async () => {
       if (!user) return;
+
       setLoading(true);
       const targetCircle = params.circleId
         ? await getCircle(String(params.circleId))
         : await getLatestCircleForParticipant(user.id);
+
+      if (!active) return;
       setCircle(targetCircle);
-      if (targetCircle) {
-        const memberProfiles = await getUsersByIds(targetCircle.members || []);
-        setMembers(memberProfiles);
-      } else {
-        setMembers([]);
-      }
       setLoading(false);
     };
-    load();
-  }, [user?.id, params.circleId]);
 
-  const membersCount = (circle?.members || []).length;
-  const size = circle?.size || 0;
-  const progressWidth = useMemo((): any => {
-    if (!size) return "0%";
-    return `${Math.min(1, membersCount / size) * 100}%`;
-  }, [membersCount, size]);
-  const isComplete = Boolean(
-    circle && (circle.status === "complete" || membersCount >= size),
-  );
+    loadCircle();
+
+    return () => {
+      active = false;
+    };
+  }, [params.circleId, user]);
+
+  useEffect(() => {
+    let active = true;
+
+    const loadMessages = async () => {
+      if (!circle) {
+        setMessages([]);
+        return;
+      }
+
+      const history = await getMessages(circle.id);
+      if (active) {
+        setMessages(history);
+      }
+    };
+
+    loadMessages();
+
+    return () => {
+      active = false;
+    };
+  }, [circle]);
+
+  useEffect(() => {
+    if (!subscribedCircleId) return;
+
+    const channel = subscribeToMessages(subscribedCircleId, (payload) => {
+      const incoming = rowToMessage(payload.new);
+      setMessages((currentMessages) => {
+        if (currentMessages.some((message) => message.id === incoming.id)) {
+          return currentMessages;
+        }
+        return [...currentMessages, incoming];
+      });
+    });
+
+    return () => {
+      channel.unsubscribe();
+    };
+  }, [subscribedCircleId]);
+
+  const handleSendMessage = async (text: string) => {
+    if (!circle || !user || sending) return;
+
+    setSending(true);
+    try {
+      await sendMessage(
+        circle.id,
+        user.id,
+        getDisplayName(profile?.name, user.user_metadata?.display_name, user.email),
+        text,
+      );
+    } catch (error) {
+      console.error("Error sending message:", error);
+      Alert.alert("Message not sent", "Please try again.");
+    } finally {
+      setSending(false);
+    }
+  };
+
+  const handleMediaPress = async () => {
+    if (!circle || !user || sending) return;
+
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permission.granted) {
+      Alert.alert("Media access needed", "Allow photo access to share media.");
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.All,
+      quality: 0.8,
+      allowsEditing: false,
+    });
+
+    if (result.canceled || !result.assets[0]) return;
+
+    const asset = result.assets[0];
+    const mediaType = asset.type === "video" ? "video" : "image";
+
+    setSending(true);
+    try {
+      const mediaId = Crypto.randomUUID();
+      const mediaUrl = await uploadChatMedia(circle.id, mediaId, asset.uri, mediaType);
+
+      await sendMessage(
+        circle.id,
+        user.id,
+        getDisplayName(profile?.name, user.user_metadata?.display_name, user.email),
+        "",
+        mediaUrl,
+        mediaType,
+      );
+    } catch (error) {
+      console.error("Error sending media:", error);
+      Alert.alert("Media not sent", "Please try a smaller file or choose another one.");
+    } finally {
+      setSending(false);
+    }
+  };
+
+  const renderMessage = ({ item }: { item: Message }) => {
+    const isOwn = item.senderId === user?.id;
+
+    if (item.mediaUrl && item.mediaType) {
+      return (
+        <MediaMessage
+          message={{
+            id: item.id,
+            type: item.mediaType,
+            uri: item.mediaUrl,
+            caption: item.text || undefined,
+            senderId: item.senderId,
+            senderName: item.senderName,
+            timestamp: item.timestamp,
+            isOwn,
+          }}
+        />
+      );
+    }
+
+    return (
+      <MessageBubble
+        message={{
+          id: item.id,
+          text: item.text,
+          senderId: item.senderId,
+          senderName: item.senderName,
+          timestamp: item.timestamp,
+          isOwn,
+        }}
+      />
+    );
+  };
 
   if (loading) {
     return (
       <SafeAreaView style={styles.container}>
         <StatusBar barStyle="dark-content" />
         <View style={styles.centered}>
-          <ActivityIndicator size="large" color={Colors.primaryDark} />
+          <ActivityIndicator size="large" color={Colors.primary} />
         </View>
       </SafeAreaView>
     );
@@ -71,205 +250,141 @@ export default function ChatScreen() {
       <SafeAreaView style={styles.container}>
         <StatusBar barStyle="dark-content" />
         <View style={styles.centered}>
-          <Text style={styles.title}>Your Circle</Text>
-          <Text style={styles.subtitle}>No active circle yet.</Text>
-          <View style={styles.ctaWrap}>
-            <Button
-              title="Create Circle"
-              onPress={() => router.push("/circle/create")}
-            />
-          </View>
+          <Text style={styles.title}>No active Circle</Text>
+          <Text style={styles.emptyText}>Create or join a Circle to start chatting.</Text>
         </View>
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" />
+    <KeyboardAvoidingView
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      style={styles.keyboardView}
+    >
+      <SafeAreaView style={styles.container}>
+        <StatusBar barStyle="dark-content" />
 
-      <View style={styles.headerRow}>
-        <Text style={styles.title}>{circle.name}</Text>
-        <View
-          style={[styles.stageBadge, isComplete && styles.stageBadgeComplete]}
-        >
-          <Text style={styles.stageBadgeText}>
-            {isComplete ? "COMPLETE" : "FORMING"}
-          </Text>
-        </View>
-      </View>
-      <Text style={styles.subtitle}>
-        {isComplete ? "Your Circle is ready to meet" : "Your circle is forming"}
-      </Text>
-
-      <View style={styles.membersRow}>
-        {Array.from({ length: size }).map((_, index) => {
-          const member = members[index];
-          return (
-            <View
-              key={`${member?.uid || `empty-${index}`}`}
-              style={styles.memberItem}
-            >
-              <Avatar
-                size="md"
-                uri={member?.photoURL || undefined}
-                placeholder={!member?.photoURL}
-              />
-              <Text style={styles.memberName}>{member?.name || "Open"}</Text>
-            </View>
-          );
-        })}
-      </View>
-
-      <View style={styles.progressCard}>
-        <View style={styles.progressHeader}>
-          <Text style={styles.progressLabel}>Progress</Text>
-          <Text style={styles.progressCount}>
-            {membersCount} / {size}
-          </Text>
-        </View>
-        <View style={styles.progressTrack}>
-          <View style={[styles.progressFill, { width: progressWidth }]} />
-        </View>
-        <Text style={styles.progressText}>
-          {isComplete
-            ? "All members accepted. Your Circle is complete."
-            : `Waiting for ${Math.max(0, size - membersCount)} more to accept your invite`}
-        </Text>
-      </View>
-
-      <View style={styles.goalCard}>
-        <Text style={styles.goalLabel}>MEETUP GOAL</Text>
-        <Text
-          style={styles.goalValue}
-        >{`${(circle as any).meetupGoal || "Coffee"} · ${(circle as any).meetupTimeframe || "Within 3 days"}`}</Text>
-      </View>
-
-      <View style={styles.footer}>
-        {isComplete ? (
-          <>
-            <Button
-              title="Enter Circle"
+        <View style={styles.header}>
+          <View style={styles.headerCopy}>
+            <Text numberOfLines={1} style={styles.title}>
+              {circle.name}
+            </Text>
+            <Text style={styles.headerSubtitle}>
+              {circle.members.length} members
+            </Text>
+          </View>
+          <View style={styles.headerActions}>
+            <TouchableOpacity
+              activeOpacity={0.76}
+              style={styles.iconButton}
               onPress={() => router.push("/circle/call")}
-            />
-            <Button
-              title="View details"
-              variant="ghost"
-              onPress={() => router.push("/circle/progress")}
-            />
-          </>
-        ) : (
-          <Button
-            title="Continue swiping"
-            onPress={() => router.push("/(tabs)/swipe")}
-          />
-        )}
-      </View>
-    </SafeAreaView>
+            >
+              <Phone size={20} color={Colors.textPrimary} strokeWidth={2.2} />
+            </TouchableOpacity>
+            <TouchableOpacity activeOpacity={0.76} style={styles.iconButton}>
+              <MoreHorizontal size={22} color={Colors.textPrimary} strokeWidth={2.2} />
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        <FlatList
+          ref={listRef}
+          data={messages}
+          keyExtractor={(item) => item.id}
+          renderItem={renderMessage}
+          contentContainerStyle={styles.messagesContent}
+          ListHeaderComponent={<Text style={styles.dayLabel}>Today</Text>}
+          ListEmptyComponent={
+            <View style={styles.emptyState}>
+              <Text style={styles.emptyText}>Start the conversation.</Text>
+            </View>
+          }
+          keyboardShouldPersistTaps="handled"
+          onContentSizeChange={() => listRef.current?.scrollToEnd({ animated: true })}
+          onLayout={() => listRef.current?.scrollToEnd({ animated: false })}
+        />
+
+        <ChatInput
+          disabled={sending}
+          placeholder="Message Circle..."
+          onMediaPress={handleMediaPress}
+          onSendMessage={(text) => {
+            void handleSendMessage(text);
+          }}
+        />
+      </SafeAreaView>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
+  keyboardView: {
+    flex: 1,
+    backgroundColor: Colors.background,
+  },
   container: {
     flex: 1,
     backgroundColor: Colors.background,
-    padding: Spacing.screenPadding,
   },
   centered: {
     flex: 1,
-    justifyContent: "center",
     alignItems: "center",
+    justifyContent: "center",
+    padding: Spacing.screenPadding,
   },
-  ctaWrap: {
-    marginTop: Spacing.lg,
-    width: "100%",
-  },
-  headerRow: {
+  header: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
+    paddingHorizontal: Spacing.screenPadding,
+    paddingTop: Spacing.md,
+    paddingBottom: Spacing.md,
+  },
+  headerCopy: {
+    flex: 1,
+    paddingRight: Spacing.md,
   },
   title: {
-    ...Typography.h2,
+    ...Typography.h3,
+    color: Colors.textPrimary,
   },
-  stageBadge: {
-    backgroundColor: Colors.primaryLight,
-    borderRadius: Radius.pill,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-  },
-  stageBadgeComplete: {
-    backgroundColor: Colors.primary,
-  },
-  stageBadgeText: {
-    ...Typography.bodySmall,
-    fontWeight: "700",
-  },
-  subtitle: {
+  headerSubtitle: {
     ...Typography.bodySmall,
     marginTop: Spacing.xs,
   },
-  membersRow: {
+  headerActions: {
     flexDirection: "row",
-    flexWrap: "wrap",
     gap: Spacing.sm,
-    marginTop: Spacing.lg,
   },
-  memberItem: {
+  iconButton: {
+    width: 44,
+    height: 44,
+    borderRadius: Radius.pill,
     alignItems: "center",
-    width: 58,
-  },
-  memberName: {
-    ...Typography.bodySmall,
-    marginTop: 4,
-  },
-  progressCard: {
-    backgroundColor: "#F7F1DD",
-    borderRadius: Radius.lg,
-    padding: Spacing.md,
-    marginTop: Spacing.lg,
-  },
-  progressHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-  },
-  progressLabel: {
-    ...Typography.h3,
-  },
-  progressCount: {
-    ...Typography.h3,
-  },
-  progressTrack: {
-    marginTop: Spacing.sm,
-    height: 8,
-    borderRadius: Radius.pill,
-    backgroundColor: Colors.white,
-    overflow: "hidden",
-  },
-  progressFill: {
-    height: "100%",
-    backgroundColor: Colors.primary,
-    borderRadius: Radius.pill,
-  },
-  progressText: {
-    ...Typography.bodySmall,
-    marginTop: Spacing.sm,
-  },
-  goalCard: {
-    marginTop: Spacing.md,
+    justifyContent: "center",
     backgroundColor: Colors.inputBg,
-    borderRadius: Radius.md,
-    padding: Spacing.md,
   },
-  goalLabel: {
-    ...Typography.label,
+  messagesContent: {
+    flexGrow: 1,
+    paddingTop: Spacing.sm,
+    paddingBottom: Spacing.lg,
   },
-  goalValue: {
-    ...Typography.h3,
-    marginTop: Spacing.xs,
+  dayLabel: {
+    ...Typography.bodySmall,
+    color: Colors.textSecondary,
+    textAlign: "center",
+    marginBottom: Spacing.md,
   },
-  footer: {
-    marginTop: "auto",
-    gap: Spacing.sm,
+  emptyState: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    padding: Spacing.screenPadding,
+  },
+  emptyText: {
+    ...Typography.body,
+    color: Colors.textSecondary,
+    textAlign: "center",
   },
 });

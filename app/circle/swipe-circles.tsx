@@ -231,7 +231,7 @@ export default function SwipeCirclesScreen({
           "Circle complete!",
           `You've joined ${currentCircle.name}! Opening your Circle tab.`,
           {
-            onConfirm: () => router.replace("/circle/chat"),
+            onConfirm: () => router.replace("/(tabs)/home?circleView=chat"),
           },
         );
         return;

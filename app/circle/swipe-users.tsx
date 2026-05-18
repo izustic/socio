@@ -202,7 +202,7 @@ export default function SwipeUsersScreen() {
           "Circle complete!",
           "Your circle is now full. Opening your Circle tab.",
           {
-            onConfirm: () => router.replace("/circle/chat"),
+            onConfirm: () => router.replace("/(tabs)/home?circleView=chat"),
           },
         );
         return;
@@ -291,7 +291,7 @@ export default function SwipeUsersScreen() {
             <Button
               title="Check back later"
               variant="outline"
-              onPress={() => router.push("/circle/chat")}
+              onPress={() => router.push("/(tabs)/home?circleView=chat")}
             />
           </View>
         </View>

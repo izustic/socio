@@ -13,7 +13,10 @@
     "newArchEnabled": false,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.anonymous.demoapp"
+      "bundleIdentifier": "com.anonymous.demoapp",
+      "infoPlist": {
+        "NSUserNotificationsUsageDescription": "We'll let you know when your Circle grows, someone accepts, or it's time to meet."
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -43,7 +46,8 @@
       ],
       "expo-font",
       "expo-web-browser",
-      "expo-secure-store"
+      "expo-secure-store",
+      "expo-notifications"
     ],
     "experiments": {
       "typedRoutes": true

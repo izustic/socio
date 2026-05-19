@@ -1,6 +1,13 @@
 import { Colors, Radius, Typography } from '@/src/constants/theme';
 import React from 'react';
-import { StyleSheet, Text, TouchableOpacity, TouchableOpacityProps, ViewStyle } from 'react-native';
+import {
+  ActivityIndicator,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  TouchableOpacityProps,
+  ViewStyle,
+} from 'react-native';
 
 type ButtonVariant = 'primary' | 'outline' | 'ghost';
 
@@ -8,6 +15,7 @@ interface ButtonProps extends TouchableOpacityProps {
   title: string;
   variant?: ButtonVariant;
   fullWidth?: boolean;
+  loading?: boolean;
 }
 
 export default function Button({
@@ -15,6 +23,7 @@ export default function Button({
   variant = 'primary',
   style,
   disabled,
+  loading = false,
   fullWidth = true,
   ...props
 }: ButtonProps) {
@@ -35,10 +44,14 @@ export default function Button({
         disabled && styles.disabled,
         style as ViewStyle,
       ]}
-      disabled={disabled}
+      disabled={disabled || loading}
       {...props}
     >
-      <Text style={textStyle}>{title}</Text>
+      {loading ? (
+        <ActivityIndicator color={Colors.textPrimary} />
+      ) : (
+        <Text style={textStyle}>{title}</Text>
+      )}
     </TouchableOpacity>
   );
 }

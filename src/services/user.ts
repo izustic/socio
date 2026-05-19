@@ -110,7 +110,7 @@ export const syncUserOnboarding = async (
   draft: {
     name?: string;
     age?: number;
-    gender?: 'Male' | 'Female' | 'Non-binary' | 'Prefer not to say';
+    gender?: 'Male' | 'Female';
     education?: string;
     interests?: string[];
     traits?: string[];

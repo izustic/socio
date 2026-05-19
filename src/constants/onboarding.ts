@@ -111,12 +111,7 @@ export const ONBOARDING_TRAITS: ProfileTrait[] = [
   'Spontaneous',
 ];
 
-export const GENDER_OPTIONS: User['gender'][] = [
-  'Male',
-  'Female',
-  'Non-binary',
-  'Prefer not to say',
-];
+export const GENDER_OPTIONS = ['Male', 'Female'] as const satisfies readonly User['gender'][];
 
 export const EDUCATION_OPTIONS: EducationLevel[] = [
   'High school',
@@ -126,13 +121,6 @@ export const EDUCATION_OPTIONS: EducationLevel[] = [
   'Trade school',
   'Prefer not to say',
 ];
-
-export const GENDER_EMOJI: Record<User['gender'], string> = {
-  Male: '🧔',
-  Female: '💁',
-  'Non-binary': '🌈',
-  'Prefer not to say': '✨',
-};
 
 export const INTEREST_EMOJI: Record<Interest, string> = {
   Music: '🎵',

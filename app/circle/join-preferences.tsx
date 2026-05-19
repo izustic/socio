@@ -11,7 +11,14 @@ import {
 import { Colors, Radius, Spacing, Typography } from "@/src/constants/theme";
 import { Interest, ProfileTrait } from "@/src/types";
 import { router } from "expo-router";
-import { ChevronDown, ChevronLeft } from "lucide-react-native";
+import {
+  ChevronDown,
+  ChevronLeft,
+  Mars,
+  Venus,
+  VenusAndMars,
+} from "lucide-react-native";
+import type { LucideIcon } from "lucide-react-native";
 import { useState } from "react";
 import {
   GestureResponderEvent,
@@ -28,10 +35,10 @@ import {
 
 type GenderMix = "Male" | "Female" | "Both";
 
-const GENDER_OPTIONS: { label: GenderMix; icon: string }[] = [
-  { label: "Male", icon: "👦" },
-  { label: "Female", icon: "👩" },
-  { label: "Both", icon: "🌈" },
+const GENDER_OPTIONS: { label: GenderMix; Icon: LucideIcon }[] = [
+  { label: "Male", Icon: Mars },
+  { label: "Female", Icon: Venus },
+  { label: "Both", Icon: VenusAndMars },
 ];
 
 const MIN_AGE = 18;
@@ -216,6 +223,7 @@ export default function JoinCirclePreferencesScreen() {
           <View style={styles.genderRow}>
             {GENDER_OPTIONS.map((option) => {
               const selected = genderMix === option.label;
+              const GenderIcon = option.Icon;
               return (
                 <TouchableOpacity
                   key={option.label}
@@ -223,7 +231,7 @@ export default function JoinCirclePreferencesScreen() {
                   style={[styles.genderTile, selected && styles.selectedChip]}
                   onPress={() => setGenderMix(option.label)}
                 >
-                  <Text style={styles.genderIcon}>{option.icon}</Text>
+                  <GenderIcon size={24} color={Colors.textPrimary} strokeWidth={2.2} />
                   <Text
                     style={[
                       styles.genderLabel,
@@ -493,9 +501,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: 4,
-  },
-  genderIcon: {
-    fontSize: 22,
   },
   genderLabel: {
     ...Typography.bodySmall,

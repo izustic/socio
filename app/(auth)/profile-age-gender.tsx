@@ -1,10 +1,16 @@
 import OnboardingLayout from '@/src/components/onboarding/OnboardingLayout';
-import { EDUCATION_OPTIONS, GENDER_EMOJI, GENDER_OPTIONS } from '@/src/constants/onboarding';
+import { EDUCATION_OPTIONS, GENDER_OPTIONS } from '@/src/constants/onboarding';
 import { Colors, Radius, Spacing, Typography } from '@/src/constants/theme';
 import { useOnboarding } from '@/src/context/OnboardingContext';
-import { ChevronDown } from 'lucide-react-native';
+import { ChevronDown, Mars, Venus } from 'lucide-react-native';
+import type { LucideIcon } from 'lucide-react-native';
 import { useState } from 'react';
 import { Modal, Pressable, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+
+const GENDER_ICONS: Record<(typeof GENDER_OPTIONS)[number], LucideIcon> = {
+  Male: Mars,
+  Female: Venus,
+};
 
 export default function ProfileAgeGenderScreen() {
   const { draft, mergeDraft, setStep } = useOnboarding();
@@ -48,6 +54,7 @@ export default function ProfileAgeGenderScreen() {
         <View style={styles.genderGrid}>
           {GENDER_OPTIONS.map((option) => {
             const selected = draft.gender === option;
+            const GenderIcon = GENDER_ICONS[option];
             return (
               <TouchableOpacity
                 key={option}
@@ -55,7 +62,7 @@ export default function ProfileAgeGenderScreen() {
                 style={[styles.genderTile, selected && styles.genderTileSelected]}
                 onPress={() => mergeDraft({ gender: option })}
               >
-                <Text style={styles.genderEmoji}>{GENDER_EMOJI[option]}</Text>
+                <GenderIcon size={28} color={Colors.textPrimary} strokeWidth={2.2} />
                 <Text style={[styles.genderText, selected && styles.genderTextSelected]}>
                   {option}
                 </Text>
@@ -159,9 +166,6 @@ const styles = StyleSheet.create({
   },
   genderTileSelected: {
     backgroundColor: Colors.primary,
-  },
-  genderEmoji: {
-    fontSize: 28,
   },
   genderText: {
     ...Typography.bodySmall,

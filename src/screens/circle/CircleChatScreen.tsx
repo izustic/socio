@@ -40,8 +40,32 @@ type MessageRow = {
   sender_name: string;
   text: string;
   media_url: string | null;
-  media_type: "image" | "video" | null;
+  media_type?: "image" | "video" | null;
   created_at: string;
+};
+
+const inferMediaType = (
+  mediaUrl: string | null | undefined,
+): "image" | "video" | null => {
+  if (!mediaUrl) return null;
+  const normalized = mediaUrl.toLowerCase();
+  if (
+    normalized.includes("/videos/") ||
+    normalized.endsWith(".mp4") ||
+    normalized.endsWith(".mov")
+  ) {
+    return "video";
+  }
+  if (
+    normalized.includes("/images/") ||
+    normalized.endsWith(".jpg") ||
+    normalized.endsWith(".jpeg") ||
+    normalized.endsWith(".png") ||
+    normalized.endsWith(".webp")
+  ) {
+    return "image";
+  }
+  return null;
 };
 
 const rowToMessage = (row: MessageRow): Message => ({
@@ -51,7 +75,7 @@ const rowToMessage = (row: MessageRow): Message => ({
   senderName: row.sender_name,
   text: row.text,
   mediaUrl: row.media_url,
-  mediaType: row.media_type,
+  mediaType: row.media_type ?? inferMediaType(row.media_url),
   timestamp: new Date(row.created_at),
 });
 

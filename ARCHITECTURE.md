@@ -394,7 +394,7 @@ export const sendMessage = async (
   senderName: string,
   text: string,
   mediaUrl?: string,
-  mediaType?: 'image' | 'video'
+  mediaType?: 'image' | 'video' // inferred from mediaUrl on read
 ) => {
   const { data, error } = await supabase
     .from('messages')
@@ -404,7 +404,6 @@ export const sendMessage = async (
       sender_name: senderName,
       text,
       media_url: mediaUrl ?? null,
-      media_type: mediaType ?? null,
     })
     .select('id')
     .single();
@@ -687,7 +686,6 @@ CREATE TABLE messages (
   sender_name TEXT,
   text TEXT,
   media_url TEXT,
-  media_type TEXT,
   created_at TIMESTAMP DEFAULT NOW()
 );
 

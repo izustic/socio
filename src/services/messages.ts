@@ -9,6 +9,7 @@ interface MessageRow {
   sender_name: string;
   text: string;
   media_url: string | null;
+  media_urls?: string[] | null;
   media_type?: 'image' | 'video' | null;
   created_at: string;
 }
@@ -32,6 +33,7 @@ const rowToMessage = (row: MessageRow): Message => ({
   senderName: row.sender_name,
   text: row.text,
   mediaUrl: row.media_url,
+  mediaUrls: row.media_urls?.length ? row.media_urls : row.media_url ? [row.media_url] : [],
   mediaType: row.media_type ?? inferMediaType(row.media_url),
   timestamp: new Date(row.created_at),
 });
@@ -42,7 +44,8 @@ export const sendMessage = async (
   senderName: string,
   text: string,
   mediaUrl?: string,
-  mediaType?: 'image' | 'video'
+  mediaType?: 'image' | 'video',
+  mediaUrls?: string[]
 ): Promise<Message> => {
   try {
     const { data: { user } } = await supabase.auth.getUser();
@@ -50,7 +53,7 @@ export const sendMessage = async (
       throw new Error('Not authenticated as message sender');
     }
 
-    const messagePayload: Record<string, string | null> = {
+    const messagePayload: Record<string, unknown> = {
       circle_id: circleId,
       sender_id: senderId,
       sender_name: senderName,
@@ -60,6 +63,10 @@ export const sendMessage = async (
 
     if (mediaType) {
       messagePayload.media_type = mediaType;
+    }
+
+    if (mediaUrls && mediaUrls.length > 0) {
+      messagePayload.media_urls = mediaUrls;
     }
 
     const { data, error } = await supabase

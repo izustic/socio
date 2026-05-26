@@ -104,6 +104,7 @@ export interface Message {
   senderName: string;
   text: string;
   mediaUrl?: string | null;
+  mediaUrls?: string[];
   mediaType?: "image" | "video" | null;
   timestamp: Date;
 }

@@ -1,11 +1,20 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, TextInput } from 'react-native';
-import { Mic, Plus, Send, Square } from 'lucide-react-native';
+import { Image } from 'expo-image';
+import { Mic, Plus, Send, Square, X } from 'lucide-react-native';
 import { Colors, Radius, Spacing, Typography } from '@/src/constants/theme';
+
+interface ChatAttachment {
+  id: string;
+  uri: string;
+  type: 'image' | 'video';
+}
 
 interface ChatInputProps {
   onSendMessage: (text: string) => void;
   onMediaPress: () => void;
+  attachments?: ChatAttachment[];
+  onRemoveAttachment?: (id: string) => void;
   onAudioPress?: () => void;
   placeholder?: string;
   disabled?: boolean;
@@ -14,6 +23,8 @@ interface ChatInputProps {
 export default function ChatInput({ 
   onSendMessage, 
   onMediaPress, 
+  attachments = [],
+  onRemoveAttachment,
   onAudioPress,
   placeholder = "Type a message...",
   disabled = false
@@ -22,7 +33,7 @@ export default function ChatInput({
   const [isRecording, setIsRecording] = useState(false);
 
   const handleSend = () => {
-    if (text.trim() && !disabled) {
+    if ((text.trim() || attachments.length > 0) && !disabled) {
       onSendMessage(text.trim());
       setText('');
     }
@@ -35,10 +46,31 @@ export default function ChatInput({
     }
   };
 
-  const canSend = text.trim().length > 0 && !disabled;
+  const canSend = (text.trim().length > 0 || attachments.length > 0) && !disabled;
 
   return (
     <View style={styles.container}>
+      {attachments.length > 0 && (
+        <View style={styles.attachmentTray}>
+          {attachments.map((attachment) => (
+            <View key={attachment.id} style={styles.attachmentPreview}>
+              <Image
+                source={{ uri: attachment.uri }}
+                style={styles.attachmentImage}
+                contentFit="cover"
+              />
+              <TouchableOpacity
+                style={styles.removeAttachmentButton}
+                onPress={() => onRemoveAttachment?.(attachment.id)}
+                disabled={disabled}
+                accessibilityLabel="Remove attachment"
+              >
+                <X size={14} color={Colors.white} strokeWidth={2.6} />
+              </TouchableOpacity>
+            </View>
+          ))}
+        </View>
+      )}
       <View style={styles.inputContainer}>
         {/* Media button */}
         <TouchableOpacity
@@ -68,7 +100,7 @@ export default function ChatInput({
         </View>
 
         {/* Audio button or Send button */}
-        {text.trim().length === 0 ? (
+        {!canSend ? (
           <TouchableOpacity
             style={[
               styles.audioButton,
@@ -131,6 +163,34 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: Colors.border,
     gap: Spacing.xs,
+  },
+  attachmentTray: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.sm,
+    paddingBottom: Spacing.xs,
+  },
+  attachmentPreview: {
+    width: 58,
+    height: 58,
+    borderRadius: Radius.sm,
+    overflow: 'hidden',
+    backgroundColor: Colors.inputBg,
+  },
+  attachmentImage: {
+    width: '100%',
+    height: '100%',
+  },
+  removeAttachmentButton: {
+    position: 'absolute',
+    top: 4,
+    right: 4,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: 'rgba(0, 0, 0, 0.62)',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   inputContainer: {
     flexDirection: 'row',

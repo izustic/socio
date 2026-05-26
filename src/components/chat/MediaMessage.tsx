@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Image } from 'expo-image';
 import { Video, ResizeMode } from 'expo-av';
 import { Colors, Radius, Spacing, Typography } from '@/src/constants/theme';
+import { getSignedChatMediaUrls } from '@/src/services/supabase';
 import Avatar from '../ui/Avatar';
 
 interface MediaMessageProps {
@@ -10,6 +11,7 @@ interface MediaMessageProps {
     id: string;
     type: 'image' | 'video' | 'audio';
     uri: string;
+    uris?: string[];
     caption?: string;
     duration?: number;
     size?: number;
@@ -33,6 +35,26 @@ export default function MediaMessage({
   onAudioPress
 }: MediaMessageProps) {
   const [videoStatus, setVideoStatus] = useState<'loading' | 'ready' | 'error'>('loading');
+  const sourceUris = useMemo(
+    () => (message.uris && message.uris.length > 0 ? message.uris : [message.uri]).filter(Boolean),
+    [message.uri, message.uris],
+  );
+  const [resolvedUris, setResolvedUris] = useState(sourceUris);
+
+  useEffect(() => {
+    let active = true;
+
+    const resolveMedia = async () => {
+      const signedUrls = await getSignedChatMediaUrls(sourceUris);
+      if (active) setResolvedUris(signedUrls);
+    };
+
+    resolveMedia();
+
+    return () => {
+      active = false;
+    };
+  }, [sourceUris]);
 
   const formatFileSize = (bytes: number) => {
     if (bytes < 1024) return bytes + ' B';
@@ -46,33 +68,57 @@ export default function MediaMessage({
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const renderImageContent = () => (
-    <TouchableOpacity
-      style={styles.mediaContainer}
-      onPress={() => onImagePress?.(message.uri)}
-      activeOpacity={0.8}
-    >
-      <Image
-        source={{ uri: message.uri }}
-        style={styles.image}
-        contentFit="cover"
-      />
-      {message.caption && (
-        <View style={styles.captionContainer}>
-          <Text style={styles.caption}>{message.caption}</Text>
+  const renderImageContent = () => {
+    const images = resolvedUris.length > 0 ? resolvedUris : sourceUris;
+    const visibleImages = images.slice(0, 4);
+    const overflowCount = Math.max(images.length - visibleImages.length, 0);
+    const isGrid = images.length > 1;
+
+    return (
+      <View style={styles.mediaContainer}>
+        <View style={[styles.imageGrid, !isGrid && styles.singleImageGrid]}>
+          {visibleImages.map((uri, index) => (
+            <TouchableOpacity
+              key={`${uri}-${index}`}
+              style={[
+                styles.imageCell,
+                !isGrid && styles.singleImageCell,
+                isGrid && images.length === 3 && index === 0 && styles.largeGridCell,
+              ]}
+              onPress={() => onImagePress?.(uri)}
+              activeOpacity={0.86}
+            >
+              <Image
+                source={{ uri }}
+                style={styles.image}
+                contentFit="cover"
+                transition={120}
+              />
+              {overflowCount > 0 && index === visibleImages.length - 1 && (
+                <View style={styles.overflowOverlay}>
+                  <Text style={styles.overflowText}>+{overflowCount}</Text>
+                </View>
+              )}
+            </TouchableOpacity>
+          ))}
         </View>
-      )}
-    </TouchableOpacity>
-  );
+        {message.caption && (
+          <View style={styles.captionContainer}>
+            <Text style={styles.caption}>{message.caption}</Text>
+          </View>
+        )}
+      </View>
+    );
+  };
 
   const renderVideoContent = () => (
     <TouchableOpacity
       style={styles.mediaContainer}
-      onPress={() => onVideoPress?.(message.uri)}
+        onPress={() => onVideoPress?.(resolvedUris[0] ?? message.uri)}
       activeOpacity={0.8}
     >
       <Video
-        source={{ uri: message.uri }}
+        source={{ uri: resolvedUris[0] ?? message.uri }}
         style={styles.video}
         resizeMode={ResizeMode.COVER}
         shouldPlay={false}
@@ -213,14 +259,48 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
   },
   mediaContainer: {
-    position: 'relative',
     borderRadius: Radius.lg,
     overflow: 'hidden',
+    backgroundColor: Colors.inputBg,
+  },
+  imageGrid: {
+    width: 220,
+    minHeight: 200,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 2,
+  },
+  singleImageGrid: {
+    height: 220,
+  },
+  imageCell: {
+    width: 109,
+    height: 99,
+    overflow: 'hidden',
+    backgroundColor: Colors.placeholder,
+  },
+  singleImageCell: {
+    width: 220,
+    height: 220,
+  },
+  largeGridCell: {
+    width: 220,
+    height: 120,
   },
   image: {
-    width: 200,
-    height: 200,
-    borderRadius: Radius.lg,
+    width: '100%',
+    height: '100%',
+  },
+  overflowOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.46)',
+  },
+  overflowText: {
+    color: Colors.white,
+    fontSize: 24,
+    fontWeight: '800',
   },
   video: {
     width: 200,
@@ -271,15 +351,11 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   captionContainer: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    backgroundColor: Colors.inputBg,
     padding: Spacing.sm,
   },
   caption: {
-    color: '#fff',
+    color: Colors.textPrimary,
     fontSize: 12,
   },
   audioContainer: {

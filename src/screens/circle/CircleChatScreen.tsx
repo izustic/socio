@@ -33,6 +33,12 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+type PendingAttachment = {
+  id: string;
+  uri: string;
+  type: "image";
+};
+
 type MessageRow = {
   id: string;
   circle_id: string;
@@ -97,6 +103,7 @@ export default function CircleChatRoute() {
   const listRef = useRef<FlatList<Message>>(null);
   const [circle, setCircle] = useState<Circle | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
+  const [pendingAttachments, setPendingAttachments] = useState<PendingAttachment[]>([]);
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const subscribedCircleId = circle?.id;
@@ -166,9 +173,41 @@ export default function CircleChatRoute() {
 
   const handleSendMessage = async (text: string) => {
     if (!circle || !user || sending) return;
+    if (!text.trim() && pendingAttachments.length === 0) return;
 
     setSending(true);
     try {
+      if (pendingAttachments.length > 0) {
+        const mediaPaths = await Promise.all(
+          pendingAttachments.map((attachment, index) =>
+            uploadChatMedia(
+              circle.id,
+              `${Crypto.randomUUID()}-${index}`,
+              attachment.uri,
+              attachment.type,
+            ),
+          ),
+        );
+
+        const sentMessage = await sendMessage(
+          circle.id,
+          user.id,
+          getDisplayName(profile?.name, user.user_metadata?.display_name, user.email),
+          text,
+          mediaPaths[0],
+          "image",
+          mediaPaths,
+        );
+        setMessages((currentMessages) => {
+          if (currentMessages.some((message) => message.id === sentMessage.id)) {
+            return currentMessages;
+          }
+          return [...currentMessages, sentMessage];
+        });
+        setPendingAttachments([]);
+        return;
+      }
+
       const sentMessage = await sendMessage(
         circle.id,
         user.id,
@@ -191,6 +230,10 @@ export default function CircleChatRoute() {
 
   const handleMediaPress = async () => {
     if (!circle || !user || sending) return;
+    if (pendingAttachments.length >= 10) {
+      Alert.alert("Limit reached", "Send or remove some images before adding more.");
+      return;
+    }
 
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permission.granted) {
@@ -199,53 +242,42 @@ export default function CircleChatRoute() {
     }
 
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.All,
+      mediaTypes: ["images"],
       quality: 0.8,
       allowsEditing: false,
+      allowsMultipleSelection: true,
+      selectionLimit: Math.max(1, 10 - pendingAttachments.length),
+      orderedSelection: true,
     });
 
-    if (result.canceled || !result.assets[0]) return;
+    if (result.canceled || !result.assets?.length) return;
 
-    const asset = result.assets[0];
-    const mediaType = asset.type === "video" ? "video" : "image";
+    setPendingAttachments((currentAttachments) => {
+      const openSlots = Math.max(0, 10 - currentAttachments.length);
+      const selectedAttachments = result.assets
+        .filter((asset) => asset.type !== "video")
+        .slice(0, openSlots)
+        .map((asset) => ({
+          id: Crypto.randomUUID(),
+          uri: asset.uri,
+          type: "image" as const,
+        }));
 
-    setSending(true);
-    try {
-      const mediaId = Crypto.randomUUID();
-      const mediaUrl = await uploadChatMedia(circle.id, mediaId, asset.uri, mediaType);
-
-      const sentMessage = await sendMessage(
-        circle.id,
-        user.id,
-        getDisplayName(profile?.name, user.user_metadata?.display_name, user.email),
-        "",
-        mediaUrl,
-        mediaType,
-      );
-      setMessages((currentMessages) => {
-        if (currentMessages.some((message) => message.id === sentMessage.id)) {
-          return currentMessages;
-        }
-        return [...currentMessages, sentMessage];
-      });
-    } catch (error) {
-      console.error("Error sending media:", error);
-      Alert.alert("Media not sent", "Please try a smaller file or choose another one.");
-    } finally {
-      setSending(false);
-    }
+      return [...currentAttachments, ...selectedAttachments];
+    });
   };
 
   const renderMessage = ({ item }: { item: Message }) => {
     const isOwn = item.senderId === user?.id;
 
-    if (item.mediaUrl && item.mediaType) {
+    if ((item.mediaUrls && item.mediaUrls.length > 0) || (item.mediaUrl && item.mediaType)) {
       return (
         <MediaMessage
           message={{
             id: item.id,
-            type: item.mediaType,
-            uri: item.mediaUrl,
+            type: item.mediaType ?? "image",
+            uri: item.mediaUrls?.[0] ?? item.mediaUrl ?? "",
+            uris: item.mediaUrls?.length ? item.mediaUrls : item.mediaUrl ? [item.mediaUrl] : [],
             caption: item.text || undefined,
             senderId: item.senderId,
             senderName: item.senderName,
@@ -352,6 +384,12 @@ export default function CircleChatRoute() {
         <ChatInput
           disabled={sending}
           placeholder="Message Circle..."
+          attachments={pendingAttachments}
+          onRemoveAttachment={(attachmentId) => {
+            setPendingAttachments((currentAttachments) =>
+              currentAttachments.filter((attachment) => attachment.id !== attachmentId),
+            );
+          }}
           onMediaPress={handleMediaPress}
           onSendMessage={(text) => {
             void handleSendMessage(text);

@@ -14,7 +14,7 @@ import {
 } from "@/src/services/messages";
 import { uploadChatMedia } from "@/src/services/supabase";
 import { Circle, Message } from "@/src/types";
-import { Video, ResizeMode } from "expo-av";
+import { Audio, Video, ResizeMode } from "expo-av";
 import * as Crypto from "expo-crypto";
 import * as FileSystem from "expo-file-system";
 import * as ImagePicker from "expo-image-picker";
@@ -48,7 +48,7 @@ type ReplyTarget = {
   messageId: string;
   senderName: string;
   text: string;
-  mediaType?: "image" | "video" | null;
+  mediaType?: "image" | "video" | "audio" | null;
 };
 
 type OpenMedia = {
@@ -64,17 +64,17 @@ type MessageRow = {
   text: string;
   media_url: string | null;
   media_urls?: string[] | null;
-  media_type?: "image" | "video" | null;
+  media_type?: "image" | "video" | "audio" | null;
   reply_to_message_id?: string | null;
   reply_to_sender_name?: string | null;
   reply_to_text?: string | null;
-  reply_to_media_type?: "image" | "video" | null;
+  reply_to_media_type?: "image" | "video" | "audio" | null;
   created_at: string;
 };
 
 const inferMediaType = (
   mediaUrl: string | null | undefined,
-): "image" | "video" | null => {
+): "image" | "video" | "audio" | null => {
   if (!mediaUrl) return null;
   const normalized = mediaUrl.toLowerCase();
   if (
@@ -83,6 +83,14 @@ const inferMediaType = (
     normalized.endsWith(".mov")
   ) {
     return "video";
+  }
+  if (
+    normalized.includes("/audios/") ||
+    normalized.endsWith(".m4a") ||
+    normalized.endsWith(".mp3") ||
+    normalized.endsWith(".aac")
+  ) {
+    return "audio";
   }
   if (
     normalized.includes("/images/") ||
@@ -123,6 +131,7 @@ const getReplyText = (message: Message) => {
     return count > 1 ? `${count} photos` : "Photo";
   }
   if (message.mediaType === "video") return "Video";
+  if (message.mediaType === "audio") return "Voice message";
   return "Message";
 };
 
@@ -142,9 +151,13 @@ export default function CircleChatRoute() {
   const { user, profile } = useAuth();
   const params = useLocalSearchParams<{ circleId?: string }>();
   const listRef = useRef<FlatList<Message>>(null);
+  const recordingRef = useRef<Audio.Recording | null>(null);
   const [circle, setCircle] = useState<Circle | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [pendingAttachments, setPendingAttachments] = useState<PendingAttachment[]>([]);
+  const [pendingAudio, setPendingAudio] = useState<{ uri: string; durationMillis?: number } | null>(null);
+  const [recordingDurationMillis, setRecordingDurationMillis] = useState(0);
+  const [recordingAudio, setRecordingAudio] = useState(false);
   const [replyTo, setReplyTo] = useState<ReplyTarget | null>(null);
   const [highlightedMessageId, setHighlightedMessageId] = useState<string | null>(null);
   const [openMedia, setOpenMedia] = useState<OpenMedia | null>(null);
@@ -216,12 +229,47 @@ export default function CircleChatRoute() {
     };
   }, [subscribedCircleId]);
 
+  useEffect(() => {
+    return () => {
+      recordingRef.current?.stopAndUnloadAsync().catch(() => undefined);
+    };
+  }, []);
+
   const handleSendMessage = async (text: string) => {
     if (!circle || !user || sending) return;
-    if (!text.trim() && pendingAttachments.length === 0) return;
+    if (!text.trim() && pendingAttachments.length === 0 && !pendingAudio) return;
 
     setSending(true);
     try {
+      if (pendingAudio) {
+        const audioPath = await uploadChatMedia(
+          circle.id,
+          Crypto.randomUUID(),
+          pendingAudio.uri,
+          "audio",
+        );
+
+        const sentMessage = await sendMessage(
+          circle.id,
+          user.id,
+          getDisplayName(profile?.name, user.user_metadata?.display_name, user.email),
+          text,
+          audioPath,
+          "audio",
+          [audioPath],
+          replyTo,
+        );
+        setMessages((currentMessages) => {
+          if (currentMessages.some((message) => message.id === sentMessage.id)) {
+            return currentMessages;
+          }
+          return [...currentMessages, sentMessage];
+        });
+        setPendingAudio(null);
+        setReplyTo(null);
+        return;
+      }
+
       if (pendingAttachments.length > 0) {
         const mediaPaths = await Promise.all(
           pendingAttachments.map((attachment, index) =>
@@ -281,7 +329,7 @@ export default function CircleChatRoute() {
   };
 
   const handleMediaPress = async () => {
-    if (!circle || !user || sending) return;
+    if (!circle || !user || sending || recordingAudio || pendingAudio) return;
     if (pendingAttachments.length >= 10) {
       Alert.alert("Limit reached", "Send or remove some images before adding more.");
       return;
@@ -317,6 +365,79 @@ export default function CircleChatRoute() {
 
       return [...currentAttachments, ...selectedAttachments];
     });
+  };
+
+  const handleStartRecording = async () => {
+    if (sending || recordingAudio || pendingAudio || pendingAttachments.length > 0) return;
+
+    try {
+      const permission = await Audio.requestPermissionsAsync();
+      if (!permission.granted) {
+        Alert.alert("Microphone needed", "Allow microphone access to record voice messages.");
+        return;
+      }
+
+      await Audio.setAudioModeAsync({
+        allowsRecordingIOS: true,
+        playsInSilentModeIOS: true,
+      });
+
+      const { recording } = await Audio.Recording.createAsync(
+        Audio.RecordingOptionsPresets.HIGH_QUALITY,
+        (status) => {
+          if (status.isRecording) {
+            setRecordingDurationMillis(status.durationMillis ?? 0);
+          }
+        },
+        250,
+      );
+
+      recordingRef.current = recording;
+      setRecordingDurationMillis(0);
+      setRecordingAudio(true);
+    } catch (error) {
+      console.error("Error starting recording:", error);
+      Alert.alert("Could not record", "Please try again.");
+      setRecordingAudio(false);
+      recordingRef.current = null;
+    }
+  };
+
+  const handleStopRecording = async () => {
+    if (!recordingRef.current) return;
+
+    try {
+      const recording = recordingRef.current;
+      recordingRef.current = null;
+      await recording.stopAndUnloadAsync();
+      const uri = recording.getURI();
+      const status = await recording.getStatusAsync();
+
+      await Audio.setAudioModeAsync({
+        allowsRecordingIOS: false,
+        playsInSilentModeIOS: true,
+      });
+
+      setRecordingAudio(false);
+      setPendingAudio(
+        uri
+          ? {
+              uri,
+              durationMillis: status.durationMillis ?? recordingDurationMillis,
+            }
+          : null,
+      );
+    } catch (error) {
+      console.error("Error stopping recording:", error);
+      Alert.alert("Recording failed", "Please try recording again.");
+      setRecordingAudio(false);
+      recordingRef.current = null;
+    }
+  };
+
+  const handleDiscardAudio = () => {
+    setPendingAudio(null);
+    setRecordingDurationMillis(0);
   };
 
   const handleReplyPress = (messageId: string) => {
@@ -519,6 +640,9 @@ export default function CircleChatRoute() {
           disabled={sending}
           placeholder="Message Circle..."
           attachments={pendingAttachments}
+          audioPreview={pendingAudio}
+          isRecordingAudio={recordingAudio}
+          recordingDurationMillis={recordingDurationMillis}
           replyTo={replyTo}
           onCancelReply={() => setReplyTo(null)}
           onRemoveAttachment={(attachmentId) => {
@@ -527,6 +651,9 @@ export default function CircleChatRoute() {
             );
           }}
           onMediaPress={handleMediaPress}
+          onStartRecording={handleStartRecording}
+          onStopRecording={handleStopRecording}
+          onDiscardAudio={handleDiscardAudio}
           onSendMessage={(text) => {
             void handleSendMessage(text);
           }}

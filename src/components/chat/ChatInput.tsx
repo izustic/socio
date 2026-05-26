@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, TextInput } from 'react-native';
 import { Image } from 'expo-image';
-import { Mic, Plus, Send, Square, X } from 'lucide-react-native';
+import { Audio } from 'expo-av';
+import { Mic, Play, Plus, Send, Square, Trash2, X } from 'lucide-react-native';
 import { Colors, Radius, Spacing, Typography } from '@/src/constants/theme';
 
 interface ChatAttachment {
@@ -13,7 +14,12 @@ interface ChatAttachment {
 interface ReplyPreview {
   senderName: string;
   text: string;
-  mediaType?: 'image' | 'video' | null;
+  mediaType?: 'image' | 'video' | 'audio' | null;
+}
+
+interface AudioPreview {
+  uri: string;
+  durationMillis?: number;
 }
 
 interface ChatInputProps {
@@ -23,7 +29,12 @@ interface ChatInputProps {
   onRemoveAttachment?: (id: string) => void;
   replyTo?: ReplyPreview | null;
   onCancelReply?: () => void;
-  onAudioPress?: () => void;
+  audioPreview?: AudioPreview | null;
+  isRecordingAudio?: boolean;
+  recordingDurationMillis?: number;
+  onStartRecording?: () => void;
+  onStopRecording?: () => void;
+  onDiscardAudio?: () => void;
   placeholder?: string;
   disabled?: boolean;
 }
@@ -35,28 +46,81 @@ export default function ChatInput({
   onRemoveAttachment,
   replyTo,
   onCancelReply,
-  onAudioPress,
+  audioPreview,
+  isRecordingAudio = false,
+  recordingDurationMillis = 0,
+  onStartRecording,
+  onStopRecording,
+  onDiscardAudio,
   placeholder = "Type a message...",
   disabled = false
 }: ChatInputProps) {
   const [text, setText] = useState('');
-  const [isRecording, setIsRecording] = useState(false);
+  const [previewPlaying, setPreviewPlaying] = useState(false);
+  const previewSoundRef = useRef<Audio.Sound | null>(null);
+
+  useEffect(() => {
+    return () => {
+      previewSoundRef.current?.unloadAsync();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (audioPreview) return;
+    previewSoundRef.current?.unloadAsync();
+    previewSoundRef.current = null;
+    setPreviewPlaying(false);
+  }, [audioPreview]);
+
+  const formatDuration = (durationMillis = 0) => {
+    const totalSeconds = Math.max(0, Math.round(durationMillis / 1000));
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+  };
 
   const handleSend = () => {
-    if ((text.trim() || attachments.length > 0) && !disabled) {
+    if ((text.trim() || attachments.length > 0 || audioPreview) && !disabled) {
       onSendMessage(text.trim());
       setText('');
     }
   };
 
   const handleAudioPress = () => {
-    if (onAudioPress) {
-      setIsRecording(!isRecording);
-      onAudioPress();
+    if (isRecordingAudio) {
+      onStopRecording?.();
+      return;
     }
+    onStartRecording?.();
   };
 
-  const canSend = (text.trim().length > 0 || attachments.length > 0) && !disabled;
+  const handlePreviewPlay = async () => {
+    if (!audioPreview || disabled) return;
+
+    if (previewSoundRef.current && previewPlaying) {
+      await previewSoundRef.current.stopAsync();
+      await previewSoundRef.current.setPositionAsync(0);
+      setPreviewPlaying(false);
+      return;
+    }
+
+    await previewSoundRef.current?.unloadAsync();
+    const { sound } = await Audio.Sound.createAsync(
+      { uri: audioPreview.uri },
+      { shouldPlay: true },
+    );
+    sound.setOnPlaybackStatusUpdate((status) => {
+      if (status.isLoaded && status.didJustFinish) {
+        setPreviewPlaying(false);
+        sound.setPositionAsync(0);
+      }
+    });
+    previewSoundRef.current = sound;
+    setPreviewPlaying(true);
+  };
+
+  const canSend = (text.trim().length > 0 || attachments.length > 0 || Boolean(audioPreview)) && !disabled;
+  const audioButtonDisabled = disabled || attachments.length > 0 || Boolean(audioPreview);
 
   return (
     <View style={styles.container}>
@@ -68,7 +132,7 @@ export default function ChatInput({
               {replyTo.senderName}
             </Text>
             <Text numberOfLines={1} style={styles.replyText}>
-              {replyTo.mediaType ? `${replyTo.mediaType === 'image' ? 'Photo' : 'Video'}${replyTo.text ? ` · ${replyTo.text}` : ''}` : replyTo.text}
+              {replyTo.mediaType ? `${replyTo.mediaType === 'image' ? 'Photo' : replyTo.mediaType === 'video' ? 'Video' : 'Voice message'}${replyTo.text ? ` · ${replyTo.text}` : ''}` : replyTo.text}
             </Text>
           </View>
           <TouchableOpacity
@@ -102,16 +166,45 @@ export default function ChatInput({
           ))}
         </View>
       )}
+      {isRecordingAudio && (
+        <View style={styles.audioDraft}>
+          <View style={styles.recordingDot} />
+          <Text style={styles.audioDraftText}>Recording</Text>
+          <Text style={styles.audioDuration}>{formatDuration(recordingDurationMillis)}</Text>
+        </View>
+      )}
+      {audioPreview && !isRecordingAudio && (
+        <View style={styles.audioDraft}>
+          <TouchableOpacity
+            style={styles.audioPreviewButton}
+            onPress={handlePreviewPlay}
+            disabled={disabled}
+            accessibilityLabel="Play voice message preview"
+          >
+            <Play size={16} color={Colors.textPrimary} fill={Colors.textPrimary} strokeWidth={2.2} />
+          </TouchableOpacity>
+          <View style={styles.audioPreviewBar} />
+          <Text style={styles.audioDuration}>{formatDuration(audioPreview.durationMillis)}</Text>
+          <TouchableOpacity
+            style={styles.discardAudioButton}
+            onPress={onDiscardAudio}
+            disabled={disabled}
+            accessibilityLabel="Discard voice message"
+          >
+            <Trash2 size={17} color={Colors.danger} strokeWidth={2.2} />
+          </TouchableOpacity>
+        </View>
+      )}
       <View style={styles.inputContainer}>
         {/* Media button */}
         <TouchableOpacity
           style={styles.mediaButton}
           onPress={onMediaPress}
-          disabled={disabled}
+          disabled={disabled || isRecordingAudio || Boolean(audioPreview)}
         >
           <Plus
             size={24} 
-            color={disabled ? Colors.textDisabled : Colors.primary} 
+            color={disabled || isRecordingAudio || audioPreview ? Colors.textDisabled : Colors.primary} 
             strokeWidth={2.4}
           />
         </TouchableOpacity>
@@ -135,13 +228,13 @@ export default function ChatInput({
           <TouchableOpacity
             style={[
               styles.audioButton,
-              isRecording && styles.audioButtonRecording,
+              isRecordingAudio && styles.audioButtonRecording,
               disabled && styles.buttonDisabled
             ]}
             onPress={handleAudioPress}
-            disabled={disabled || !onAudioPress}
+            disabled={audioButtonDisabled && !isRecordingAudio}
           >
-            {isRecording ? (
+            {isRecordingAudio ? (
               <Square
                 size={20}
                 color={disabled ? Colors.textDisabled : '#FF5252'}
@@ -151,7 +244,7 @@ export default function ChatInput({
             ) : (
               <Mic
                 size={20}
-                color={disabled ? Colors.textDisabled : Colors.primary}
+                color={audioButtonDisabled ? Colors.textDisabled : Colors.primary}
                 strokeWidth={2.4}
               />
             )}
@@ -244,6 +337,53 @@ const styles = StyleSheet.create({
   attachmentImage: {
     width: '100%',
     height: '100%',
+  },
+  audioDraft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    borderRadius: Radius.md,
+    backgroundColor: Colors.inputBg,
+  },
+  recordingDot: {
+    width: 9,
+    height: 9,
+    borderRadius: Radius.full,
+    backgroundColor: Colors.danger,
+  },
+  audioDraftText: {
+    ...Typography.bodySmall,
+    flex: 1,
+    color: Colors.textPrimary,
+    fontWeight: '700',
+  },
+  audioDuration: {
+    ...Typography.bodySmall,
+    color: Colors.textSecondary,
+    fontVariant: ['tabular-nums'],
+  },
+  audioPreviewButton: {
+    width: 32,
+    height: 32,
+    borderRadius: Radius.full,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: Colors.white,
+  },
+  audioPreviewBar: {
+    flex: 1,
+    height: 4,
+    borderRadius: Radius.full,
+    backgroundColor: Colors.border,
+  },
+  discardAudioButton: {
+    width: 32,
+    height: 32,
+    borderRadius: Radius.full,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   removeAttachmentButton: {
     position: 'absolute',

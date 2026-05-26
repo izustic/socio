@@ -105,12 +105,12 @@ export interface Message {
   text: string;
   mediaUrl?: string | null;
   mediaUrls?: string[];
-  mediaType?: "image" | "video" | null;
+  mediaType?: "image" | "video" | "audio" | null;
   replyTo?: {
     messageId: string;
     senderName: string;
     text: string;
-    mediaType?: "image" | "video" | null;
+    mediaType?: "image" | "video" | "audio" | null;
   } | null;
   timestamp: Date;
 }

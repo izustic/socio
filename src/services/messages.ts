@@ -10,11 +10,11 @@ interface MessageRow {
   text: string;
   media_url: string | null;
   media_urls?: string[] | null;
-  media_type?: 'image' | 'video' | null;
+  media_type?: 'image' | 'video' | 'audio' | null;
   reply_to_message_id?: string | null;
   reply_to_sender_name?: string | null;
   reply_to_text?: string | null;
-  reply_to_media_type?: 'image' | 'video' | null;
+  reply_to_media_type?: 'image' | 'video' | 'audio' | null;
   created_at: string;
 }
 
@@ -22,14 +22,17 @@ export interface MessageReplyInput {
   messageId: string;
   senderName: string;
   text: string;
-  mediaType?: 'image' | 'video' | null;
+  mediaType?: 'image' | 'video' | 'audio' | null;
 }
 
-const inferMediaType = (mediaUrl: string | null | undefined): 'image' | 'video' | null => {
+const inferMediaType = (mediaUrl: string | null | undefined): 'image' | 'video' | 'audio' | null => {
   if (!mediaUrl) return null;
   const normalized = mediaUrl.toLowerCase();
   if (normalized.includes('/videos/') || normalized.endsWith('.mp4') || normalized.endsWith('.mov')) {
     return 'video';
+  }
+  if (normalized.includes('/audios/') || normalized.endsWith('.m4a') || normalized.endsWith('.mp3') || normalized.endsWith('.aac')) {
+    return 'audio';
   }
   if (normalized.includes('/images/') || normalized.endsWith('.jpg') || normalized.endsWith('.jpeg') || normalized.endsWith('.png') || normalized.endsWith('.webp')) {
     return 'image';
@@ -63,7 +66,7 @@ export const sendMessage = async (
   senderName: string,
   text: string,
   mediaUrl?: string,
-  mediaType?: 'image' | 'video',
+  mediaType?: 'image' | 'video' | 'audio',
   mediaUrls?: string[],
   replyTo?: MessageReplyInput | null
 ): Promise<Message> => {

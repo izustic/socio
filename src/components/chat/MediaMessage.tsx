@@ -1,7 +1,8 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Image } from 'expo-image';
-import { Video, ResizeMode } from 'expo-av';
+import { Audio, Video, ResizeMode } from 'expo-av';
+import { Mic, Pause, Play } from 'lucide-react-native';
 import { Colors, Radius, Spacing, Typography } from '@/src/constants/theme';
 import { getSignedChatMediaUrls } from '@/src/services/supabase';
 import Avatar from '../ui/Avatar';
@@ -24,7 +25,7 @@ interface MediaMessageProps {
       messageId: string;
       senderName: string;
       text: string;
-      mediaType?: 'image' | 'video' | null;
+      mediaType?: 'image' | 'video' | 'audio' | null;
     } | null;
   };
   showAvatar?: boolean;
@@ -47,6 +48,8 @@ export default function MediaMessage({
   onAudioPress
 }: MediaMessageProps) {
   const [videoStatus, setVideoStatus] = useState<'loading' | 'ready' | 'error'>('loading');
+  const [audioPlaying, setAudioPlaying] = useState(false);
+  const [audioSound, setAudioSound] = useState<Audio.Sound | null>(null);
   const sourceUris = useMemo(
     () => (message.uris && message.uris.length > 0 ? message.uris : [message.uri]).filter(Boolean),
     [message.uri, message.uris],
@@ -67,6 +70,12 @@ export default function MediaMessage({
       active = false;
     };
   }, [sourceUris]);
+
+  useEffect(() => {
+    return () => {
+      audioSound?.unloadAsync();
+    };
+  }, [audioSound]);
 
   const formatFileSize = (bytes: number) => {
     if (bytes < 1024) return bytes + ' B';
@@ -164,17 +173,56 @@ export default function MediaMessage({
   const renderAudioContent = () => (
     <TouchableOpacity
       style={styles.audioContainer}
-      onPress={() => onAudioPress?.(message.uri)}
+      onPress={async () => {
+        const audioUri = resolvedUris[0] ?? message.uri;
+        onAudioPress?.(audioUri);
+
+        if (audioSound && audioPlaying) {
+          await audioSound.pauseAsync();
+          setAudioPlaying(false);
+          return;
+        }
+
+        if (audioSound) {
+          await audioSound.playAsync();
+          setAudioPlaying(true);
+          return;
+        }
+
+        const { sound } = await Audio.Sound.createAsync(
+          { uri: audioUri },
+          { shouldPlay: true },
+        );
+        sound.setOnPlaybackStatusUpdate((status) => {
+          if (status.isLoaded && status.didJustFinish) {
+            setAudioPlaying(false);
+            sound.setPositionAsync(0);
+          }
+        });
+        setAudioSound(sound);
+        setAudioPlaying(true);
+      }}
       onLongPress={onLongPress}
       delayLongPress={240}
       activeOpacity={0.8}
     >
       <View style={styles.audioContent}>
         <View style={styles.audioIcon}>
-          <Text style={styles.audioIconText}>🎵</Text>
+          <Mic size={18} color={Colors.white} strokeWidth={2.4} />
         </View>
         <View style={styles.audioInfo}>
-          <Text style={styles.audioType}>Audio Message</Text>
+          {/* <Text style={styles.audioType}>Voice message</Text> */}
+          <View style={styles.audioWave}>
+            {Array.from({ length: 18 }).map((_, index) => (
+              <View
+                key={index}
+                style={[
+                  styles.audioWaveBar,
+                  { height: 7 + ((index * 7) % 18) },
+                ]}
+              />
+            ))}
+          </View>
           {message.duration && (
             <Text style={styles.audioDuration}>{formatDuration(message.duration)}</Text>
           )}
@@ -183,7 +231,11 @@ export default function MediaMessage({
           )}
         </View>
         <View style={styles.audioPlayButton}>
-          <Text style={styles.audioPlayIcon}>▶</Text>
+          {audioPlaying ? (
+            <Pause size={14} color={Colors.white} fill={Colors.white} strokeWidth={2.4} />
+          ) : (
+            <Play size={14} color={Colors.white} fill={Colors.white} strokeWidth={2.4} />
+          )}
         </View>
       </View>
       {message.caption && (
@@ -254,7 +306,7 @@ export default function MediaMessage({
                 </Text>
                 <Text numberOfLines={1} style={styles.replyText}>
                   {message.replyTo.mediaType
-                    ? `${message.replyTo.mediaType === 'image' ? 'Photo' : 'Video'}${message.replyTo.text ? ` · ${message.replyTo.text}` : ''}`
+                    ? `${message.replyTo.mediaType === 'image' ? 'Photo' : message.replyTo.mediaType === 'video' ? 'Video' : 'Voice message'}${message.replyTo.text ? ` · ${message.replyTo.text}` : ''}`
                     : message.replyTo.text}
                 </Text>
               </View>
@@ -475,9 +527,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  audioIconText: {
-    fontSize: 16,
-  },
   audioInfo: {
     flex: 1,
     gap: 2,
@@ -485,6 +534,18 @@ const styles = StyleSheet.create({
   audioType: {
     ...Typography.body,
     fontWeight: '600',
+  },
+  audioWave: {
+    height: 24,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    marginVertical: 2,
+  },
+  audioWaveBar: {
+    width: 3,
+    borderRadius: Radius.full,
+    backgroundColor: Colors.textDisabled,
   },
   audioDuration: {
     ...Typography.bodySmall,

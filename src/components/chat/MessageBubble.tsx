@@ -16,7 +16,7 @@ interface MessageBubbleProps {
       messageId: string;
       senderName: string;
       text: string;
-      mediaType?: 'image' | 'video' | null;
+      mediaType?: 'image' | 'video' | 'audio' | null;
     } | null;
   };
   showAvatar?: boolean;
@@ -90,7 +90,7 @@ export default function MessageBubble({
                   message.isOwn ? styles.ownReplyText : styles.otherReplyText,
                 ]}>
                   {message.replyTo.mediaType
-                    ? `${message.replyTo.mediaType === 'image' ? 'Photo' : 'Video'}${message.replyTo.text ? ` · ${message.replyTo.text}` : ''}`
+                    ? `${message.replyTo.mediaType === 'image' ? 'Photo' : message.replyTo.mediaType === 'video' ? 'Video' : 'Voice message'}${message.replyTo.text ? ` · ${message.replyTo.text}` : ''}`
                     : message.replyTo.text}
                 </Text>
               </View>

@@ -169,12 +169,18 @@ export default function CircleChatRoute() {
 
     setSending(true);
     try {
-      await sendMessage(
+      const sentMessage = await sendMessage(
         circle.id,
         user.id,
         getDisplayName(profile?.name, user.user_metadata?.display_name, user.email),
         text,
       );
+      setMessages((currentMessages) => {
+        if (currentMessages.some((message) => message.id === sentMessage.id)) {
+          return currentMessages;
+        }
+        return [...currentMessages, sentMessage];
+      });
     } catch (error) {
       console.error("Error sending message:", error);
       Alert.alert("Message not sent", "Please try again.");
@@ -208,7 +214,7 @@ export default function CircleChatRoute() {
       const mediaId = Crypto.randomUUID();
       const mediaUrl = await uploadChatMedia(circle.id, mediaId, asset.uri, mediaType);
 
-      await sendMessage(
+      const sentMessage = await sendMessage(
         circle.id,
         user.id,
         getDisplayName(profile?.name, user.user_metadata?.display_name, user.email),
@@ -216,6 +222,12 @@ export default function CircleChatRoute() {
         mediaUrl,
         mediaType,
       );
+      setMessages((currentMessages) => {
+        if (currentMessages.some((message) => message.id === sentMessage.id)) {
+          return currentMessages;
+        }
+        return [...currentMessages, sentMessage];
+      });
     } catch (error) {
       console.error("Error sending media:", error);
       Alert.alert("Media not sent", "Please try a smaller file or choose another one.");

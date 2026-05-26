@@ -43,7 +43,7 @@ export const sendMessage = async (
   text: string,
   mediaUrl?: string,
   mediaType?: 'image' | 'video'
-): Promise<string> => {
+): Promise<Message> => {
   try {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user || user.id !== senderId) {
@@ -65,13 +65,12 @@ export const sendMessage = async (
     const { data, error } = await supabase
       .from('messages')
       .insert(messagePayload)
-      .select('id')
+      .select('*')
       .single();
 
     if (error) throw error;
 
-    console.log('Message sent:', data.id);
-    return data.id;
+    return rowToMessage(data as MessageRow);
   } catch (error) {
     console.error('Error sending message:', error);
     throw error;

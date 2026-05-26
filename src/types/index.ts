@@ -106,5 +106,11 @@ export interface Message {
   mediaUrl?: string | null;
   mediaUrls?: string[];
   mediaType?: "image" | "video" | null;
+  replyTo?: {
+    messageId: string;
+    senderName: string;
+    text: string;
+    mediaType?: "image" | "video" | null;
+  } | null;
   timestamp: Date;
 }

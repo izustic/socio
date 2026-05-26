@@ -11,7 +11,18 @@ interface MessageRow {
   media_url: string | null;
   media_urls?: string[] | null;
   media_type?: 'image' | 'video' | null;
+  reply_to_message_id?: string | null;
+  reply_to_sender_name?: string | null;
+  reply_to_text?: string | null;
+  reply_to_media_type?: 'image' | 'video' | null;
   created_at: string;
+}
+
+export interface MessageReplyInput {
+  messageId: string;
+  senderName: string;
+  text: string;
+  mediaType?: 'image' | 'video' | null;
 }
 
 const inferMediaType = (mediaUrl: string | null | undefined): 'image' | 'video' | null => {
@@ -35,6 +46,14 @@ const rowToMessage = (row: MessageRow): Message => ({
   mediaUrl: row.media_url,
   mediaUrls: row.media_urls?.length ? row.media_urls : row.media_url ? [row.media_url] : [],
   mediaType: row.media_type ?? inferMediaType(row.media_url),
+  replyTo: row.reply_to_message_id
+    ? {
+        messageId: row.reply_to_message_id,
+        senderName: row.reply_to_sender_name ?? 'Someone',
+        text: row.reply_to_text ?? '',
+        mediaType: row.reply_to_media_type ?? null,
+      }
+    : null,
   timestamp: new Date(row.created_at),
 });
 
@@ -45,7 +64,8 @@ export const sendMessage = async (
   text: string,
   mediaUrl?: string,
   mediaType?: 'image' | 'video',
-  mediaUrls?: string[]
+  mediaUrls?: string[],
+  replyTo?: MessageReplyInput | null
 ): Promise<Message> => {
   try {
     const { data: { user } } = await supabase.auth.getUser();
@@ -67,6 +87,13 @@ export const sendMessage = async (
 
     if (mediaUrls && mediaUrls.length > 0) {
       messagePayload.media_urls = mediaUrls;
+    }
+
+    if (replyTo) {
+      messagePayload.reply_to_message_id = replyTo.messageId;
+      messagePayload.reply_to_sender_name = replyTo.senderName;
+      messagePayload.reply_to_text = replyTo.text;
+      messagePayload.reply_to_media_type = replyTo.mediaType ?? null;
     }
 
     const { data, error } = await supabase

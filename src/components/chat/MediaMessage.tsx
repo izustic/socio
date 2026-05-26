@@ -20,8 +20,17 @@ interface MediaMessageProps {
     senderPhoto?: string;
     timestamp: Date;
     isOwn: boolean;
+    replyTo?: {
+      messageId: string;
+      senderName: string;
+      text: string;
+      mediaType?: 'image' | 'video' | null;
+    } | null;
   };
   showAvatar?: boolean;
+  onLongPress?: () => void;
+  onReplyPress?: (messageId: string) => void;
+  highlighted?: boolean;
   onImagePress?: (uri: string) => void;
   onVideoPress?: (uri: string) => void;
   onAudioPress?: (uri: string) => void;
@@ -30,6 +39,9 @@ interface MediaMessageProps {
 export default function MediaMessage({ 
   message, 
   showAvatar = true,
+  onLongPress,
+  onReplyPress,
+  highlighted = false,
   onImagePress,
   onVideoPress,
   onAudioPress
@@ -86,6 +98,8 @@ export default function MediaMessage({
                 isGrid && images.length === 3 && index === 0 && styles.largeGridCell,
               ]}
               onPress={() => onImagePress?.(uri)}
+              onLongPress={onLongPress}
+              delayLongPress={240}
               activeOpacity={0.86}
             >
               <Image
@@ -114,7 +128,9 @@ export default function MediaMessage({
   const renderVideoContent = () => (
     <TouchableOpacity
       style={styles.mediaContainer}
-        onPress={() => onVideoPress?.(resolvedUris[0] ?? message.uri)}
+      onPress={() => onVideoPress?.(resolvedUris[0] ?? message.uri)}
+      onLongPress={onLongPress}
+      delayLongPress={240}
       activeOpacity={0.8}
     >
       <Video
@@ -149,6 +165,8 @@ export default function MediaMessage({
     <TouchableOpacity
       style={styles.audioContainer}
       onPress={() => onAudioPress?.(message.uri)}
+      onLongPress={onLongPress}
+      delayLongPress={240}
       activeOpacity={0.8}
     >
       <View style={styles.audioContent}>
@@ -188,10 +206,15 @@ export default function MediaMessage({
   };
 
   return (
-    <View style={[
+    <TouchableOpacity
+      style={[
       styles.container,
       message.isOwn ? styles.ownContainer : styles.otherContainer
-    ]}>
+      ]}
+      activeOpacity={0.9}
+      onLongPress={onLongPress}
+      delayLongPress={240}
+    >
       {!message.isOwn && showAvatar && (
         <Avatar
           uri={message.senderPhoto}
@@ -207,8 +230,36 @@ export default function MediaMessage({
         
         <View style={[
           styles.mediaWrapper,
+          highlighted && styles.highlightedWrapper,
           message.isOwn ? styles.ownWrapper : styles.otherWrapper
         ]}>
+          {message.replyTo && (
+            <TouchableOpacity
+              activeOpacity={0.78}
+              onPress={() => onReplyPress?.(message.replyTo!.messageId)}
+              style={[
+              styles.replySnippet,
+              message.isOwn ? styles.ownReplySnippet : styles.otherReplySnippet,
+            ]}>
+              <View style={[
+                styles.replyAccent,
+                message.isOwn ? styles.ownReplyAccent : styles.otherReplyAccent,
+              ]} />
+              <View style={styles.replyCopy}>
+                <Text numberOfLines={1} style={[
+                  styles.replySender,
+                  message.isOwn ? styles.ownReplySender : styles.otherReplySender,
+                ]}>
+                  {message.replyTo.senderName}
+                </Text>
+                <Text numberOfLines={1} style={styles.replyText}>
+                  {message.replyTo.mediaType
+                    ? `${message.replyTo.mediaType === 'image' ? 'Photo' : 'Video'}${message.replyTo.text ? ` · ${message.replyTo.text}` : ''}`
+                    : message.replyTo.text}
+                </Text>
+              </View>
+            </TouchableOpacity>
+          )}
           {mediaContent()}
         </View>
       </View>
@@ -216,7 +267,7 @@ export default function MediaMessage({
       {message.isOwn && showAvatar && (
         <View style={styles.avatarSpacer} />
       )}
-    </View>
+    </TouchableOpacity>
   );
 }
 
@@ -251,12 +302,58 @@ const styles = StyleSheet.create({
   mediaWrapper: {
     borderRadius: Radius.lg,
     overflow: 'hidden',
+    minWidth: 220,
+  },
+  highlightedWrapper: {
+    borderWidth: 2,
+    borderColor: Colors.primaryDark,
   },
   ownWrapper: {
     backgroundColor: 'transparent',
   },
   otherWrapper: {
     backgroundColor: 'transparent',
+  },
+  replySnippet: {
+    flexDirection: 'row',
+    gap: Spacing.sm,
+    borderRadius: Radius.md,
+    padding: Spacing.sm,
+    marginBottom: 2,
+  },
+  ownReplySnippet: {
+    backgroundColor: Colors.primaryLight,
+  },
+  otherReplySnippet: {
+    backgroundColor: Colors.inputBg,
+  },
+  replyAccent: {
+    width: 3,
+    borderRadius: Radius.full,
+  },
+  ownReplyAccent: {
+    backgroundColor: Colors.primary,
+  },
+  otherReplyAccent: {
+    backgroundColor: Colors.primary,
+  },
+  replyCopy: {
+    flex: 1,
+    minWidth: 0,
+  },
+  replySender: {
+    ...Typography.bodySmall,
+    fontWeight: '700',
+  },
+  ownReplySender: {
+    color: Colors.primaryDark,
+  },
+  otherReplySender: {
+    color: Colors.primaryDark,
+  },
+  replyText: {
+    ...Typography.bodySmall,
+    color: Colors.textSecondary,
   },
   mediaContainer: {
     borderRadius: Radius.lg,

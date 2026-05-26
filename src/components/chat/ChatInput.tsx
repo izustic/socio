@@ -10,11 +10,19 @@ interface ChatAttachment {
   type: 'image' | 'video';
 }
 
+interface ReplyPreview {
+  senderName: string;
+  text: string;
+  mediaType?: 'image' | 'video' | null;
+}
+
 interface ChatInputProps {
   onSendMessage: (text: string) => void;
   onMediaPress: () => void;
   attachments?: ChatAttachment[];
   onRemoveAttachment?: (id: string) => void;
+  replyTo?: ReplyPreview | null;
+  onCancelReply?: () => void;
   onAudioPress?: () => void;
   placeholder?: string;
   disabled?: boolean;
@@ -25,6 +33,8 @@ export default function ChatInput({
   onMediaPress, 
   attachments = [],
   onRemoveAttachment,
+  replyTo,
+  onCancelReply,
   onAudioPress,
   placeholder = "Type a message...",
   disabled = false
@@ -50,6 +60,27 @@ export default function ChatInput({
 
   return (
     <View style={styles.container}>
+      {replyTo && (
+        <View style={styles.replyPreview}>
+          <View style={styles.replyAccent} />
+          <View style={styles.replyCopy}>
+            <Text numberOfLines={1} style={styles.replySender}>
+              {replyTo.senderName}
+            </Text>
+            <Text numberOfLines={1} style={styles.replyText}>
+              {replyTo.mediaType ? `${replyTo.mediaType === 'image' ? 'Photo' : 'Video'}${replyTo.text ? ` · ${replyTo.text}` : ''}` : replyTo.text}
+            </Text>
+          </View>
+          <TouchableOpacity
+            style={styles.cancelReplyButton}
+            onPress={onCancelReply}
+            disabled={disabled}
+            accessibilityLabel="Cancel reply"
+          >
+            <X size={16} color={Colors.textSecondary} strokeWidth={2.5} />
+          </TouchableOpacity>
+        </View>
+      )}
       {attachments.length > 0 && (
         <View style={styles.attachmentTray}>
           {attachments.map((attachment) => (
@@ -163,6 +194,39 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: Colors.border,
     gap: Spacing.xs,
+  },
+  replyPreview: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+    padding: Spacing.sm,
+    borderRadius: Radius.md,
+    backgroundColor: Colors.inputBg,
+  },
+  replyAccent: {
+    width: 3,
+    alignSelf: 'stretch',
+    borderRadius: Radius.full,
+    backgroundColor: Colors.primary,
+  },
+  replyCopy: {
+    flex: 1,
+    minWidth: 0,
+  },
+  replySender: {
+    ...Typography.bodySmall,
+    color: Colors.primaryDark,
+    fontWeight: '700',
+  },
+  replyText: {
+    ...Typography.bodySmall,
+    color: Colors.textSecondary,
+  },
+  cancelReplyButton: {
+    width: 28,
+    height: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   attachmentTray: {
     flexDirection: 'row',

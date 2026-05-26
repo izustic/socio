@@ -39,6 +39,13 @@ type PendingAttachment = {
   type: "image";
 };
 
+type ReplyTarget = {
+  messageId: string;
+  senderName: string;
+  text: string;
+  mediaType?: "image" | "video" | null;
+};
+
 type MessageRow = {
   id: string;
   circle_id: string;
@@ -46,7 +53,12 @@ type MessageRow = {
   sender_name: string;
   text: string;
   media_url: string | null;
+  media_urls?: string[] | null;
   media_type?: "image" | "video" | null;
+  reply_to_message_id?: string | null;
+  reply_to_sender_name?: string | null;
+  reply_to_text?: string | null;
+  reply_to_media_type?: "image" | "video" | null;
   created_at: string;
 };
 
@@ -81,9 +93,28 @@ const rowToMessage = (row: MessageRow): Message => ({
   senderName: row.sender_name,
   text: row.text,
   mediaUrl: row.media_url,
+  mediaUrls: row.media_urls?.length ? row.media_urls : row.media_url ? [row.media_url] : [],
   mediaType: row.media_type ?? inferMediaType(row.media_url),
+  replyTo: row.reply_to_message_id
+    ? {
+        messageId: row.reply_to_message_id,
+        senderName: row.reply_to_sender_name ?? "Someone",
+        text: row.reply_to_text ?? "",
+        mediaType: row.reply_to_media_type ?? null,
+      }
+    : null,
   timestamp: new Date(row.created_at),
 });
+
+const getReplyText = (message: Message) => {
+  if (message.text.trim()) return message.text.trim();
+  if (message.mediaType === "image") {
+    const count = message.mediaUrls?.length ?? (message.mediaUrl ? 1 : 0);
+    return count > 1 ? `${count} photos` : "Photo";
+  }
+  if (message.mediaType === "video") return "Video";
+  return "Message";
+};
 
 const getDisplayName = (
   profileName?: string,
@@ -104,6 +135,8 @@ export default function CircleChatRoute() {
   const [circle, setCircle] = useState<Circle | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [pendingAttachments, setPendingAttachments] = useState<PendingAttachment[]>([]);
+  const [replyTo, setReplyTo] = useState<ReplyTarget | null>(null);
+  const [highlightedMessageId, setHighlightedMessageId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const subscribedCircleId = circle?.id;
@@ -197,6 +230,7 @@ export default function CircleChatRoute() {
           mediaPaths[0],
           "image",
           mediaPaths,
+          replyTo,
         );
         setMessages((currentMessages) => {
           if (currentMessages.some((message) => message.id === sentMessage.id)) {
@@ -205,6 +239,7 @@ export default function CircleChatRoute() {
           return [...currentMessages, sentMessage];
         });
         setPendingAttachments([]);
+        setReplyTo(null);
         return;
       }
 
@@ -213,6 +248,10 @@ export default function CircleChatRoute() {
         user.id,
         getDisplayName(profile?.name, user.user_metadata?.display_name, user.email),
         text,
+        undefined,
+        undefined,
+        undefined,
+        replyTo,
       );
       setMessages((currentMessages) => {
         if (currentMessages.some((message) => message.id === sentMessage.id)) {
@@ -220,6 +259,7 @@ export default function CircleChatRoute() {
         }
         return [...currentMessages, sentMessage];
       });
+      setReplyTo(null);
     } catch (error) {
       console.error("Error sending message:", error);
       Alert.alert("Message not sent", "Please try again.");
@@ -267,12 +307,41 @@ export default function CircleChatRoute() {
     });
   };
 
+  const handleReplyPress = (messageId: string) => {
+    const targetIndex = messages.findIndex((message) => message.id === messageId);
+
+    if (targetIndex < 0) {
+      Alert.alert("Original message unavailable", "That message is not loaded in this chat.");
+      return;
+    }
+
+    listRef.current?.scrollToIndex({
+      index: targetIndex,
+      animated: true,
+      viewPosition: 0.45,
+    });
+    setHighlightedMessageId(messageId);
+    setTimeout(() => setHighlightedMessageId(null), 1400);
+  };
+
   const renderMessage = ({ item }: { item: Message }) => {
     const isOwn = item.senderId === user?.id;
+    const highlighted = highlightedMessageId === item.id;
+    const selectReply = () => {
+      setReplyTo({
+        messageId: item.id,
+        senderName: item.senderName,
+        text: getReplyText(item),
+        mediaType: item.mediaType ?? null,
+      });
+    };
 
     if ((item.mediaUrls && item.mediaUrls.length > 0) || (item.mediaUrl && item.mediaType)) {
       return (
         <MediaMessage
+          onLongPress={selectReply}
+          onReplyPress={handleReplyPress}
+          highlighted={highlighted}
           message={{
             id: item.id,
             type: item.mediaType ?? "image",
@@ -283,6 +352,7 @@ export default function CircleChatRoute() {
             senderName: item.senderName,
             timestamp: item.timestamp,
             isOwn,
+            replyTo: item.replyTo,
           }}
         />
       );
@@ -290,6 +360,9 @@ export default function CircleChatRoute() {
 
     return (
       <MessageBubble
+        onLongPress={selectReply}
+        onReplyPress={handleReplyPress}
+        highlighted={highlighted}
         message={{
           id: item.id,
           text: item.text,
@@ -297,6 +370,7 @@ export default function CircleChatRoute() {
           senderName: item.senderName,
           timestamp: item.timestamp,
           isOwn,
+          replyTo: item.replyTo,
         }}
       />
     );
@@ -376,6 +450,19 @@ export default function CircleChatRoute() {
               <Text style={styles.emptyText}>Start the conversation.</Text>
             </View>
           }
+          onScrollToIndexFailed={(info) => {
+            listRef.current?.scrollToOffset({
+              offset: Math.max(0, info.averageItemLength * info.index),
+              animated: true,
+            });
+            setTimeout(() => {
+              listRef.current?.scrollToIndex({
+                index: info.index,
+                animated: true,
+                viewPosition: 0.45,
+              });
+            }, 250);
+          }}
           keyboardShouldPersistTaps="handled"
           onContentSizeChange={() => listRef.current?.scrollToEnd({ animated: true })}
           onLayout={() => listRef.current?.scrollToEnd({ animated: false })}
@@ -385,6 +472,8 @@ export default function CircleChatRoute() {
           disabled={sending}
           placeholder="Message Circle..."
           attachments={pendingAttachments}
+          replyTo={replyTo}
+          onCancelReply={() => setReplyTo(null)}
           onRemoveAttachment={(attachmentId) => {
             setPendingAttachments((currentAttachments) =>
               currentAttachments.filter((attachment) => attachment.id !== attachmentId),

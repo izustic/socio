@@ -14,16 +14,21 @@ import {
 } from "@/src/services/messages";
 import { uploadChatMedia } from "@/src/services/supabase";
 import { Circle, Message } from "@/src/types";
+import { Video, ResizeMode } from "expo-av";
 import * as Crypto from "expo-crypto";
+import * as FileSystem from "expo-file-system";
 import * as ImagePicker from "expo-image-picker";
+import { Image } from "expo-image";
+import * as MediaLibrary from "expo-media-library";
 import { router, useLocalSearchParams } from "expo-router";
-import { ChevronLeft, MoreHorizontal, Phone } from "lucide-react-native";
+import { ChevronLeft, Download, MoreHorizontal, Phone, X } from "lucide-react-native";
 import React, { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
   FlatList,
   KeyboardAvoidingView,
+  Modal,
   Platform,
   StatusBar,
   StyleSheet,
@@ -44,6 +49,11 @@ type ReplyTarget = {
   senderName: string;
   text: string;
   mediaType?: "image" | "video" | null;
+};
+
+type OpenMedia = {
+  uri: string;
+  type: "image" | "video";
 };
 
 type MessageRow = {
@@ -137,6 +147,8 @@ export default function CircleChatRoute() {
   const [pendingAttachments, setPendingAttachments] = useState<PendingAttachment[]>([]);
   const [replyTo, setReplyTo] = useState<ReplyTarget | null>(null);
   const [highlightedMessageId, setHighlightedMessageId] = useState<string | null>(null);
+  const [openMedia, setOpenMedia] = useState<OpenMedia | null>(null);
+  const [savingMedia, setSavingMedia] = useState(false);
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const subscribedCircleId = circle?.id;
@@ -324,6 +336,39 @@ export default function CircleChatRoute() {
     setTimeout(() => setHighlightedMessageId(null), 1400);
   };
 
+  const getMediaFileName = (media: OpenMedia) => {
+    const urlPath = media.uri.split("?")[0];
+    const existingName = urlPath.split("/").pop();
+    if (existingName && existingName.includes(".")) return existingName;
+
+    const extension = media.type === "image" ? "jpg" : "mp4";
+    return `socio-${Date.now()}.${extension}`;
+  };
+
+  const handleSaveOpenMedia = async () => {
+    if (!openMedia || savingMedia) return;
+
+    setSavingMedia(true);
+    try {
+      const permission = await MediaLibrary.requestPermissionsAsync();
+      if (!permission.granted) {
+        Alert.alert("Permission needed", "Allow photo access to save this media.");
+        return;
+      }
+
+      const fileName = getMediaFileName(openMedia);
+      const destination = `${FileSystem.cacheDirectory}${fileName}`;
+      const downloaded = await FileSystem.downloadAsync(openMedia.uri, destination);
+      await MediaLibrary.saveToLibraryAsync(downloaded.uri);
+      Alert.alert("Saved", openMedia.type === "image" ? "Photo saved to your library." : "Video saved to your library.");
+    } catch (error) {
+      console.error("Error saving media:", error);
+      Alert.alert("Could not save", "Please try again.");
+    } finally {
+      setSavingMedia(false);
+    }
+  };
+
   const renderMessage = ({ item }: { item: Message }) => {
     const isOwn = item.senderId === user?.id;
     const highlighted = highlightedMessageId === item.id;
@@ -342,6 +387,8 @@ export default function CircleChatRoute() {
           onLongPress={selectReply}
           onReplyPress={handleReplyPress}
           highlighted={highlighted}
+          onImagePress={(uri) => setOpenMedia({ uri, type: "image" })}
+          onVideoPress={(uri) => setOpenMedia({ uri, type: "video" })}
           message={{
             id: item.id,
             type: item.mediaType ?? "image",
@@ -484,6 +531,59 @@ export default function CircleChatRoute() {
             void handleSendMessage(text);
           }}
         />
+
+        <Modal
+          visible={Boolean(openMedia)}
+          animationType="fade"
+          transparent={false}
+          onRequestClose={() => setOpenMedia(null)}
+        >
+          <SafeAreaView style={styles.mediaViewer}>
+            <StatusBar barStyle="light-content" />
+            <View style={styles.mediaViewerHeader}>
+              <TouchableOpacity
+                activeOpacity={0.76}
+                style={styles.viewerButton}
+                onPress={() => setOpenMedia(null)}
+                accessibilityLabel="Close media viewer"
+              >
+                <X size={24} color={Colors.white} strokeWidth={2.3} />
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                activeOpacity={0.76}
+                style={[styles.viewerButton, savingMedia && styles.viewerButtonDisabled]}
+                onPress={handleSaveOpenMedia}
+                disabled={savingMedia}
+                accessibilityLabel="Save media"
+              >
+                {savingMedia ? (
+                  <ActivityIndicator size="small" color={Colors.white} />
+                ) : (
+                  <Download size={22} color={Colors.white} strokeWidth={2.3} />
+                )}
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.mediaViewerBody}>
+              {openMedia?.type === "image" ? (
+                <Image
+                  source={{ uri: openMedia.uri }}
+                  style={styles.fullImage}
+                  contentFit="contain"
+                />
+              ) : openMedia?.type === "video" ? (
+                <Video
+                  source={{ uri: openMedia.uri }}
+                  style={styles.fullVideo}
+                  resizeMode={ResizeMode.CONTAIN}
+                  useNativeControls
+                  shouldPlay
+                />
+              ) : null}
+            </View>
+          </SafeAreaView>
+        </Modal>
       </SafeAreaView>
     </KeyboardAvoidingView>
   );
@@ -557,5 +657,40 @@ const styles = StyleSheet.create({
     ...Typography.body,
     color: Colors.textSecondary,
     textAlign: "center",
+  },
+  mediaViewer: {
+    flex: 1,
+    backgroundColor: "#000",
+  },
+  mediaViewerHeader: {
+    height: 64,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: Spacing.md,
+  },
+  viewerButton: {
+    width: 44,
+    height: 44,
+    borderRadius: Radius.pill,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(255, 255, 255, 0.14)",
+  },
+  viewerButtonDisabled: {
+    opacity: 0.6,
+  },
+  mediaViewerBody: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  fullImage: {
+    width: "100%",
+    height: "100%",
+  },
+  fullVideo: {
+    width: "100%",
+    height: "100%",
   },
 });

@@ -4,8 +4,9 @@ import MessageBubble from "@/src/components/chat/MessageBubble";
 import {
   PollCreator,
   PollMessage,
-  type PollData,
 } from "@/src/components/chat/PollComponents";
+
+import type { PollData } from "@/src/components/chat/PollComponents";
 import { Colors, Radius, Spacing, Typography } from "@/src/constants/theme";
 import { useAuth } from "@/src/context/AuthContext";
 import {

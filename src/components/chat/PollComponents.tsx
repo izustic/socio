@@ -25,13 +25,13 @@ import {
 // Types
 // ─────────────────────────────────────────────
 
-export interface PollOption {
+interface PollOption {
   id: string;
   text: string;
   votes: string[]; // array of voter userIds
 }
 
-export interface PollData {
+interface PollData {
   id: string;
   question: string;
   options: PollOption[];
@@ -61,7 +61,7 @@ const EXPIRY_OPTIONS = [
   { label: "7 days", value: 10080 },
 ];
 
-export function PollCreator({
+function PollCreator({
   visible,
   onClose,
   onCreatePoll,
@@ -317,7 +317,7 @@ interface PollMessageProps {
   isOwn?: boolean;
 }
 
-export function PollMessage({
+function PollMessage({
   poll,
   currentUserId,
   onVote,
@@ -545,6 +545,7 @@ export function PollMessage({
     </View>
   );
 }
+
 
 // ─────────────────────────────────────────────
 // PollCreator Styles
@@ -912,3 +913,6 @@ const poll_styles = StyleSheet.create({
     backgroundColor: Colors.textDisabled,
   },
 });
+
+export { PollCreator, PollMessage };
+export type { PollData, PollOption };

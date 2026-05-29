@@ -1,6 +1,11 @@
 import ChatInput from "@/src/components/chat/ChatInput";
 import MediaMessage from "@/src/components/chat/MediaMessage";
 import MessageBubble from "@/src/components/chat/MessageBubble";
+import {
+  PollCreator,
+  PollMessage,
+  type PollData,
+} from "@/src/components/chat/PollComponents";
 import { Colors, Radius, Spacing, Typography } from "@/src/constants/theme";
 import { useAuth } from "@/src/context/AuthContext";
 import {
@@ -12,16 +17,30 @@ import {
   sendMessage,
   subscribeToMessages,
 } from "@/src/services/messages";
+import {
+  addPollVote,
+  createPoll,
+  getPollById,
+  getPollsByIds,
+} from "@/src/services/polls";
 import { uploadChatMedia } from "@/src/services/supabase";
 import { Circle, Message } from "@/src/types";
-import { Audio, Video, ResizeMode } from "expo-av";
+import { Audio, ResizeMode, Video } from "expo-av";
 import * as Crypto from "expo-crypto";
 import * as FileSystem from "expo-file-system";
-import * as ImagePicker from "expo-image-picker";
 import { Image } from "expo-image";
+import * as ImagePicker from "expo-image-picker";
 import * as MediaLibrary from "expo-media-library";
 import { router, useLocalSearchParams } from "expo-router";
-import { ChevronLeft, Download, MoreHorizontal, Phone, X } from "lucide-react-native";
+import {
+  ChevronLeft,
+  ChartBarBig,
+  Download,
+  GalleryHorizontal,
+  MoreHorizontal,
+  Phone,
+  X,
+} from "lucide-react-native";
 import React, { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
@@ -111,7 +130,11 @@ const rowToMessage = (row: MessageRow): Message => ({
   senderName: row.sender_name,
   text: row.text,
   mediaUrl: row.media_url,
-  mediaUrls: row.media_urls?.length ? row.media_urls : row.media_url ? [row.media_url] : [],
+  mediaUrls: row.media_urls?.length
+    ? row.media_urls
+    : row.media_url
+      ? [row.media_url]
+      : [],
   mediaType: row.media_type ?? inferMediaType(row.media_url),
   replyTo: row.reply_to_message_id
     ? {
@@ -154,17 +177,27 @@ export default function CircleChatRoute() {
   const recordingRef = useRef<Audio.Recording | null>(null);
   const [circle, setCircle] = useState<Circle | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
-  const [pendingAttachments, setPendingAttachments] = useState<PendingAttachment[]>([]);
-  const [pendingAudio, setPendingAudio] = useState<{ uri: string; durationMillis?: number } | null>(null);
+  const [pendingAttachments, setPendingAttachments] = useState<
+    PendingAttachment[]
+  >([]);
+  const [pendingAudio, setPendingAudio] = useState<{
+    uri: string;
+    durationMillis?: number;
+  } | null>(null);
   const [recordingDurationMillis, setRecordingDurationMillis] = useState(0);
   const [recordingAudio, setRecordingAudio] = useState(false);
   const [replyTo, setReplyTo] = useState<ReplyTarget | null>(null);
-  const [highlightedMessageId, setHighlightedMessageId] = useState<string | null>(null);
+  const [highlightedMessageId, setHighlightedMessageId] = useState<
+    string | null
+  >(null);
   const [openMedia, setOpenMedia] = useState<OpenMedia | null>(null);
   const [savingMedia, setSavingMedia] = useState(false);
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
+  const [attachmentSheetVisible, setAttachmentSheetVisible] = useState(false);
   const subscribedCircleId = circle?.id;
+  const [pollCreatorVisible, setPollCreatorVisible] = useState(false);
+  const [polls, setPolls] = useState<Record<string, PollData>>({});
 
   useEffect(() => {
     let active = true;
@@ -222,12 +255,59 @@ export default function CircleChatRoute() {
         }
         return [...currentMessages, incoming];
       });
+
+      const pollId =
+        incoming.pollId ??
+        (incoming.text.startsWith("__poll__:")
+          ? incoming.text.replace("__poll__:", "")
+          : null);
+
+      if (pollId) {
+        void (async () => {
+          const poll = await getPollById(pollId);
+          if (poll) {
+            setPolls((prev) => ({ ...prev, [poll.id]: poll }));
+          }
+        })();
+      }
     });
 
     return () => {
       channel.unsubscribe();
     };
   }, [subscribedCircleId]);
+
+  useEffect(() => {
+    const loadPollsForMessages = async () => {
+      const messagePollIds = messages.reduce<string[]>((acc, message) => {
+        const referencedPollId =
+          message.pollId ??
+          (message.text.startsWith("__poll__:")
+            ? message.text.replace("__poll__:", "")
+            : null);
+
+        if (referencedPollId && !acc.includes(referencedPollId)) {
+          acc.push(referencedPollId);
+        }
+        return acc;
+      }, []);
+
+      const missingPollIds = messagePollIds.filter((id) => !polls[id]);
+      if (missingPollIds.length === 0) return;
+
+      const loadedPolls = await getPollsByIds(missingPollIds);
+      if (loadedPolls.length > 0) {
+        setPolls((prev) => ({
+          ...prev,
+          ...Object.fromEntries(loadedPolls.map((poll) => [poll.id, poll])),
+        }));
+      }
+    };
+
+    if (messages.length > 0) {
+      void loadPollsForMessages();
+    }
+  }, [messages, polls]);
 
   useEffect(() => {
     return () => {
@@ -237,7 +317,8 @@ export default function CircleChatRoute() {
 
   const handleSendMessage = async (text: string) => {
     if (!circle || !user || sending) return;
-    if (!text.trim() && pendingAttachments.length === 0 && !pendingAudio) return;
+    if (!text.trim() && pendingAttachments.length === 0 && !pendingAudio)
+      return;
 
     setSending(true);
     try {
@@ -252,7 +333,11 @@ export default function CircleChatRoute() {
         const sentMessage = await sendMessage(
           circle.id,
           user.id,
-          getDisplayName(profile?.name, user.user_metadata?.display_name, user.email),
+          getDisplayName(
+            profile?.name,
+            user.user_metadata?.display_name,
+            user.email,
+          ),
           text,
           audioPath,
           "audio",
@@ -260,7 +345,9 @@ export default function CircleChatRoute() {
           replyTo,
         );
         setMessages((currentMessages) => {
-          if (currentMessages.some((message) => message.id === sentMessage.id)) {
+          if (
+            currentMessages.some((message) => message.id === sentMessage.id)
+          ) {
             return currentMessages;
           }
           return [...currentMessages, sentMessage];
@@ -285,7 +372,11 @@ export default function CircleChatRoute() {
         const sentMessage = await sendMessage(
           circle.id,
           user.id,
-          getDisplayName(profile?.name, user.user_metadata?.display_name, user.email),
+          getDisplayName(
+            profile?.name,
+            user.user_metadata?.display_name,
+            user.email,
+          ),
           text,
           mediaPaths[0],
           "image",
@@ -293,7 +384,9 @@ export default function CircleChatRoute() {
           replyTo,
         );
         setMessages((currentMessages) => {
-          if (currentMessages.some((message) => message.id === sentMessage.id)) {
+          if (
+            currentMessages.some((message) => message.id === sentMessage.id)
+          ) {
             return currentMessages;
           }
           return [...currentMessages, sentMessage];
@@ -306,7 +399,11 @@ export default function CircleChatRoute() {
       const sentMessage = await sendMessage(
         circle.id,
         user.id,
-        getDisplayName(profile?.name, user.user_metadata?.display_name, user.email),
+        getDisplayName(
+          profile?.name,
+          user.user_metadata?.display_name,
+          user.email,
+        ),
         text,
         undefined,
         undefined,
@@ -327,11 +424,65 @@ export default function CircleChatRoute() {
       setSending(false);
     }
   };
+  const handleCreatePoll = async (
+    pollData: Omit<PollData, "id" | "createdAt">,
+  ) => {
+    if (!circle || !user || sending) return;
 
-  const handleMediaPress = async () => {
+    setSending(true);
+    try {
+      const poll = await createPoll(circle.id, pollData);
+      setPolls((prev) => ({ ...prev, [poll.id]: poll }));
+
+      const sentMessage = await sendMessage(
+        circle.id,
+        user.id,
+        getDisplayName(
+          profile?.name,
+          user.user_metadata?.display_name,
+          user.email,
+        ),
+        `__poll__:${poll.id}`,
+        undefined,
+        undefined,
+        undefined,
+        replyTo,
+        poll.id,
+      );
+
+      setMessages((curr) =>
+        curr.some((m) => m.id === sentMessage.id)
+          ? curr
+          : [...curr, sentMessage],
+      );
+      setReplyTo(null);
+    } catch (error) {
+      console.error("Error creating poll:", error);
+      Alert.alert("Poll not created", "Please try again.");
+    } finally {
+      setSending(false);
+    }
+  };
+
+  const handleVote = async (pollId: string, optionIds: string[]) => {
+    if (!user) return;
+
+    try {
+      const updatedPoll = await addPollVote(pollId, optionIds, user.id);
+      setPolls((prev) => ({ ...prev, [updatedPoll.id]: updatedPoll }));
+    } catch (error) {
+      console.error("Error submitting vote:", error);
+      Alert.alert("Vote failed", "Please try again.");
+    }
+  };
+
+  const openMediaPicker = async () => {
     if (!circle || !user || sending || recordingAudio || pendingAudio) return;
     if (pendingAttachments.length >= 10) {
-      Alert.alert("Limit reached", "Send or remove some images before adding more.");
+      Alert.alert(
+        "Limit reached",
+        "Send or remove some images before adding more.",
+      );
       return;
     }
 
@@ -352,28 +503,54 @@ export default function CircleChatRoute() {
 
     if (result.canceled || !result.assets?.length) return;
 
-    setPendingAttachments((currentAttachments) => {
-      const openSlots = Math.max(0, 10 - currentAttachments.length);
-      const selectedAttachments = result.assets
-        .filter((asset) => asset.type !== "video")
-        .slice(0, openSlots)
-        .map((asset) => ({
-          id: Crypto.randomUUID(),
-          uri: asset.uri,
-          type: "image" as const,
-        }));
-
-      return [...currentAttachments, ...selectedAttachments];
+    setPendingAttachments((curr) => {
+      const openSlots = Math.max(0, 10 - curr.length);
+      return [
+        ...curr,
+        ...result.assets
+          .filter((a) => a.type !== "video")
+          .slice(0, openSlots)
+          .map((a) => ({
+            id: Crypto.randomUUID(),
+            uri: a.uri,
+            type: "image" as const,
+          })),
+      ];
     });
   };
 
+  const handleMediaPress = () => {
+    if (!circle || !user || sending || recordingAudio || pendingAudio) return;
+    setAttachmentSheetVisible(true);
+  };
+
+  const closeAttachmentSheet = () => setAttachmentSheetVisible(false);
+
+  const handleOpenPoll = () => {
+    closeAttachmentSheet();
+    setPollCreatorVisible(true);
+  };
+
+  const handleOpenGallery = async () => {
+    closeAttachmentSheet();
+    await openMediaPicker();
+  };
   const handleStartRecording = async () => {
-    if (sending || recordingAudio || pendingAudio || pendingAttachments.length > 0) return;
+    if (
+      sending ||
+      recordingAudio ||
+      pendingAudio ||
+      pendingAttachments.length > 0
+    )
+      return;
 
     try {
       const permission = await Audio.requestPermissionsAsync();
       if (!permission.granted) {
-        Alert.alert("Microphone needed", "Allow microphone access to record voice messages.");
+        Alert.alert(
+          "Microphone needed",
+          "Allow microphone access to record voice messages.",
+        );
         return;
       }
 
@@ -441,10 +618,15 @@ export default function CircleChatRoute() {
   };
 
   const handleReplyPress = (messageId: string) => {
-    const targetIndex = messages.findIndex((message) => message.id === messageId);
+    const targetIndex = messages.findIndex(
+      (message) => message.id === messageId,
+    );
 
     if (targetIndex < 0) {
-      Alert.alert("Original message unavailable", "That message is not loaded in this chat.");
+      Alert.alert(
+        "Original message unavailable",
+        "That message is not loaded in this chat.",
+      );
       return;
     }
 
@@ -473,15 +655,26 @@ export default function CircleChatRoute() {
     try {
       const permission = await MediaLibrary.requestPermissionsAsync();
       if (!permission.granted) {
-        Alert.alert("Permission needed", "Allow photo access to save this media.");
+        Alert.alert(
+          "Permission needed",
+          "Allow photo access to save this media.",
+        );
         return;
       }
 
       const fileName = getMediaFileName(openMedia);
       const destination = `${FileSystem.cacheDirectory}${fileName}`;
-      const downloaded = await FileSystem.downloadAsync(openMedia.uri, destination);
+      const downloaded = await FileSystem.downloadAsync(
+        openMedia.uri,
+        destination,
+      );
       await MediaLibrary.saveToLibraryAsync(downloaded.uri);
-      Alert.alert("Saved", openMedia.type === "image" ? "Photo saved to your library." : "Video saved to your library.");
+      Alert.alert(
+        "Saved",
+        openMedia.type === "image"
+          ? "Photo saved to your library."
+          : "Video saved to your library.",
+      );
     } catch (error) {
       console.error("Error saving media:", error);
       Alert.alert("Could not save", "Please try again.");
@@ -490,6 +683,59 @@ export default function CircleChatRoute() {
     }
   };
 
+  // const renderMessage = ({ item }: { item: Message }) => {
+  //   const isOwn = item.senderId === user?.id;
+  //   const highlighted = highlightedMessageId === item.id;
+  //   const selectReply = () => {
+  //     setReplyTo({
+  //       messageId: item.id,
+  //       senderName: item.senderName,
+  //       text: getReplyText(item),
+  //       mediaType: item.mediaType ?? null,
+  //     });
+  //   };
+
+  //   if ((item.mediaUrls && item.mediaUrls.length > 0) || (item.mediaUrl && item.mediaType)) {
+  //     return (
+  //       <MediaMessage
+  //         onLongPress={selectReply}
+  //         onReplyPress={handleReplyPress}
+  //         highlighted={highlighted}
+  //         onImagePress={(uri) => setOpenMedia({ uri, type: "image" })}
+  //         onVideoPress={(uri) => setOpenMedia({ uri, type: "video" })}
+  //         message={{
+  //           id: item.id,
+  //           type: item.mediaType ?? "image",
+  //           uri: item.mediaUrls?.[0] ?? item.mediaUrl ?? "",
+  //           uris: item.mediaUrls?.length ? item.mediaUrls : item.mediaUrl ? [item.mediaUrl] : [],
+  //           caption: item.text || undefined,
+  //           senderId: item.senderId,
+  //           senderName: item.senderName,
+  //           timestamp: item.timestamp,
+  //           isOwn,
+  //           replyTo: item.replyTo,
+  //         }}
+  //       />
+  //     );
+  //   }
+
+  //   return (
+  //     <MessageBubble
+  //       onLongPress={selectReply}
+  //       onReplyPress={handleReplyPress}
+  //       highlighted={highlighted}
+  //       message={{
+  //         id: item.id,
+  //         text: item.text,
+  //         senderId: item.senderId,
+  //         senderName: item.senderName,
+  //         timestamp: item.timestamp,
+  //         isOwn,
+  //         replyTo: item.replyTo,
+  //       }}
+  //     />
+  //   );
+  // };
   const renderMessage = ({ item }: { item: Message }) => {
     const isOwn = item.senderId === user?.id;
     const highlighted = highlightedMessageId === item.id;
@@ -502,7 +748,33 @@ export default function CircleChatRoute() {
       });
     };
 
-    if ((item.mediaUrls && item.mediaUrls.length > 0) || (item.mediaUrl && item.mediaType)) {
+    // poll message
+    if (item.text.startsWith("__poll__:")) {
+      const pollId = item.text.replace("__poll__:", "");
+      const poll = polls[pollId];
+      if (!poll) return null;
+      return (
+        <View
+          style={[
+            { paddingHorizontal: Spacing.md, marginBottom: Spacing.sm },
+            isOwn ? { alignItems: "flex-end" } : { alignItems: "flex-start" },
+          ]}
+        >
+          <PollMessage
+            poll={poll}
+            currentUserId={user?.id ?? ""}
+            onVote={handleVote}
+            isOwn={isOwn}
+          />
+        </View>
+      );
+    }
+
+    // existing media / text rendering unchanged below...
+    if (
+      (item.mediaUrls && item.mediaUrls.length > 0) ||
+      (item.mediaUrl && item.mediaType)
+    ) {
       return (
         <MediaMessage
           onLongPress={selectReply}
@@ -514,7 +786,11 @@ export default function CircleChatRoute() {
             id: item.id,
             type: item.mediaType ?? "image",
             uri: item.mediaUrls?.[0] ?? item.mediaUrl ?? "",
-            uris: item.mediaUrls?.length ? item.mediaUrls : item.mediaUrl ? [item.mediaUrl] : [],
+            uris: item.mediaUrls?.length
+              ? item.mediaUrls
+              : item.mediaUrl
+                ? [item.mediaUrl]
+                : [],
             caption: item.text || undefined,
             senderId: item.senderId,
             senderName: item.senderName,
@@ -543,7 +819,6 @@ export default function CircleChatRoute() {
       />
     );
   };
-
   if (loading) {
     return (
       <SafeAreaView style={styles.container}>
@@ -561,7 +836,9 @@ export default function CircleChatRoute() {
         <StatusBar barStyle="dark-content" />
         <View style={styles.centered}>
           <Text style={styles.title}>No active Circle</Text>
-          <Text style={styles.emptyText}>Create or join a Circle to start chatting.</Text>
+          <Text style={styles.emptyText}>
+            Create or join a Circle to start chatting.
+          </Text>
         </View>
       </SafeAreaView>
     );
@@ -582,7 +859,11 @@ export default function CircleChatRoute() {
             onPress={() => router.replace("/(tabs)/home")}
             accessibilityLabel="Back to Circle"
           >
-            <ChevronLeft size={24} color={Colors.textPrimary} strokeWidth={2.2} />
+            <ChevronLeft
+              size={24}
+              color={Colors.textPrimary}
+              strokeWidth={2.2}
+            />
           </TouchableOpacity>
           <View style={styles.headerCopy}>
             <Text numberOfLines={1} style={styles.title}>
@@ -601,7 +882,11 @@ export default function CircleChatRoute() {
               <Phone size={20} color={Colors.textPrimary} strokeWidth={2.2} />
             </TouchableOpacity>
             <TouchableOpacity activeOpacity={0.76} style={styles.iconButton}>
-              <MoreHorizontal size={22} color={Colors.textPrimary} strokeWidth={2.2} />
+              <MoreHorizontal
+                size={22}
+                color={Colors.textPrimary}
+                strokeWidth={2.2}
+              />
             </TouchableOpacity>
           </View>
         </View>
@@ -632,7 +917,9 @@ export default function CircleChatRoute() {
             }, 250);
           }}
           keyboardShouldPersistTaps="handled"
-          onContentSizeChange={() => listRef.current?.scrollToEnd({ animated: true })}
+          onContentSizeChange={() =>
+            listRef.current?.scrollToEnd({ animated: true })
+          }
           onLayout={() => listRef.current?.scrollToEnd({ animated: false })}
         />
 
@@ -647,7 +934,9 @@ export default function CircleChatRoute() {
           onCancelReply={() => setReplyTo(null)}
           onRemoveAttachment={(attachmentId) => {
             setPendingAttachments((currentAttachments) =>
-              currentAttachments.filter((attachment) => attachment.id !== attachmentId),
+              currentAttachments.filter(
+                (attachment) => attachment.id !== attachmentId,
+              ),
             );
           }}
           onMediaPress={handleMediaPress}
@@ -658,6 +947,48 @@ export default function CircleChatRoute() {
             void handleSendMessage(text);
           }}
         />
+
+        <Modal
+          visible={attachmentSheetVisible}
+          animationType="fade"
+          transparent
+          onRequestClose={closeAttachmentSheet}
+        >
+          <TouchableOpacity
+            style={styles.attachmentSheetOverlay}
+            activeOpacity={1}
+            onPress={closeAttachmentSheet}
+          >
+            <View style={styles.attachmentSheetContainer}>
+              <View style={styles.attachmentSheetHandle} />
+              <Text style={styles.attachmentSheetTitle}>Add to message</Text>
+              <TouchableOpacity
+                activeOpacity={0.76}
+                style={styles.attachmentOption}
+                onPress={handleOpenGallery}
+              >
+                <View style={styles.attachmentOptionIcon}>
+                  <GalleryHorizontal
+                    size={22}
+                    color={Colors.primary}
+                    strokeWidth={2.2}
+                  />
+                </View>
+                <Text style={styles.attachmentOptionText}>Gallery</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                activeOpacity={0.76}
+                style={styles.attachmentOption}
+                onPress={handleOpenPoll}
+              >
+                <View style={styles.attachmentOptionIcon}>
+                  <ChartBarBig size={22} color={Colors.primary} strokeWidth={2.2} />
+                </View>
+                <Text style={styles.attachmentOptionText}>Poll</Text>
+              </TouchableOpacity>
+            </View>
+          </TouchableOpacity>
+        </Modal>
 
         <Modal
           visible={Boolean(openMedia)}
@@ -679,7 +1010,10 @@ export default function CircleChatRoute() {
 
               <TouchableOpacity
                 activeOpacity={0.76}
-                style={[styles.viewerButton, savingMedia && styles.viewerButtonDisabled]}
+                style={[
+                  styles.viewerButton,
+                  savingMedia && styles.viewerButtonDisabled,
+                ]}
                 onPress={handleSaveOpenMedia}
                 disabled={savingMedia}
                 accessibilityLabel="Save media"
@@ -711,6 +1045,12 @@ export default function CircleChatRoute() {
             </View>
           </SafeAreaView>
         </Modal>
+        <PollCreator
+          visible={pollCreatorVisible}
+          onClose={() => setPollCreatorVisible(false)}
+          onCreatePoll={handleCreatePoll}
+          currentUserId={user?.id ?? ""}
+        />
       </SafeAreaView>
     </KeyboardAvoidingView>
   );
@@ -784,6 +1124,60 @@ const styles = StyleSheet.create({
     ...Typography.body,
     color: Colors.textSecondary,
     textAlign: "center",
+  },
+  attachmentSheetOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.35)",
+    justifyContent: "flex-end",
+  },
+  attachmentSheetContainer: {
+    paddingTop: Spacing.sm,
+    paddingHorizontal: Spacing.screenPadding,
+    paddingBottom: Spacing.lg,
+    backgroundColor: Colors.surface,
+    borderTopLeftRadius: Radius.xl,
+    borderTopRightRadius: Radius.xl,
+    shadowColor: "#000",
+    shadowOpacity: 0.12,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: -6 },
+    elevation: 12,
+  },
+  attachmentSheetHandle: {
+    width: 40,
+    height: 4,
+    borderRadius: 999,
+    backgroundColor: Colors.inputBg,
+    alignSelf: "center",
+    marginBottom: Spacing.md,
+  },
+  attachmentSheetTitle: {
+    ...Typography.body,
+    fontWeight: "600",
+    color: Colors.textPrimary,
+    marginBottom: Spacing.md,
+  },
+  attachmentOption: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.sm,
+    paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.md,
+    borderRadius: Radius.lg,
+    backgroundColor: Colors.background,
+    marginBottom: Spacing.sm,
+  },
+  attachmentOptionIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: Radius.pill,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: Colors.inputBg,
+  },
+  attachmentOptionText: {
+    ...Typography.body,
+    color: Colors.textPrimary,
   },
   mediaViewer: {
     flex: 1,

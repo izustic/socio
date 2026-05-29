@@ -103,6 +103,7 @@ export interface Message {
   senderId: string;
   senderName: string;
   text: string;
+  pollId?: string | null;
   mediaUrl?: string | null;
   mediaUrls?: string[];
   mediaType?: "image" | "video" | "audio" | null;

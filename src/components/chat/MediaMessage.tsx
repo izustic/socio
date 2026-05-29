@@ -50,6 +50,7 @@ export default function MediaMessage({
   const [videoStatus, setVideoStatus] = useState<'loading' | 'ready' | 'error'>('loading');
   const [audioPlaying, setAudioPlaying] = useState(false);
   const [audioSound, setAudioSound] = useState<Audio.Sound | null>(null);
+  const [audioProgress, setAudioProgress] = useState(0);
   const sourceUris = useMemo(
     () => (message.uris && message.uris.length > 0 ? message.uris : [message.uri]).filter(Boolean),
     [message.uri, message.uris],
@@ -194,8 +195,17 @@ export default function MediaMessage({
           { shouldPlay: true },
         );
         sound.setOnPlaybackStatusUpdate((status) => {
-          if (status.isLoaded && status.didJustFinish) {
+          if (!status.isLoaded) {
+            return;
+          }
+
+          if (status.durationMillis && status.positionMillis != null) {
+            setAudioProgress(status.positionMillis / Math.max(status.durationMillis, 1));
+          }
+
+          if (status.didJustFinish) {
             setAudioPlaying(false);
+            setAudioProgress(0);
             sound.setPositionAsync(0);
           }
         });
@@ -213,15 +223,21 @@ export default function MediaMessage({
         <View style={styles.audioInfo}>
           {/* <Text style={styles.audioType}>Voice message</Text> */}
           <View style={styles.audioWave}>
-            {Array.from({ length: 18 }).map((_, index) => (
-              <View
-                key={index}
-                style={[
-                  styles.audioWaveBar,
-                  { height: 7 + ((index * 7) % 18) },
-                ]}
-              />
-            ))}
+            {Array.from({ length: 18 }).map((_, index) => {
+              const activeIndex = Math.max(audioPlaying ? 1 : 0, Math.round(audioProgress * 18));
+              const isActive = index < activeIndex;
+
+              return (
+                <View
+                  key={index}
+                  style={[
+                    styles.audioWaveBar,
+                    { height: 7 + ((index * 7) % 18) },
+                    isActive && styles.audioWaveBarActive,
+                  ]}
+                />
+              );
+            })}
           </View>
           {message.duration && (
             <Text style={styles.audioDuration}>{formatDuration(message.duration)}</Text>
@@ -546,6 +562,9 @@ const styles = StyleSheet.create({
     width: 3,
     borderRadius: Radius.full,
     backgroundColor: Colors.textDisabled,
+  },
+  audioWaveBarActive: {
+    backgroundColor: Colors.primary,
   },
   audioDuration: {
     ...Typography.bodySmall,

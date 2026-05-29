@@ -192,12 +192,14 @@ export default function MediaMessage({
 
         const { sound } = await Audio.Sound.createAsync(
           { uri: audioUri },
-          { shouldPlay: true },
+          { shouldPlay: true, isLooping: false },
         );
         sound.setOnPlaybackStatusUpdate((status) => {
           if (!status.isLoaded) {
             return;
           }
+
+          setAudioPlaying(!!status.isPlaying);
 
           if (status.durationMillis && status.positionMillis != null) {
             setAudioProgress(status.positionMillis / Math.max(status.durationMillis, 1));

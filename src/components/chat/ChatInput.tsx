@@ -1,20 +1,35 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, TextInput } from 'react-native';
-import { Image } from 'expo-image';
-import { Audio } from 'expo-av';
-import { Mic, Play, Plus, Send, Square, Trash2, X } from 'lucide-react-native';
-import { Colors, Radius, Spacing, Typography } from '@/src/constants/theme';
+import { Colors, Radius, Spacing, Typography } from "@/src/constants/theme";
+import { Audio } from "expo-av";
+import { Image } from "expo-image";
+import {
+  Mic,
+  Pause,
+  Play,
+  Plus,
+  Send,
+  Square,
+  Trash2,
+  X,
+} from "lucide-react-native";
+import React, { useEffect, useRef, useState } from "react";
+import {
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
 
 interface ChatAttachment {
   id: string;
   uri: string;
-  type: 'image' | 'video';
+  type: "image" | "video";
 }
 
 interface ReplyPreview {
   senderName: string;
   text: string;
-  mediaType?: 'image' | 'video' | 'audio' | null;
+  mediaType?: "image" | "video" | "audio" | null;
 }
 
 interface AudioPreview {
@@ -39,9 +54,9 @@ interface ChatInputProps {
   disabled?: boolean;
 }
 
-export default function ChatInput({ 
-  onSendMessage, 
-  onMediaPress, 
+export default function ChatInput({
+  onSendMessage,
+  onMediaPress,
   attachments = [],
   onRemoveAttachment,
   replyTo,
@@ -53,10 +68,11 @@ export default function ChatInput({
   onStopRecording,
   onDiscardAudio,
   placeholder = "Type a message...",
-  disabled = false
+  disabled = false,
 }: ChatInputProps) {
-  const [text, setText] = useState('');
+  const [text, setText] = useState("");
   const [previewPlaying, setPreviewPlaying] = useState(false);
+  const [previewProgress, setPreviewProgress] = useState(0);
   const previewSoundRef = useRef<Audio.Sound | null>(null);
 
   useEffect(() => {
@@ -70,19 +86,20 @@ export default function ChatInput({
     previewSoundRef.current?.unloadAsync();
     previewSoundRef.current = null;
     setPreviewPlaying(false);
+    setPreviewProgress(0);
   }, [audioPreview]);
 
   const formatDuration = (durationMillis = 0) => {
     const totalSeconds = Math.max(0, Math.round(durationMillis / 1000));
     const minutes = Math.floor(totalSeconds / 60);
     const seconds = totalSeconds % 60;
-    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+    return `${minutes}:${seconds.toString().padStart(2, "0")}`;
   };
 
   const handleSend = () => {
     if ((text.trim() || attachments.length > 0 || audioPreview) && !disabled) {
       onSendMessage(text.trim());
-      setText('');
+      setText("");
     }
   };
 
@@ -97,21 +114,48 @@ export default function ChatInput({
   const handlePreviewPlay = async () => {
     if (!audioPreview || disabled) return;
 
-    if (previewSoundRef.current && previewPlaying) {
-      await previewSoundRef.current.stopAsync();
-      await previewSoundRef.current.setPositionAsync(0);
-      setPreviewPlaying(false);
-      return;
+    if (previewSoundRef.current) {
+      const status = await previewSoundRef.current.getStatusAsync();
+      if (status.isLoaded) {
+        if (status.isPlaying) {
+          await previewSoundRef.current.pauseAsync();
+          setPreviewPlaying(false);
+          return;
+        }
+
+        if (
+          status.positionMillis != null &&
+          status.durationMillis != null &&
+          status.positionMillis < status.durationMillis
+        ) {
+          await previewSoundRef.current.playAsync();
+          setPreviewPlaying(true);
+          return;
+        }
+      } else {
+        await previewSoundRef.current.unloadAsync();
+        previewSoundRef.current = null;
+      }
     }
 
     await previewSoundRef.current?.unloadAsync();
     const { sound } = await Audio.Sound.createAsync(
       { uri: audioPreview.uri },
-      { shouldPlay: true },
+      { shouldPlay: true, isLooping: false },
     );
     sound.setOnPlaybackStatusUpdate((status) => {
-      if (status.isLoaded && status.didJustFinish) {
+      if (!status.isLoaded) return;
+
+      setPreviewPlaying(!!status.isPlaying);
+      if (status.positionMillis != null && status.durationMillis != null) {
+        setPreviewProgress(
+          status.positionMillis / Math.max(status.durationMillis, 1),
+        );
+      }
+
+      if (status.didJustFinish) {
         setPreviewPlaying(false);
+        setPreviewProgress(0);
         sound.setPositionAsync(0);
       }
     });
@@ -119,8 +163,13 @@ export default function ChatInput({
     setPreviewPlaying(true);
   };
 
-  const canSend = (text.trim().length > 0 || attachments.length > 0 || Boolean(audioPreview)) && !disabled;
-  const audioButtonDisabled = disabled || attachments.length > 0 || Boolean(audioPreview);
+  const canSend =
+    (text.trim().length > 0 ||
+      attachments.length > 0 ||
+      Boolean(audioPreview)) &&
+    !disabled;
+  const audioButtonDisabled =
+    disabled || attachments.length > 0 || Boolean(audioPreview);
 
   return (
     <View style={styles.container}>
@@ -132,7 +181,9 @@ export default function ChatInput({
               {replyTo.senderName}
             </Text>
             <Text numberOfLines={1} style={styles.replyText}>
-              {replyTo.mediaType ? `${replyTo.mediaType === 'image' ? 'Photo' : replyTo.mediaType === 'video' ? 'Video' : 'Voice message'}${replyTo.text ? ` · ${replyTo.text}` : ''}` : replyTo.text}
+              {replyTo.mediaType
+                ? `${replyTo.mediaType === "image" ? "Photo" : replyTo.mediaType === "video" ? "Video" : "Voice message"}${replyTo.text ? ` · ${replyTo.text}` : ""}`
+                : replyTo.text}
             </Text>
           </View>
           <TouchableOpacity
@@ -170,7 +221,9 @@ export default function ChatInput({
         <View style={styles.audioDraft}>
           <View style={styles.recordingDot} />
           <Text style={styles.audioDraftText}>Recording</Text>
-          <Text style={styles.audioDuration}>{formatDuration(recordingDurationMillis)}</Text>
+          <Text style={styles.audioDuration}>
+            {formatDuration(recordingDurationMillis)}
+          </Text>
         </View>
       )}
       {audioPreview && !isRecordingAudio && (
@@ -179,12 +232,36 @@ export default function ChatInput({
             style={styles.audioPreviewButton}
             onPress={handlePreviewPlay}
             disabled={disabled}
-            accessibilityLabel="Play voice message preview"
+            accessibilityLabel={
+              previewPlaying
+                ? "Pause voice message preview"
+                : "Play voice message preview"
+            }
           >
-            <Play size={16} color={Colors.textPrimary} fill={Colors.textPrimary} strokeWidth={2.2} />
+            {previewPlaying ? (
+              <Pause size={16} color={Colors.textPrimary} strokeWidth={2.2} />
+            ) : (
+              <Play
+                size={16}
+                color={Colors.textPrimary}
+                fill={Colors.textPrimary}
+                strokeWidth={2.2}
+              />
+            )}
           </TouchableOpacity>
-          <View style={styles.audioPreviewBar} />
-          <Text style={styles.audioDuration}>{formatDuration(audioPreview.durationMillis)}</Text>
+          <View style={styles.audioPreviewBar}>
+            <View
+              style={[
+                styles.audioPreviewFill,
+                {
+                  width: `${Math.max(8, Math.round(previewProgress * 100))}%`,
+                },
+              ]}
+            />
+          </View>
+          <Text style={styles.audioDuration}>
+            {formatDuration(audioPreview.durationMillis)}
+          </Text>
           <TouchableOpacity
             style={styles.discardAudioButton}
             onPress={onDiscardAudio}
@@ -203,8 +280,12 @@ export default function ChatInput({
           disabled={disabled || isRecordingAudio || Boolean(audioPreview)}
         >
           <Plus
-            size={24} 
-            color={disabled || isRecordingAudio || audioPreview ? Colors.textDisabled : Colors.primary} 
+            size={24}
+            color={
+              disabled || isRecordingAudio || audioPreview
+                ? Colors.textDisabled
+                : Colors.primary
+            }
             strokeWidth={2.4}
           />
         </TouchableOpacity>
@@ -229,7 +310,7 @@ export default function ChatInput({
             style={[
               styles.audioButton,
               isRecordingAudio && styles.audioButtonRecording,
-              disabled && styles.buttonDisabled
+              disabled && styles.buttonDisabled,
             ]}
             onPress={handleAudioPress}
             disabled={audioButtonDisabled && !isRecordingAudio}
@@ -237,14 +318,16 @@ export default function ChatInput({
             {isRecordingAudio ? (
               <Square
                 size={20}
-                color={disabled ? Colors.textDisabled : '#FF5252'}
-                fill={disabled ? Colors.textDisabled : '#FF5252'}
+                color={disabled ? Colors.textDisabled : "#FF5252"}
+                fill={disabled ? Colors.textDisabled : "#FF5252"}
                 strokeWidth={2.4}
               />
             ) : (
               <Mic
                 size={20}
-                color={audioButtonDisabled ? Colors.textDisabled : Colors.primary}
+                color={
+                  audioButtonDisabled ? Colors.textDisabled : Colors.primary
+                }
                 strokeWidth={2.4}
               />
             )}
@@ -253,14 +336,14 @@ export default function ChatInput({
           <TouchableOpacity
             style={[
               styles.sendButton,
-              canSend ? styles.sendButtonActive : styles.buttonDisabled
+              canSend ? styles.sendButtonActive : styles.buttonDisabled,
             ]}
             onPress={handleSend}
             disabled={!canSend}
           >
             <Send
-              size={20} 
-              color={canSend ? '#fff' : Colors.textDisabled} 
+              size={20}
+              color={canSend ? "#fff" : Colors.textDisabled}
               strokeWidth={2.4}
             />
           </TouchableOpacity>
@@ -269,10 +352,12 @@ export default function ChatInput({
 
       {/* Character count */}
       {text.length > 400 && (
-        <Text style={[
-          styles.characterCount,
-          text.length >= 500 && styles.characterCountWarning
-        ]}>
+        <Text
+          style={[
+            styles.characterCount,
+            text.length >= 500 && styles.characterCountWarning,
+          ]}
+        >
           {text.length}/500
         </Text>
       )}
@@ -289,8 +374,8 @@ const styles = StyleSheet.create({
     gap: Spacing.xs,
   },
   replyPreview: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: Spacing.sm,
     padding: Spacing.sm,
     borderRadius: Radius.md,
@@ -298,7 +383,7 @@ const styles = StyleSheet.create({
   },
   replyAccent: {
     width: 3,
-    alignSelf: 'stretch',
+    alignSelf: "stretch",
     borderRadius: Radius.full,
     backgroundColor: Colors.primary,
   },
@@ -309,7 +394,7 @@ const styles = StyleSheet.create({
   replySender: {
     ...Typography.bodySmall,
     color: Colors.primaryDark,
-    fontWeight: '700',
+    fontWeight: "700",
   },
   replyText: {
     ...Typography.bodySmall,
@@ -318,12 +403,12 @@ const styles = StyleSheet.create({
   cancelReplyButton: {
     width: 28,
     height: 28,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   attachmentTray: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+    flexDirection: "row",
+    flexWrap: "wrap",
     gap: Spacing.sm,
     paddingBottom: Spacing.xs,
   },
@@ -331,16 +416,16 @@ const styles = StyleSheet.create({
     width: 58,
     height: 58,
     borderRadius: Radius.sm,
-    overflow: 'hidden',
+    overflow: "hidden",
     backgroundColor: Colors.inputBg,
   },
   attachmentImage: {
-    width: '100%',
-    height: '100%',
+    width: "100%",
+    height: "100%",
   },
   audioDraft: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: Spacing.sm,
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.sm,
@@ -357,19 +442,19 @@ const styles = StyleSheet.create({
     ...Typography.bodySmall,
     flex: 1,
     color: Colors.textPrimary,
-    fontWeight: '700',
+    fontWeight: "700",
   },
   audioDuration: {
     ...Typography.bodySmall,
     color: Colors.textSecondary,
-    fontVariant: ['tabular-nums'],
+    fontVariant: ["tabular-nums"],
   },
   audioPreviewButton: {
     width: 32,
     height: 32,
     borderRadius: Radius.full,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     backgroundColor: Colors.white,
   },
   audioPreviewBar: {
@@ -377,28 +462,35 @@ const styles = StyleSheet.create({
     height: 4,
     borderRadius: Radius.full,
     backgroundColor: Colors.border,
+    overflow: "hidden",
+  },
+  audioPreviewFill: {
+    height: "100%",
+    borderRadius: Radius.full,
+    backgroundColor: Colors.primary,
+    width: "0%",
   },
   discardAudioButton: {
     width: 32,
     height: 32,
     borderRadius: Radius.full,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   removeAttachmentButton: {
-    position: 'absolute',
+    position: "absolute",
     top: 4,
     right: 4,
     width: 20,
     height: 20,
     borderRadius: 10,
-    backgroundColor: 'rgba(0, 0, 0, 0.62)',
-    alignItems: 'center',
-    justifyContent: 'center',
+    backgroundColor: "rgba(0, 0, 0, 0.62)",
+    alignItems: "center",
+    justifyContent: "center",
   },
   inputContainer: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
+    flexDirection: "row",
+    alignItems: "center",
     gap: Spacing.sm,
     backgroundColor: Colors.inputBg,
     borderRadius: Radius.pill,
@@ -409,8 +501,8 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   inputWrapper: {
     flex: 1,
@@ -420,24 +512,24 @@ const styles = StyleSheet.create({
     color: Colors.textPrimary,
     minHeight: 36,
     maxHeight: 80,
-    textAlignVertical: 'center',
+    textAlignVertical: "center",
   },
   audioButton: {
     width: 32,
     height: 32,
     borderRadius: 16,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   audioButtonRecording: {
-    backgroundColor: 'rgba(255, 82, 82, 0.1)',
+    backgroundColor: "rgba(255, 82, 82, 0.1)",
   },
   sendButton: {
     width: 32,
     height: 32,
     borderRadius: 16,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     backgroundColor: Colors.inputBg,
   },
   sendButtonActive: {
@@ -449,10 +541,10 @@ const styles = StyleSheet.create({
   characterCount: {
     ...Typography.bodySmall,
     color: Colors.textSecondary,
-    textAlign: 'right',
+    textAlign: "right",
     fontSize: 10,
   },
   characterCountWarning: {
-    color: '#FF5252',
+    color: "#FF5252",
   },
 });

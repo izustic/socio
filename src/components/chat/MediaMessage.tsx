@@ -1,16 +1,16 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { Image } from 'expo-image';
-import { Audio, Video, ResizeMode } from 'expo-av';
-import { Mic, Pause, Play } from 'lucide-react-native';
-import { Colors, Radius, Spacing, Typography } from '@/src/constants/theme';
-import { getSignedChatMediaUrls } from '@/src/services/supabase';
-import Avatar from '../ui/Avatar';
+import { Colors, Radius, Spacing, Typography } from "@/src/constants/theme";
+import { getSignedChatMediaUrls } from "@/src/services/supabase";
+import { Audio, ResizeMode, Video } from "expo-av";
+import { Image } from "expo-image";
+import { Mic, Pause, Play } from "lucide-react-native";
+import React, { useEffect, useMemo, useState } from "react";
+import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import Avatar from "../ui/Avatar";
 
 interface MediaMessageProps {
   message: {
     id: string;
-    type: 'image' | 'video' | 'audio';
+    type: "image" | "video" | "audio";
     uri: string;
     uris?: string[];
     caption?: string;
@@ -25,7 +25,7 @@ interface MediaMessageProps {
       messageId: string;
       senderName: string;
       text: string;
-      mediaType?: 'image' | 'video' | 'audio' | null;
+      mediaType?: "image" | "video" | "audio" | null;
     } | null;
   };
   showAvatar?: boolean;
@@ -37,22 +37,28 @@ interface MediaMessageProps {
   onAudioPress?: (uri: string) => void;
 }
 
-export default function MediaMessage({ 
-  message, 
+export default function MediaMessage({
+  message,
   showAvatar = true,
   onLongPress,
   onReplyPress,
   highlighted = false,
   onImagePress,
   onVideoPress,
-  onAudioPress
+  onAudioPress,
 }: MediaMessageProps) {
-  const [videoStatus, setVideoStatus] = useState<'loading' | 'ready' | 'error'>('loading');
+  const [videoStatus, setVideoStatus] = useState<"loading" | "ready" | "error">(
+    "loading",
+  );
   const [audioPlaying, setAudioPlaying] = useState(false);
   const [audioSound, setAudioSound] = useState<Audio.Sound | null>(null);
   const [audioProgress, setAudioProgress] = useState(0);
   const sourceUris = useMemo(
-    () => (message.uris && message.uris.length > 0 ? message.uris : [message.uri]).filter(Boolean),
+    () =>
+      (message.uris && message.uris.length > 0
+        ? message.uris
+        : [message.uri]
+      ).filter(Boolean),
     [message.uri, message.uris],
   );
   const [resolvedUris, setResolvedUris] = useState(sourceUris);
@@ -79,15 +85,15 @@ export default function MediaMessage({
   }, [audioSound]);
 
   const formatFileSize = (bytes: number) => {
-    if (bytes < 1024) return bytes + ' B';
-    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
-    return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+    if (bytes < 1024) return bytes + " B";
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " KB";
+    return (bytes / (1024 * 1024)).toFixed(1) + " MB";
   };
 
   const formatDuration = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = Math.floor(seconds % 60);
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
+    return `${mins}:${secs.toString().padStart(2, "0")}`;
   };
 
   const renderImageContent = () => {
@@ -105,7 +111,10 @@ export default function MediaMessage({
               style={[
                 styles.imageCell,
                 !isGrid && styles.singleImageCell,
-                isGrid && images.length === 3 && index === 0 && styles.largeGridCell,
+                isGrid &&
+                  images.length === 3 &&
+                  index === 0 &&
+                  styles.largeGridCell,
               ]}
               onPress={() => onImagePress?.(uri)}
               onLongPress={onLongPress}
@@ -149,18 +158,20 @@ export default function MediaMessage({
         resizeMode={ResizeMode.COVER}
         shouldPlay={false}
         isLooping
-        onReadyForDisplay={() => setVideoStatus('ready')}
-        onError={() => setVideoStatus('error')}
+        onReadyForDisplay={() => setVideoStatus("ready")}
+        onError={() => setVideoStatus("error")}
       />
       <View style={styles.videoOverlay}>
         <View style={styles.playButton}>
           <Text style={styles.playIcon}>▶</Text>
         </View>
-        {videoStatus === 'error' && (
+        {videoStatus === "error" && (
           <Text style={styles.videoError}>Unable to preview</Text>
         )}
         {message.duration && (
-          <Text style={styles.duration}>{formatDuration(message.duration)}</Text>
+          <Text style={styles.duration}>
+            {formatDuration(message.duration)}
+          </Text>
         )}
       </View>
       {message.caption && (
@@ -202,7 +213,9 @@ export default function MediaMessage({
           setAudioPlaying(!!status.isPlaying);
 
           if (status.durationMillis && status.positionMillis != null) {
-            setAudioProgress(status.positionMillis / Math.max(status.durationMillis, 1));
+            setAudioProgress(
+              status.positionMillis / Math.max(status.durationMillis, 1),
+            );
           }
 
           if (status.didJustFinish) {
@@ -226,7 +239,10 @@ export default function MediaMessage({
           {/* <Text style={styles.audioType}>Voice message</Text> */}
           <View style={styles.audioWave}>
             {Array.from({ length: 18 }).map((_, index) => {
-              const activeIndex = Math.max(audioPlaying ? 1 : 0, Math.round(audioProgress * 18));
+              const activeIndex = Math.max(
+                audioPlaying ? 1 : 0,
+                Math.round(audioProgress * 18),
+              );
               const isActive = index < activeIndex;
 
               return (
@@ -242,7 +258,9 @@ export default function MediaMessage({
             })}
           </View>
           {message.duration && (
-            <Text style={styles.audioDuration}>{formatDuration(message.duration)}</Text>
+            <Text style={styles.audioDuration}>
+              {formatDuration(message.duration)}
+            </Text>
           )}
           {message.size && (
             <Text style={styles.audioSize}>{formatFileSize(message.size)}</Text>
@@ -250,9 +268,19 @@ export default function MediaMessage({
         </View>
         <View style={styles.audioPlayButton}>
           {audioPlaying ? (
-            <Pause size={14} color={Colors.white} fill={Colors.white} strokeWidth={2.4} />
+            <Pause
+              size={14}
+              color={Colors.white}
+              fill={Colors.white}
+              strokeWidth={2.4}
+            />
           ) : (
-            <Play size={14} color={Colors.white} fill={Colors.white} strokeWidth={2.4} />
+            <Play
+              size={14}
+              color={Colors.white}
+              fill={Colors.white}
+              strokeWidth={2.4}
+            />
           )}
         </View>
       </View>
@@ -264,11 +292,11 @@ export default function MediaMessage({
 
   const mediaContent = () => {
     switch (message.type) {
-      case 'image':
+      case "image":
         return renderImageContent();
-      case 'video':
+      case "video":
         return renderVideoContent();
-      case 'audio':
+      case "audio":
         return renderAudioContent();
       default:
         return null;
@@ -278,53 +306,63 @@ export default function MediaMessage({
   return (
     <TouchableOpacity
       style={[
-      styles.container,
-      message.isOwn ? styles.ownContainer : styles.otherContainer
+        styles.container,
+        message.isOwn ? styles.ownContainer : styles.otherContainer,
       ]}
       activeOpacity={0.9}
       onLongPress={onLongPress}
       delayLongPress={240}
     >
       {!message.isOwn && showAvatar && (
-        <Avatar
-          uri={message.senderPhoto}
-          size={32}
-          style={styles.avatar}
-        />
+        <Avatar uri={message.senderPhoto} size={32} style={styles.avatar} />
       )}
-      
+
       <View style={styles.content}>
         {!message.isOwn && (
           <Text style={styles.senderName}>{message.senderName}</Text>
         )}
-        
-        <View style={[
-          styles.mediaWrapper,
-          highlighted && styles.highlightedWrapper,
-          message.isOwn ? styles.ownWrapper : styles.otherWrapper
-        ]}>
+
+        <View
+          style={[
+            styles.mediaWrapper,
+            highlighted && styles.highlightedWrapper,
+            message.isOwn ? styles.ownWrapper : styles.otherWrapper,
+          ]}
+        >
           {message.replyTo && (
             <TouchableOpacity
               activeOpacity={0.78}
               onPress={() => onReplyPress?.(message.replyTo!.messageId)}
               style={[
-              styles.replySnippet,
-              message.isOwn ? styles.ownReplySnippet : styles.otherReplySnippet,
-            ]}>
-              <View style={[
-                styles.replyAccent,
-                message.isOwn ? styles.ownReplyAccent : styles.otherReplyAccent,
-              ]} />
+                styles.replySnippet,
+                message.isOwn
+                  ? styles.ownReplySnippet
+                  : styles.otherReplySnippet,
+              ]}
+            >
+              <View
+                style={[
+                  styles.replyAccent,
+                  message.isOwn
+                    ? styles.ownReplyAccent
+                    : styles.otherReplyAccent,
+                ]}
+              />
               <View style={styles.replyCopy}>
-                <Text numberOfLines={1} style={[
-                  styles.replySender,
-                  message.isOwn ? styles.ownReplySender : styles.otherReplySender,
-                ]}>
+                <Text
+                  numberOfLines={1}
+                  style={[
+                    styles.replySender,
+                    message.isOwn
+                      ? styles.ownReplySender
+                      : styles.otherReplySender,
+                  ]}
+                >
                   {message.replyTo.senderName}
                 </Text>
                 <Text numberOfLines={1} style={styles.replyText}>
                   {message.replyTo.mediaType
-                    ? `${message.replyTo.mediaType === 'image' ? 'Photo' : message.replyTo.mediaType === 'video' ? 'Video' : 'Voice message'}${message.replyTo.text ? ` · ${message.replyTo.text}` : ''}`
+                    ? `${message.replyTo.mediaType === "image" ? "Photo" : message.replyTo.mediaType === "video" ? "Video" : "Voice message"}${message.replyTo.text ? ` · ${message.replyTo.text}` : ""}`
                     : message.replyTo.text}
                 </Text>
               </View>
@@ -333,25 +371,23 @@ export default function MediaMessage({
           {mediaContent()}
         </View>
       </View>
-      
-      {message.isOwn && showAvatar && (
-        <View style={styles.avatarSpacer} />
-      )}
+
+      {message.isOwn && showAvatar && <View style={styles.avatarSpacer} />}
     </TouchableOpacity>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    flexDirection: 'row',
+    flexDirection: "row",
     paddingHorizontal: Spacing.md,
     marginBottom: Spacing.sm,
   },
   ownContainer: {
-    justifyContent: 'flex-end',
+    justifyContent: "flex-end",
   },
   otherContainer: {
-    justifyContent: 'flex-start',
+    justifyContent: "flex-start",
   },
   avatar: {
     marginRight: Spacing.sm,
@@ -360,7 +396,7 @@ const styles = StyleSheet.create({
     width: 32,
   },
   content: {
-    maxWidth: '80%',
+    maxWidth: "80%",
     gap: 2,
   },
   senderName: {
@@ -371,7 +407,7 @@ const styles = StyleSheet.create({
   },
   mediaWrapper: {
     borderRadius: Radius.lg,
-    overflow: 'hidden',
+    overflow: "hidden",
     minWidth: 220,
   },
   highlightedWrapper: {
@@ -379,13 +415,13 @@ const styles = StyleSheet.create({
     borderColor: Colors.primaryDark,
   },
   ownWrapper: {
-    backgroundColor: 'transparent',
+    backgroundColor: "transparent",
   },
   otherWrapper: {
-    backgroundColor: 'transparent',
+    backgroundColor: "transparent",
   },
   replySnippet: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: Spacing.sm,
     borderRadius: Radius.md,
     padding: Spacing.sm,
@@ -413,7 +449,7 @@ const styles = StyleSheet.create({
   },
   replySender: {
     ...Typography.bodySmall,
-    fontWeight: '700',
+    fontWeight: "700",
   },
   ownReplySender: {
     color: Colors.primaryDark,
@@ -427,14 +463,14 @@ const styles = StyleSheet.create({
   },
   mediaContainer: {
     borderRadius: Radius.lg,
-    overflow: 'hidden',
+    overflow: "hidden",
     backgroundColor: Colors.inputBg,
   },
   imageGrid: {
     width: 220,
     minHeight: 200,
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+    flexDirection: "row",
+    flexWrap: "wrap",
     gap: 2,
   },
   singleImageGrid: {
@@ -443,7 +479,7 @@ const styles = StyleSheet.create({
   imageCell: {
     width: 109,
     height: 99,
-    overflow: 'hidden',
+    overflow: "hidden",
     backgroundColor: Colors.placeholder,
   },
   singleImageCell: {
@@ -455,19 +491,19 @@ const styles = StyleSheet.create({
     height: 120,
   },
   image: {
-    width: '100%',
-    height: '100%',
+    width: "100%",
+    height: "100%",
   },
   overflowOverlay: {
     ...StyleSheet.absoluteFillObject,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.46)',
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(0, 0, 0, 0.46)",
   },
   overflowText: {
     color: Colors.white,
     fontSize: 24,
-    fontWeight: '800',
+    fontWeight: "800",
   },
   video: {
     width: 200,
@@ -475,47 +511,47 @@ const styles = StyleSheet.create({
     borderRadius: Radius.lg,
   },
   videoOverlay: {
-    position: 'absolute',
+    position: "absolute",
     top: 0,
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.3)',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "rgba(0, 0, 0, 0.3)",
+    justifyContent: "center",
+    alignItems: "center",
     borderRadius: Radius.lg,
   },
   playButton: {
     width: 50,
     height: 50,
     borderRadius: 25,
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "rgba(255, 255, 255, 0.9)",
+    justifyContent: "center",
+    alignItems: "center",
   },
   playIcon: {
     fontSize: 20,
     color: Colors.textPrimary,
-    fontWeight: '700',
+    fontWeight: "700",
   },
   videoError: {
-    position: 'absolute',
+    position: "absolute",
     bottom: 28,
-    color: '#fff',
+    color: "#fff",
     fontSize: 11,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   duration: {
-    position: 'absolute',
+    position: "absolute",
     bottom: 8,
     right: 8,
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
-    color: '#fff',
+    backgroundColor: "rgba(0, 0, 0, 0.7)",
+    color: "#fff",
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 4,
     fontSize: 10,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   captionContainer: {
     backgroundColor: Colors.inputBg,
@@ -533,8 +569,8 @@ const styles = StyleSheet.create({
     gap: Spacing.sm,
   },
   audioContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: Spacing.sm,
   },
   audioIcon: {
@@ -542,8 +578,8 @@ const styles = StyleSheet.create({
     height: 40,
     borderRadius: 20,
     backgroundColor: Colors.primary,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   audioInfo: {
     flex: 1,
@@ -551,12 +587,12 @@ const styles = StyleSheet.create({
   },
   audioType: {
     ...Typography.body,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   audioWave: {
     height: 24,
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 3,
     marginVertical: 2,
   },
@@ -581,13 +617,13 @@ const styles = StyleSheet.create({
     height: 32,
     borderRadius: 16,
     backgroundColor: Colors.primary,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   audioPlayIcon: {
-    color: '#fff',
+    color: "#fff",
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: "700",
   },
   audioCaption: {
     ...Typography.bodySmall,

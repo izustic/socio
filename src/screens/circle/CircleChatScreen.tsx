@@ -1,10 +1,7 @@
 import ChatInput from "@/src/components/chat/ChatInput";
 import MediaMessage from "@/src/components/chat/MediaMessage";
 import MessageBubble from "@/src/components/chat/MessageBubble";
-import {
-  PollCreator,
-  PollMessage,
-} from "@/src/components/chat/PollComponents";
+import { PollCreator, PollMessage } from "@/src/components/chat/PollComponents";
 
 import type { PollData } from "@/src/components/chat/PollComponents";
 import { Colors, Radius, Spacing, Typography } from "@/src/constants/theme";
@@ -34,8 +31,8 @@ import * as ImagePicker from "expo-image-picker";
 import * as MediaLibrary from "expo-media-library";
 import { router, useLocalSearchParams } from "expo-router";
 import {
-  ChevronLeft,
   ChartBarBig,
+  ChevronLeft,
   Download,
   GalleryHorizontal,
   MoreHorizontal,
@@ -878,7 +875,15 @@ export default function CircleChatRoute() {
             <TouchableOpacity
               activeOpacity={0.76}
               style={styles.iconButton}
-              onPress={() => router.push("/circle/call")}
+              onPress={() =>
+                router.push({
+                  pathname: "/circle/call",
+                  params: {
+                    circleId: circle?.id,
+                    circleName: circle?.name,
+                  },
+                })
+              }
             >
               <Phone size={20} color={Colors.textPrimary} strokeWidth={2.2} />
             </TouchableOpacity>
@@ -983,7 +988,11 @@ export default function CircleChatRoute() {
                 onPress={handleOpenPoll}
               >
                 <View style={styles.attachmentOptionIcon}>
-                  <ChartBarBig size={22} color={Colors.primary} strokeWidth={2.2} />
+                  <ChartBarBig
+                    size={22}
+                    color={Colors.primary}
+                    strokeWidth={2.2}
+                  />
                 </View>
                 <Text style={styles.attachmentOptionText}>Poll</Text>
               </TouchableOpacity>

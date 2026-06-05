@@ -1,107 +1,185 @@
-import { useState, useEffect } from 'react';
-import { generateCallToken, joinCall, leaveCall, toggleMicrophone, toggleCamera } from '@/src/services/livekit';
+import {
+  ConnectionState,
+  RoomEvent,
+  Room,
+  Participant,
+  VideoTrack, Track
+} from "livekit-client";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { getLivekitToken } from "../services/livekit";
 
-interface CallState {
-  isConnected: boolean;
-  isMuted: boolean;
-  isCameraOff: boolean;
-  participants: {
-    id: string;
-    name: string;
-    isMuted: boolean;
-    isCameraOff: boolean;
-  }[];
-  error: string | null;
+const LIVEKIT_URL = process.env.EXPO_PUBLIC_LIVEKIT_URL!;
+
+export interface CallParticipant {
+  identity: string;
+  name: string;
+  isMicEnabled: boolean;
+  isCameraEnabled: boolean;
+  isLocal: boolean;
+  participant: Participant;
+  videoTrack?: VideoTrack;
 }
+// export interface CallParticipant {
+//   identity: string;
+//   name: string;
+//   isMicEnabled: boolean;
+//   isCameraEnabled: boolean;
+//   isLocal: boolean;
+//   participant: Participant;
+// }
 
-export function useCircleCall(circleId: string) {
-  const [callState, setCallState] = useState<CallState>({
-    isConnected: false,
-    isMuted: false,
-    isCameraOff: false,
-    participants: [],
-    error: null,
-  });
+export const useCircleCall = (
+  circleId: string,
+  userId: string,
+  userName: string,
+) => {
+  const roomRef = useRef<Room | null>(null);
+  const [connectionState, setConnectionState] = useState<ConnectionState>(
+    ConnectionState.Disconnected,
+  );
+  const [participants, setParticipants] = useState<CallParticipant[]>([]);
+  const [isMicEnabled, setIsMicEnabled] = useState(true);
+  const [isCameraEnabled, setIsCameraEnabled] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const [loading, setLoading] = useState(false);
+  const isConnected = connectionState === ConnectionState.Connected;
+  const isConnecting = connectionState === ConnectionState.Connecting;
 
-  const connectToCall = async (userId: string) => {
-    setLoading(true);
-    setCallState(prev => ({ ...prev, error: null }));
+  const buildParticipantList = useCallback((room: Room) => {
+    const list: CallParticipant[] = [];
+const getCameraTrack = (
+  participant: Participant,
+): VideoTrack | undefined => {
+  const publication =
+    participant.getTrackPublication(Track.Source.Camera);
 
-    try {
-      const tokenData = await generateCallToken(circleId, userId);
-      await joinCall(tokenData);
-      
-      setCallState(prev => ({
-        ...prev,
-        isConnected: true,
-      }));
-    } catch (error) {
-      console.error('Call connection error:', error);
-      setCallState(prev => ({
-        ...prev,
-        error: 'Failed to connect to call',
-      }));
-    } finally {
-      setLoading(false);
-    }
-  };
+  return publication?.videoTrack;
+};
+    // Add local participant first
+    const local = room.localParticipant;
+    list.push({
+      identity: local.identity,
+      name: local.name ?? local.identity,
+      isMicEnabled: local.isMicrophoneEnabled,
+      isCameraEnabled: local.isCameraEnabled,
+      isLocal: true,
+      participant: local,
+      videoTrack: getCameraTrack(local),
+    });
 
-  const disconnectFromCall = async () => {
-    try {
-      await leaveCall();
-      setCallState({
-        isConnected: false,
-        isMuted: false,
-        isCameraOff: false,
-        participants: [],
-        error: null,
+    // Add remote participants
+    room.remoteParticipants.forEach((remote) => {
+      list.push({
+        identity: remote.identity,
+        name: remote.name ?? remote.identity,
+        isMicEnabled: remote.isMicrophoneEnabled,
+        isCameraEnabled: remote.isCameraEnabled,
+        isLocal: false,
+        participant: remote,
+        videoTrack: getCameraTrack(remote),
       });
-    } catch (error) {
-      console.error('Call disconnection error:', error);
-    }
-  };
+    });
 
-  const toggleMute = async () => {
-    try {
-      await toggleMicrophone(!callState.isMuted);
-      setCallState(prev => ({
-        ...prev,
-        isMuted: !prev.isMuted,
-      }));
-    } catch (error) {
-      console.error('Toggle mute error:', error);
-    }
-  };
+    setParticipants(list);
+  }, []);
 
-  const toggleVideo = async () => {
+  const connect = useCallback(async () => {
+    if (roomRef.current) return;
+
     try {
-      await toggleCamera(!callState.isCameraOff);
-      setCallState(prev => ({
-        ...prev,
-        isCameraOff: !prev.isCameraOff,
-      }));
-    } catch (error) {
-      console.error('Toggle video error:', error);
+      setError(null);
+      const token = await getLivekitToken(circleId, userId, userName);
+
+      const room = new Room({
+        adaptiveStream: true,
+        dynacast: true,
+      });
+
+      roomRef.current = room;
+
+      // Room event listeners
+      room.on(RoomEvent.ConnectionStateChanged, (state: ConnectionState) => {
+        setConnectionState(state);
+      });
+
+      room.on(RoomEvent.ParticipantConnected, () => buildParticipantList(room));
+      room.on(RoomEvent.ParticipantDisconnected, () =>
+        buildParticipantList(room),
+      );
+      room.on(RoomEvent.TrackPublished, () => buildParticipantList(room));
+      room.on(RoomEvent.TrackUnpublished, () => buildParticipantList(room));
+      room.on(RoomEvent.TrackMuted, () => buildParticipantList(room));
+      room.on(RoomEvent.TrackUnmuted, () => buildParticipantList(room));
+
+      room.on(RoomEvent.Disconnected, () => {
+        setConnectionState(ConnectionState.Disconnected);
+        setParticipants([]);
+        roomRef.current = null;
+      });
+
+      await room.connect(LIVEKIT_URL, token);
+
+      // Enable camera and mic on join
+      await room.localParticipant.enableCameraAndMicrophone();
+
+      setIsMicEnabled(true);
+      setIsCameraEnabled(true);
+      buildParticipantList(room);
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Failed to connect to call";
+      setError(message);
+      roomRef.current = null;
+      setConnectionState(ConnectionState.Disconnected);
     }
-  };
+  }, [circleId, userId, userName, buildParticipantList]);
+
+  const disconnect = useCallback(async () => {
+    const room = roomRef.current;
+    if (!room) return;
+    await room.disconnect();
+    roomRef.current = null;
+    setParticipants([]);
+    setConnectionState(ConnectionState.Disconnected);
+  }, []);
+
+  const toggleMic = useCallback(async () => {
+    const room = roomRef.current;
+    if (!room) return;
+    const enabled = !isMicEnabled;
+    await room.localParticipant.setMicrophoneEnabled(enabled);
+    setIsMicEnabled(enabled);
+    buildParticipantList(room);
+  }, [isMicEnabled, buildParticipantList]);
+
+  const toggleCamera = useCallback(async () => {
+    const room = roomRef.current;
+    if (!room) return;
+    const enabled = !isCameraEnabled;
+    await room.localParticipant.setCameraEnabled(enabled);
+    setIsCameraEnabled(enabled);
+    buildParticipantList(room);
+  }, [isCameraEnabled, buildParticipantList]);
 
   // Cleanup on unmount
   useEffect(() => {
     return () => {
-      if (callState.isConnected) {
-        disconnectFromCall();
-      }
+      roomRef.current?.disconnect();
+      roomRef.current = null;
     };
-  }, [callState.isConnected]);
+  }, []);
 
   return {
-    connectToCall,
-    disconnectFromCall,
-    toggleMute,
-    toggleVideo,
-    loading,
-    ...callState,
+    connect,
+    disconnect,
+    toggleMic,
+    toggleCamera,
+    connectionState,
+    isConnected,
+    isConnecting,
+    participants,
+    isMicEnabled,
+    isCameraEnabled,
+    error,
   };
-}
+};

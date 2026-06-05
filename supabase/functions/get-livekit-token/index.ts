@@ -1,85 +1,98 @@
-import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
-import { AccessToken, VideoGrant } from 'https://cdn.jsdelivr.net/npm/livekit-server-sdk@1.2.11/+esm';
+// @ts-nocheck
+// import { createClient } from "@supabase/supabase-js";
+// import { AccessToken } from "livekit-server-sdk";
+import { createClient } from "npm:@supabase/supabase-js";
+import { AccessToken } from "npm:livekit-server-sdk";
 
-interface TokenRequest {
-  roomName: string;
-  participantName: string;
-  participantIdentity: string;
-}
+const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+const supabase = createClient(supabaseUrl, supabaseKey);
 
-serve(async (req) => {
-  // Handle CORS preflight
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', {
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'POST, OPTIONS',
-        'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-      },
-    });
-  }
-
+Deno.serve(async (req) => {
   try {
-    // Verify authorization
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader) {
-      return new Response(JSON.stringify({ error: 'Missing authorization' }), {
+    // Get the authorization header from the request
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return new Response(JSON.stringify({ error: "Missing or invalid authorization header" }), {
         status: 401,
-        headers: { 'Content-Type': 'application/json' },
       });
     }
 
-    // Get LiveKit config from environment
-    const livekitUrl = Deno.env.get('LIVEKIT_URL');
-    const livekitApiKey = Deno.env.get('LIVEKIT_API_KEY');
-    const livekitApiSecret = Deno.env.get('LIVEKIT_API_SECRET');
-
-    if (!livekitUrl || !livekitApiKey || !livekitApiSecret) {
-      return new Response(JSON.stringify({ error: 'LiveKit not configured' }), {
-        status: 500,
-        headers: { 'Content-Type': 'application/json' },
+    const token = authHeader.replace("Bearer ", "");
+    
+    // Verify the JWT and get the user
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+    if (authError || !user) {
+      return new Response(JSON.stringify({ error: "Invalid or expired token" }), {
+        status: 401,
       });
     }
 
-    // Parse request body
-    const { roomName, participantName, participantIdentity }: TokenRequest = await req.json();
+    const userId = user.id;
+    const { circleId, userName } = await req.json();
 
-    if (!roomName || !participantIdentity) {
-      return new Response(JSON.stringify({ error: 'Missing required fields' }), {
+    if (!circleId) {
+      return new Response(JSON.stringify({ error: "Missing circleId" }), {
         status: 400,
-        headers: { 'Content-Type': 'application/json' },
       });
     }
 
-    // Create access token
-    const at = new AccessToken(livekitApiKey, livekitApiSecret, {
-      identity: participantIdentity,
-      name: participantName || participantIdentity,
+    // Verify the user is a member of the circle
+    const { data: circle, error: circleError } = await supabase
+      .from("circles")
+      .select("members, status")
+      .eq("id", circleId)
+      .single();
+
+    if (circleError || !circle) {
+      return new Response(JSON.stringify({ error: "Circle not found" }), {
+        status: 404,
+      });
+    }
+
+    // Check if user is in the members array
+    if (!circle.members || !circle.members.includes(userId)) {
+      return new Response(JSON.stringify({ error: "User is not a member of this circle" }), {
+        status: 403,
+      });
+    }
+
+    // Check if circle is complete (only complete circles can have calls)
+    if (circle.status !== "complete") {
+      return new Response(JSON.stringify({ error: "Circle is not complete yet" }), {
+        status: 403,
+      });
+    }
+
+    const apiKey = Deno.env.get("LIVEKIT_API_KEY")!;
+    const apiSecret = Deno.env.get("LIVEKIT_API_SECRET")!;
+
+    if (!apiKey || !apiSecret) {
+      return new Response(JSON.stringify({ error: "LiveKit credentials not configured" }), {
+        status: 500,
+      });
+    }
+
+    const accessToken = new AccessToken(apiKey, apiSecret, {
+      identity: userId,
+      name: userName || user.email?.split("@")[0] || "Member",
+      ttl: "2h",
     });
 
-    // Grant access to the room
-    const grant: VideoGrant = {
-      room: roomName,
+    accessToken.addGrant({
+      room: circleId,
       roomJoin: true,
       canPublish: true,
       canSubscribe: true,
-    };
-    at.addGrant(grant);
+    });
 
-    // Generate token
-    const token = await at.toJwt();
-
-    return new Response(JSON.stringify({ token }), {
-      headers: {
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*',
-      },
+    return new Response(JSON.stringify({ token: await accessToken.toJwt() }), {
+      headers: { "Content-Type": "application/json" },
     });
   } catch (error) {
-    console.error('Error generating LiveKit token:', error);
-    return new Response(JSON.stringify({ error: 'Internal server error' }), {
+    console.error("Error in get-livekit-token:", error);
+    return new Response(JSON.stringify({ error: "Internal server error" }), {
       status: 500,
-      headers: { 'Content-Type': 'application/json' },
     });
   }
 });

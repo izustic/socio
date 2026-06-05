@@ -17,7 +17,8 @@
       "infoPlist": {
         "NSUserNotificationsUsageDescription": "We'll let you know when your Circle grows, someone accepts, or it's time to meet.",
         "NSPhotoLibraryAddUsageDescription": "Socio needs permission to save chat photos and videos to your library.",
-        "NSMicrophoneUsageDescription": "Socio needs microphone access to record voice messages."
+        "NSMicrophoneUsageDescription": "Socio needs microphone access for voice messages and Circle calls.",
+        "NSCameraUsageDescription": "Socio needs camera access for Circle video calls."
       }
     },
     "android": {
@@ -30,6 +31,7 @@
       "predictiveBackGestureEnabled": false,
       "package": "com.anonymous.demoapp",
       "permissions": [
+        "CAMERA",
         "RECORD_AUDIO"
       ]
     },
@@ -53,6 +55,18 @@
       "expo-web-browser",
       "expo-secure-store",
       "expo-notifications",
+      [
+        "@livekit/react-native-expo-plugin",
+        {
+          "android": {
+            "audioType": "communication"
+          },
+          "ios": {
+            "enableMultitaskingCameraAccess": false
+          }
+        }
+      ],
+      "@config-plugins/react-native-webrtc",
       [
         "expo-media-library",
         {

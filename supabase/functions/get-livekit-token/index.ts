@@ -1,6 +1,4 @@
 // @ts-nocheck
-// import { createClient } from "@supabase/supabase-js";
-// import { AccessToken } from "livekit-server-sdk";
 import { createClient } from "npm:@supabase/supabase-js";
 import { AccessToken } from "npm:livekit-server-sdk";
 
@@ -8,71 +6,76 @@ const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
 const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const supabase = createClient(supabaseUrl, supabaseKey);
 
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+};
+
+const json = (body: Record<string, unknown>, status = 200) =>
+  new Response(JSON.stringify(body), {
+    status,
+    headers: {
+      ...corsHeaders,
+      "Content-Type": "application/json",
+    },
+  });
+
 Deno.serve(async (req) => {
+  if (req.method === "OPTIONS") {
+    return new Response("ok", { headers: corsHeaders });
+  }
+
   try {
-    // Get the authorization header from the request
     const authHeader = req.headers.get("Authorization");
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
-      return new Response(JSON.stringify({ error: "Missing or invalid authorization header" }), {
-        status: 401,
-      });
+      return json({ error: "Missing or invalid authorization header" }, 401);
     }
 
     const token = authHeader.replace("Bearer ", "");
-    
-    // Verify the JWT and get the user
     const { data: { user }, error: authError } = await supabase.auth.getUser(token);
     if (authError || !user) {
-      return new Response(JSON.stringify({ error: "Invalid or expired token" }), {
-        status: 401,
-      });
+      return json({ error: "Invalid or expired token" }, 401);
     }
 
     const userId = user.id;
     const { circleId, userName } = await req.json();
 
     if (!circleId) {
-      return new Response(JSON.stringify({ error: "Missing circleId" }), {
-        status: 400,
-      });
+      return json({ error: "Missing circleId" }, 400);
     }
 
-    // Verify the user is a member of the circle
     const { data: circle, error: circleError } = await supabase
       .from("circles")
-      .select("members, status")
+      .select("id, members, status")
       .eq("id", circleId)
-      .single();
+      .maybeSingle();
 
     if (circleError || !circle) {
-      return new Response(JSON.stringify({ error: "Circle not found" }), {
-        status: 404,
-      });
+      return json({ error: "Circle not found" }, 404);
     }
 
-    // Check if user is in the members array
-    if (!circle.members || !circle.members.includes(userId)) {
-      return new Response(JSON.stringify({ error: "User is not a member of this circle" }), {
-        status: 403,
-      });
+    const members = Array.isArray(circle.members)
+      ? circle.members.map((member) => String(member))
+      : [];
+
+    if (!members.includes(userId)) {
+      return json({ error: "User is not a member of this circle" }, 403);
     }
 
-    // Check if circle is complete (only complete circles can have calls)
     if (circle.status !== "complete") {
-      return new Response(JSON.stringify({ error: "Circle is not complete yet" }), {
-        status: 403,
-      });
+      return json({ error: "Circle is not complete yet" }, 403);
     }
 
     const apiKey = Deno.env.get("LIVEKIT_API_KEY")!;
     const apiSecret = Deno.env.get("LIVEKIT_API_SECRET")!;
+    const livekitUrl = Deno.env.get("LIVEKIT_URL")!;
 
-    if (!apiKey || !apiSecret) {
-      return new Response(JSON.stringify({ error: "LiveKit credentials not configured" }), {
-        status: 500,
-      });
+    if (!apiKey || !apiSecret || !livekitUrl) {
+      return json({ error: "LiveKit credentials not configured" }, 500);
     }
 
+    const roomName = String(circle.id);
     const accessToken = new AccessToken(apiKey, apiSecret, {
       identity: userId,
       name: userName || user.email?.split("@")[0] || "Member",
@@ -80,19 +83,19 @@ Deno.serve(async (req) => {
     });
 
     accessToken.addGrant({
-      room: circleId,
+      room: roomName,
       roomJoin: true,
       canPublish: true,
       canSubscribe: true,
     });
 
-    return new Response(JSON.stringify({ token: await accessToken.toJwt() }), {
-      headers: { "Content-Type": "application/json" },
+    return json({
+      token: await accessToken.toJwt(),
+      url: livekitUrl,
+      roomName,
     });
   } catch (error) {
     console.error("Error in get-livekit-token:", error);
-    return new Response(JSON.stringify({ error: "Internal server error" }), {
-      status: 500,
-    });
+    return json({ error: "Internal server error" }, 500);
   }
 });

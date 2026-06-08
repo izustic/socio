@@ -1,4 +1,5 @@
 import 'react-native-url-polyfill/auto';
+import '@/src/polyfills';
 import LottieSplashScreen from '@/src/components/LottieSplashScreen';
 import { OnboardingProvider } from '@/src/context/OnboardingContext';
 import { AuthProvider } from '@/src/context/AuthContext';

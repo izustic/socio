@@ -37,7 +37,7 @@ export default function CallScreen() {
     isMicEnabled,
     isCameraEnabled,
     error,
-  } = useCircleCall(circleId, userId, userName);
+  } = useCircleCall(circleId, userName);
 
   // Auto-connect on mount
   useEffect(() => {
@@ -60,6 +60,21 @@ export default function CallScreen() {
     router.back();
   };
 
+  if (!circleId) {
+    return (
+      <SafeAreaView style={styles.loadingContainer}>
+        <Text style={styles.connectingText}>No Circle selected for this call.</Text>
+        <TouchableOpacity
+          onPress={() => router.back()}
+          style={styles.returnButton}
+          activeOpacity={0.76}
+        >
+          <Text style={styles.returnButtonText}>Back to chat</Text>
+        </TouchableOpacity>
+      </SafeAreaView>
+    );
+  }
+
   // Participant tile component
   const ParticipantTile = ({
     participant,
@@ -68,13 +83,13 @@ export default function CallScreen() {
   }) => (
     <View style={styles.participantTile}>
       {participant.isCameraEnabled && participant.videoTrack ? (
-  <VideoView
-    style={styles.videoView}
-    videoTrack={participant.videoTrack}
-    objectFit="cover"
-    mirror={participant.isLocal}
-  />
-) : (
+        <VideoView
+          style={styles.videoView}
+          videoTrack={participant.videoTrack}
+          objectFit="cover"
+          mirror={participant.isLocal}
+        />
+      ) : (
         <View style={styles.avatarPlaceholder}>
           <Text style={styles.avatarInitial}>
             {(participant.name ?? "M")[0].toUpperCase()}
@@ -109,7 +124,7 @@ export default function CallScreen() {
       {/* Top bar */}
       <View style={styles.topBar}>
         <View style={styles.encryptedBadge}>
-          <Text style={styles.encryptedText}>🔒 E2EE Encrypted</Text>
+          <Text style={styles.encryptedText}>LiveKit Call</Text>
         </View>
         <Text style={styles.memberCount}>
           {participants.length}{" "}
@@ -209,6 +224,17 @@ const styles = StyleSheet.create({
   connectingText: {
     ...Typography.body,
     color: Colors.textDisabled,
+  },
+  returnButton: {
+    marginTop: Spacing.sm,
+    borderRadius: 100,
+    backgroundColor: Colors.primary,
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.sm,
+  },
+  returnButtonText: {
+    ...Typography.button,
+    color: Colors.textPrimary,
   },
   topBar: {
     flexDirection: "row",

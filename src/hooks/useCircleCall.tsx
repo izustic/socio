@@ -1,9 +1,10 @@
 import {
   ConnectionState,
-  RoomEvent,
-  Room,
   Participant,
-  VideoTrack, Track
+  Room,
+  RoomEvent,
+  Track,
+  VideoTrack,
 } from "livekit-client";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { getLivekitToken } from "../services/livekit";
@@ -19,18 +20,9 @@ export interface CallParticipant {
   participant: Participant;
   videoTrack?: VideoTrack;
 }
-// export interface CallParticipant {
-//   identity: string;
-//   name: string;
-//   isMicEnabled: boolean;
-//   isCameraEnabled: boolean;
-//   isLocal: boolean;
-//   participant: Participant;
-// }
 
 export const useCircleCall = (
   circleId: string,
-  userId: string,
   userName: string,
 ) => {
   const roomRef = useRef<Room | null>(null);
@@ -47,15 +39,12 @@ export const useCircleCall = (
 
   const buildParticipantList = useCallback((room: Room) => {
     const list: CallParticipant[] = [];
-const getCameraTrack = (
-  participant: Participant,
-): VideoTrack | undefined => {
-  const publication =
-    participant.getTrackPublication(Track.Source.Camera);
+    const getCameraTrack = (participant: Participant): VideoTrack | undefined => {
+      const publication = participant.getTrackPublication(Track.Source.Camera);
 
-  return publication?.videoTrack;
-};
-    // Add local participant first
+      return publication?.videoTrack;
+    };
+
     const local = room.localParticipant;
     list.push({
       identity: local.identity,
@@ -67,7 +56,6 @@ const getCameraTrack = (
       videoTrack: getCameraTrack(local),
     });
 
-    // Add remote participants
     room.remoteParticipants.forEach((remote) => {
       list.push({
         identity: remote.identity,
@@ -88,7 +76,13 @@ const getCameraTrack = (
 
     try {
       setError(null);
-      const token = await getLivekitToken(circleId, userId, userName);
+      setConnectionState(ConnectionState.Connecting);
+      const tokenData = await getLivekitToken(circleId, userName);
+      const livekitUrl = tokenData.url || LIVEKIT_URL;
+
+      if (!livekitUrl) {
+        throw new Error("LiveKit URL is not configured");
+      }
 
       const room = new Room({
         adaptiveStream: true,
@@ -108,6 +102,8 @@ const getCameraTrack = (
       );
       room.on(RoomEvent.TrackPublished, () => buildParticipantList(room));
       room.on(RoomEvent.TrackUnpublished, () => buildParticipantList(room));
+      room.on(RoomEvent.TrackSubscribed, () => buildParticipantList(room));
+      room.on(RoomEvent.TrackUnsubscribed, () => buildParticipantList(room));
       room.on(RoomEvent.TrackMuted, () => buildParticipantList(room));
       room.on(RoomEvent.TrackUnmuted, () => buildParticipantList(room));
 
@@ -117,9 +113,8 @@ const getCameraTrack = (
         roomRef.current = null;
       });
 
-      await room.connect(LIVEKIT_URL, token);
+      await room.connect(livekitUrl, tokenData.token);
 
-      // Enable camera and mic on join
       await room.localParticipant.enableCameraAndMicrophone();
 
       setIsMicEnabled(true);
@@ -132,7 +127,7 @@ const getCameraTrack = (
       roomRef.current = null;
       setConnectionState(ConnectionState.Disconnected);
     }
-  }, [circleId, userId, userName, buildParticipantList]);
+  }, [circleId, userName, buildParticipantList]);
 
   const disconnect = useCallback(async () => {
     const room = roomRef.current;

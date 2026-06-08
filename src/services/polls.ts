@@ -60,7 +60,7 @@ export const createPoll = async (
   const pollId = `poll-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 
   const { data: pollResult, error: pollError } = await supabase
-    .from<PollRow>("polls")
+    .from("polls")
     .insert({
       id: pollId,
       circle_id: circleId,
@@ -84,7 +84,7 @@ export const createPoll = async (
   }));
 
   const { error: optionError } = await supabase
-    .from<PollOptionRow>("poll_options")
+    .from("poll_options")
     .insert(optionRows);
 
   if (optionError) {
@@ -98,7 +98,7 @@ export const getPollsByIds = async (pollIds: string[]): Promise<PollData[]> => {
   if (pollIds.length === 0) return [];
 
   const { data: pollRows, error: pollError } = await supabase
-    .from<PollRow>("polls")
+    .from("polls")
     .select("*")
     .in("id", pollIds);
 
@@ -106,14 +106,14 @@ export const getPollsByIds = async (pollIds: string[]): Promise<PollData[]> => {
   if (!pollRows || pollRows.length === 0) return [];
 
   const { data: optionRows, error: optionError } = await supabase
-    .from<PollOptionRow>("poll_options")
+    .from("poll_options")
     .select("*")
     .in("poll_id", pollIds);
 
   if (optionError) throw optionError;
 
   const { data: voteRows, error: voteError } = await supabase
-    .from<PollVoteRow>("poll_votes")
+    .from("poll_votes")
     .select("*")
     .in("poll_id", pollIds);
 

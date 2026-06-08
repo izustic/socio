@@ -27,7 +27,19 @@ export default function RootLayout() {
   return (
     <AuthProvider>
       <OnboardingProvider>
-        <Stack screenOptions={{ headerShown: false }} />
+        <Stack screenOptions={{ headerShown: false }}>
+          <Stack.Screen name="circle/no-circle" />
+          <Stack.Screen name="circle/create" />
+          <Stack.Screen name="circle/create-preferences" />
+          <Stack.Screen name="circle/join-preferences" />
+          <Stack.Screen name="circle/swipe-users" />
+          <Stack.Screen name="circle/swipe-circles" />
+          <Stack.Screen name="circle/swipe-empty" />
+          <Stack.Screen name="circle/progress" />
+          <Stack.Screen name="circle/complete" />
+          <Stack.Screen name="circle/chat" />
+          <Stack.Screen name="circle/call" />
+        </Stack>
       </OnboardingProvider>
     </AuthProvider>
   );

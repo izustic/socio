@@ -124,7 +124,7 @@ export default function CallScreen() {
       {/* Top bar */}
       <View style={styles.topBar}>
         <View style={styles.encryptedBadge}>
-          <Text style={styles.encryptedText}>LiveKit Call</Text>
+          <Text style={styles.encryptedText}>Socio Call</Text>
         </View>
         <Text style={styles.memberCount}>
           {participants.length}{" "}
@@ -245,7 +245,7 @@ const styles = StyleSheet.create({
     paddingBottom: Spacing.sm,
   },
   encryptedBadge: {
-    backgroundColor: "rgba(52, 199, 89, 0.15)",
+    backgroundColor: Colors.primary,
     borderRadius: 100,
     paddingHorizontal: 12,
     paddingVertical: 5,
@@ -253,7 +253,7 @@ const styles = StyleSheet.create({
   encryptedText: {
     fontSize: 12,
     fontWeight: "600",
-    color: "#34C759",
+    color: Colors.primaryLight,
   },
   memberCount: {
     ...Typography.bodySmall,

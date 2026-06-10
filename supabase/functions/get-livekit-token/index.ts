@@ -9,7 +9,8 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type",
 };
 
 const json = (body: Record<string, unknown>, status = 200) =>
@@ -33,7 +34,10 @@ Deno.serve(async (req) => {
     }
 
     const token = authHeader.replace("Bearer ", "");
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser(token);
     if (authError || !user) {
       return json({ error: "Invalid or expired token" }, 401);
     }
@@ -79,7 +83,7 @@ Deno.serve(async (req) => {
     const accessToken = new AccessToken(apiKey, apiSecret, {
       identity: userId,
       name: userName || user.email?.split("@")[0] || "Member",
-      ttl: "2h",
+      // ttl: "2h",
     });
 
     accessToken.addGrant({
@@ -96,6 +100,13 @@ Deno.serve(async (req) => {
     });
   } catch (error) {
     console.error("Error in get-livekit-token:", error);
-    return json({ error: "Internal server error" }, 500);
+
+    return json(
+      {
+        error: String(error),
+        stack: error?.stack,
+      },
+      500,
+    );
   }
 });

@@ -14,6 +14,9 @@ export const getLivekitToken = async (
     body: { circleId, userName },
   });
 
+  console.log('LiveKit token response:', JSON.stringify(data));
+  console.log('LiveKit token error:', JSON.stringify(error));
+
   if (error) throw new Error(`Failed to get LiveKit token: ${error.message}`);
   if (!data?.token) throw new Error("No token returned from Edge Function");
 

@@ -7,6 +7,7 @@ import {
     User,
 } from "../types";
 import { supabase } from "./supabase";
+import { createNotification, createNotifications } from "./notifications";
 
 export interface SwipeCandidate extends User {
   uid: string;
@@ -56,6 +57,162 @@ interface UserRow {
   bio: string;
   created_at: string;
 }
+
+interface NotificationCircleRow {
+  id: string;
+  name: string;
+  creator_id: string;
+  size: number;
+  members: string[];
+}
+
+const getUserDisplayName = async (userId: string): Promise<string> => {
+  const { data, error } = await supabase
+    .from("users")
+    .select("display_name, email")
+    .eq("id", userId)
+    .maybeSingle();
+
+  if (error) {
+    console.error("Error getting notification actor:", error);
+    return "Someone";
+  }
+
+  return data?.display_name || data?.email?.split("@")[0] || "Someone";
+};
+
+const getNotificationCircle = async (
+  circleId: string,
+): Promise<NotificationCircleRow | null> => {
+  const { data, error } = await supabase
+    .from("circles")
+    .select("id, name, creator_id, size, members")
+    .eq("id", circleId)
+    .maybeSingle();
+
+  if (error) {
+    console.error("Error getting circle for notification:", error);
+    return null;
+  }
+
+  return data as NotificationCircleRow | null;
+};
+
+const notifyCircleProgress = async (
+  circle: NotificationCircleRow,
+) => {
+  const members = (circle.members || []).map((memberId) => String(memberId));
+  const remaining = Math.max(circle.size - members.length, 0);
+
+  if (remaining === 0) {
+    await createNotifications(
+      members,
+      "circle_complete",
+      "Your Circle is complete!",
+      `${circle.name} is ready to meet.`,
+      {
+        action: "circle_complete",
+        circleId: circle.id,
+      },
+    );
+    return;
+  }
+
+  if (remaining === 1) {
+    await createNotification(
+      circle.creator_id,
+      "circle_almost_full",
+      "Circle almost full",
+      "1 more person to fill your Circle.",
+      {
+        action: "circle_progress",
+        circleId: circle.id,
+      },
+    );
+  }
+};
+
+const notifySwipeOutcome = async ({
+  circleId,
+  actorId,
+  targetUserId,
+  liked,
+  result,
+  source,
+}: {
+  circleId: string;
+  actorId: string;
+  targetUserId?: string;
+  liked: boolean;
+  result: {
+    mutualMatch: boolean;
+    addedToCircle: boolean;
+    circleComplete: boolean;
+  };
+  source: "host" | "joiner";
+}) => {
+  if (!liked) return;
+
+  try {
+    const [circle, actorName] = await Promise.all([
+      getNotificationCircle(circleId),
+      getUserDisplayName(actorId),
+    ]);
+
+    if (!circle) return;
+
+    if (source === "joiner") {
+      if (result.addedToCircle) {
+        await createNotification(
+          circle.creator_id,
+          "circle_accepted",
+          `${actorName} accepted`,
+          `Welcome them to ${circle.name}.`,
+          {
+            action: "circle_progress",
+            actorId,
+            circleId,
+          },
+        );
+      } else {
+        await createNotification(
+          circle.creator_id,
+          "circle_invite",
+          `${actorName} wants to join`,
+          `${actorName} liked ${circle.name}.`,
+          {
+            action: "review_joiner",
+            actorId,
+            circleId,
+          },
+        );
+      }
+    }
+
+    if (source === "host" && targetUserId && result.addedToCircle) {
+      await createNotification(
+        targetUserId,
+        "circle_accepted",
+        `${actorName} accepted`,
+        `You both wanted to be in ${circle.name}.`,
+        {
+          action: "circle_progress",
+          actorId,
+          circleId,
+        },
+      );
+    }
+
+    if (result.addedToCircle || result.circleComplete) {
+      const updatedCircle = await getNotificationCircle(circleId);
+      if (updatedCircle) {
+        await notifyCircleProgress(updatedCircle);
+      }
+    }
+  } catch (error) {
+    console.error("Error creating swipe notifications:", error);
+  }
+};
 
 const getDistanceKm = (
   from: { lat: number; lng: number },
@@ -376,11 +533,22 @@ export const submitSwipe = async (
     circleComplete?: boolean;
   } | null;
 
-  return {
+  const swipeResult = {
     mutualMatch: Boolean(result?.mutualMatch),
     addedToCircle: Boolean(result?.addedToCircle),
     circleComplete: Boolean(result?.circleComplete),
   };
+
+  await notifySwipeOutcome({
+    circleId,
+    actorId: currentUserId,
+    targetUserId,
+    liked,
+    result: swipeResult,
+    source: "host",
+  });
+
+  return swipeResult;
 };
 
 export interface JoinCircleFilters {
@@ -553,9 +721,19 @@ export const submitCircleSwipe = async (
     circleComplete?: boolean;
   } | null;
 
-  return {
+  const swipeResult = {
     mutualMatch: Boolean(result?.mutualMatch),
     addedToCircle: Boolean(result?.addedToCircle),
     circleComplete: Boolean(result?.circleComplete),
   };
+
+  await notifySwipeOutcome({
+    circleId,
+    actorId: userId,
+    liked,
+    result: swipeResult,
+    source: "joiner",
+  });
+
+  return swipeResult;
 };

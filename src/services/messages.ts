@@ -1,5 +1,6 @@
 import type { RealtimeChannel } from "@supabase/supabase-js";
 import { Message } from "../types";
+import { createNotifications } from "./notifications";
 import { supabase } from "./supabase";
 
 interface MessageRow {
@@ -83,6 +84,72 @@ const rowToMessage = (row: MessageRow): Message => ({
   timestamp: new Date(row.created_at),
 });
 
+const getMessageNotificationBody = (
+  senderName: string,
+  text: string,
+  mediaType?: "image" | "video" | "audio",
+  pollId?: string,
+) => {
+  if (pollId || text.startsWith("__poll__:")) {
+    return `${senderName} sent a poll.`;
+  }
+
+  const trimmedText = text.trim();
+  if (trimmedText) {
+    return trimmedText.length > 82
+      ? `${trimmedText.slice(0, 79)}...`
+      : trimmedText;
+  }
+
+  if (mediaType === "audio") return `${senderName} sent a voice message.`;
+  if (mediaType === "video") return `${senderName} sent a video.`;
+  if (mediaType === "image") return `${senderName} sent a photo.`;
+
+  return `${senderName} sent a message.`;
+};
+
+const notifyCircleMembersOfMessage = async (
+  circleId: string,
+  senderId: string,
+  senderName: string,
+  message: Message,
+) => {
+  try {
+    const { data: circle, error } = await supabase
+      .from("circles")
+      .select("name, members")
+      .eq("id", circleId)
+      .maybeSingle();
+
+    if (error) throw error;
+
+    const recipients = ((circle?.members as string[] | undefined) ?? [])
+      .map((memberId) => String(memberId))
+      .filter((memberId) => memberId !== senderId);
+
+    await createNotifications(
+      recipients,
+      "message",
+      senderName,
+      getMessageNotificationBody(
+        senderName,
+        message.text,
+        message.mediaType ?? undefined,
+        message.pollId ?? undefined,
+      ),
+      {
+        action: "open_chat",
+        circleId,
+        circleName: circle?.name,
+        messageId: message.id,
+        senderId,
+      },
+    );
+  } catch (error) {
+    console.error("Error creating message notifications:", error);
+  }
+};
+
 export const sendMessage = async (
   circleId: string,
   senderId: string,
@@ -134,7 +201,10 @@ export const sendMessage = async (
 
     if (error) throw error;
 
-    return rowToMessage(data as MessageRow);
+    const message = rowToMessage(data as MessageRow);
+    await notifyCircleMembersOfMessage(circleId, senderId, senderName, message);
+
+    return message;
   } catch (error) {
     console.error("Error sending message:", error);
     throw error;

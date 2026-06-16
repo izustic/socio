@@ -32,14 +32,17 @@ import * as MediaLibrary from "expo-media-library";
 import { router, useLocalSearchParams } from "expo-router";
 import {
   ChartBarBig,
+  ChevronRight,
   ChevronLeft,
   Download,
   GalleryHorizontal,
+  Info,
   MoreHorizontal,
   Phone,
+  Search,
   X,
 } from "lucide-react-native";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -50,6 +53,7 @@ import {
   StatusBar,
   StyleSheet,
   Text,
+  TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
@@ -168,6 +172,13 @@ const getDisplayName = (
   return email?.split("@")[0] || "Someone";
 };
 
+const getMessageSearchText = (message: Message) => {
+  if (message.text.startsWith("__poll__:")) return "Poll";
+  return [message.senderName, message.text, message.replyTo?.text]
+    .filter(Boolean)
+    .join(" ");
+};
+
 export default function CircleChatRoute() {
   const { user, profile } = useAuth();
   const params = useLocalSearchParams<{ circleId?: string }>();
@@ -196,6 +207,20 @@ export default function CircleChatRoute() {
   const subscribedCircleId = circle?.id;
   const [pollCreatorVisible, setPollCreatorVisible] = useState(false);
   const [polls, setPolls] = useState<Record<string, PollData>>({});
+  const [chatMenuVisible, setChatMenuVisible] = useState(false);
+  const [searchVisible, setSearchVisible] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const searchResults = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase();
+    if (!query) return messages.slice(-12).reverse();
+
+    return messages
+      .filter((message) =>
+        getMessageSearchText(message).toLowerCase().includes(query),
+      )
+      .reverse();
+  }, [messages, searchQuery]);
 
   useEffect(() => {
     let active = true;
@@ -637,6 +662,37 @@ export default function CircleChatRoute() {
     setTimeout(() => setHighlightedMessageId(null), 1400);
   };
 
+  const jumpToMessage = (messageId: string) => {
+    const targetIndex = messages.findIndex((message) => message.id === messageId);
+    if (targetIndex < 0) return;
+
+    setSearchVisible(false);
+    setSearchQuery("");
+    listRef.current?.scrollToIndex({
+      index: targetIndex,
+      animated: true,
+      viewPosition: 0.45,
+    });
+    setHighlightedMessageId(messageId);
+    setTimeout(() => setHighlightedMessageId(null), 1400);
+  };
+
+  const openConversationSearch = () => {
+    setChatMenuVisible(false);
+    setSearchVisible(true);
+  };
+
+  const openCircleInfo = () => {
+    if (!circle) return;
+    setChatMenuVisible(false);
+    router.push({
+      pathname: "/circle/info",
+      params: {
+        circleId: circle.id,
+      },
+    });
+  };
+
   const getMediaFileName = (media: OpenMedia) => {
     const urlPath = media.uri.split("?")[0];
     const existingName = urlPath.split("/").pop();
@@ -887,7 +943,12 @@ export default function CircleChatRoute() {
             >
               <Phone size={20} color={Colors.textPrimary} strokeWidth={2.2} />
             </TouchableOpacity>
-            <TouchableOpacity activeOpacity={0.76} style={styles.iconButton}>
+            <TouchableOpacity
+              activeOpacity={0.76}
+              style={styles.iconButton}
+              onPress={() => setChatMenuVisible(true)}
+              accessibilityLabel="Open chat menu"
+            >
               <MoreHorizontal
                 size={22}
                 color={Colors.textPrimary}
@@ -953,6 +1014,137 @@ export default function CircleChatRoute() {
             void handleSendMessage(text);
           }}
         />
+
+        <Modal
+          visible={chatMenuVisible}
+          animationType="fade"
+          transparent
+          onRequestClose={() => setChatMenuVisible(false)}
+        >
+          <TouchableOpacity
+            style={styles.menuOverlay}
+            activeOpacity={1}
+            onPress={() => setChatMenuVisible(false)}
+          >
+            <View style={styles.chatMenu}>
+              <TouchableOpacity
+                activeOpacity={0.76}
+                style={styles.menuItem}
+                onPress={openConversationSearch}
+              >
+                <Search size={20} color={Colors.textPrimary} strokeWidth={2.1} />
+                <Text style={styles.menuText}>Search in conversation</Text>
+                <ChevronRight
+                  size={18}
+                  color={Colors.textSecondary}
+                  strokeWidth={2.1}
+                />
+              </TouchableOpacity>
+              <View style={styles.menuDivider} />
+              <TouchableOpacity
+                activeOpacity={0.76}
+                style={styles.menuItem}
+                onPress={openCircleInfo}
+              >
+                <Info size={20} color={Colors.textPrimary} strokeWidth={2.1} />
+                <Text style={styles.menuText}>Circle info</Text>
+                <ChevronRight
+                  size={18}
+                  color={Colors.textSecondary}
+                  strokeWidth={2.1}
+                />
+              </TouchableOpacity>
+            </View>
+          </TouchableOpacity>
+        </Modal>
+
+        <Modal
+          visible={searchVisible}
+          animationType="slide"
+          transparent={false}
+          onRequestClose={() => {
+            setSearchVisible(false);
+            setSearchQuery("");
+          }}
+        >
+          <SafeAreaView style={styles.searchContainer}>
+            <StatusBar barStyle="dark-content" />
+            <View style={styles.searchHeader}>
+              <TouchableOpacity
+                activeOpacity={0.76}
+                style={styles.iconButton}
+                onPress={() => {
+                  setSearchVisible(false);
+                  setSearchQuery("");
+                }}
+                accessibilityLabel="Close search"
+              >
+                <ChevronLeft
+                  size={24}
+                  color={Colors.textPrimary}
+                  strokeWidth={2.2}
+                />
+              </TouchableOpacity>
+              <View style={styles.searchInputWrap}>
+                <Search
+                  size={18}
+                  color={Colors.textSecondary}
+                  strokeWidth={2.1}
+                />
+                <TextInput
+                  value={searchQuery}
+                  onChangeText={setSearchQuery}
+                  placeholder="Search conversation"
+                  placeholderTextColor={Colors.textDisabled}
+                  autoFocus
+                  style={styles.searchInput}
+                  returnKeyType="search"
+                />
+              </View>
+            </View>
+
+            <FlatList
+              data={searchResults}
+              keyExtractor={(item) => item.id}
+              keyboardShouldPersistTaps="handled"
+              contentContainerStyle={styles.searchResultsContent}
+              ListHeaderComponent={
+                <Text style={styles.searchCount}>
+                  {searchQuery.trim()
+                    ? `${searchResults.length} result${searchResults.length === 1 ? "" : "s"}`
+                    : "Recent messages"}
+                </Text>
+              }
+              ListEmptyComponent={
+                <View style={styles.emptyState}>
+                  <Text style={styles.emptyText}>No messages found.</Text>
+                </View>
+              }
+              renderItem={({ item }) => (
+                <TouchableOpacity
+                  activeOpacity={0.76}
+                  style={styles.searchResult}
+                  onPress={() => jumpToMessage(item.id)}
+                >
+                  <View style={styles.searchResultCopy}>
+                    <Text numberOfLines={1} style={styles.searchResultSender}>
+                      {item.senderId === user?.id ? "You" : item.senderName}
+                    </Text>
+                    <Text numberOfLines={2} style={styles.searchResultText}>
+                      {getReplyText(item)}
+                    </Text>
+                  </View>
+                  <Text style={styles.searchResultDate}>
+                    {item.timestamp.toLocaleDateString(undefined, {
+                      month: "short",
+                      day: "numeric",
+                    })}
+                  </Text>
+                </TouchableOpacity>
+              )}
+            />
+          </SafeAreaView>
+        </Modal>
 
         <Modal
           visible={attachmentSheetVisible}
@@ -1134,6 +1326,106 @@ const styles = StyleSheet.create({
     ...Typography.body,
     color: Colors.textSecondary,
     textAlign: "center",
+  },
+  menuOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(255, 255, 255, 0.7)",
+    alignItems: "flex-end",
+    paddingTop: 84,
+    paddingRight: Spacing.screenPadding,
+  },
+  chatMenu: {
+    width: 240,
+    borderRadius: Radius.md,
+    borderWidth: 1,
+    borderColor: Colors.divider,
+    backgroundColor: Colors.surface,
+    overflow: "hidden",
+  },
+  menuItem: {
+    minHeight: 56,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.sm,
+    paddingHorizontal: Spacing.md,
+  },
+  menuText: {
+    ...Typography.body,
+    flex: 1,
+    color: Colors.textPrimary,
+  },
+  menuDivider: {
+    height: 1,
+    marginLeft: 48,
+    backgroundColor: Colors.divider,
+  },
+  searchContainer: {
+    flex: 1,
+    backgroundColor: Colors.background,
+  },
+  searchHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.sm,
+    paddingHorizontal: Spacing.screenPadding,
+    paddingTop: Spacing.md,
+    paddingBottom: Spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.divider,
+  },
+  searchInputWrap: {
+    flex: 1,
+    minHeight: 44,
+    borderRadius: Radius.pill,
+    backgroundColor: Colors.inputBg,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.sm,
+    paddingHorizontal: Spacing.md,
+  },
+  searchInput: {
+    ...Typography.body,
+    flex: 1,
+    color: Colors.textPrimary,
+    paddingVertical: 0,
+  },
+  searchResultsContent: {
+    flexGrow: 1,
+    paddingHorizontal: Spacing.screenPadding,
+    paddingTop: Spacing.md,
+    paddingBottom: Spacing.xl,
+  },
+  searchCount: {
+    ...Typography.label,
+    marginBottom: Spacing.sm,
+    color: Colors.textSecondary,
+  },
+  searchResult: {
+    minHeight: 72,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.md,
+    paddingVertical: Spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.divider,
+  },
+  searchResultCopy: {
+    flex: 1,
+    minWidth: 0,
+  },
+  searchResultSender: {
+    ...Typography.body,
+    fontWeight: "600",
+    color: Colors.textPrimary,
+  },
+  searchResultText: {
+    ...Typography.bodySmall,
+    marginTop: 2,
+    color: Colors.textSecondary,
+  },
+  searchResultDate: {
+    ...Typography.bodySmall,
+    color: Colors.textDisabled,
   },
   attachmentSheetOverlay: {
     flex: 1,

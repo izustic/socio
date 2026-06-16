@@ -39,6 +39,7 @@ export default function RootLayout() {
           <Stack.Screen name="circle/complete" />
           <Stack.Screen name="circle/chat" />
           <Stack.Screen name="circle/call" />
+          <Stack.Screen name="circle/info" />
         </Stack>
       </OnboardingProvider>
     </AuthProvider>

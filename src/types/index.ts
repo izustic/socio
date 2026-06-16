@@ -83,6 +83,8 @@ export interface Circle {
   filters: CircleFilters;
   meetupGoal?: string;
   meetupTimeframe?: string;
+  meetupDays?: number;
+  meetupDeadline?: Date | null;
   status: CircleStatus;
   createdAt: Date;
 }

@@ -38,6 +38,8 @@ interface CircleRow {
   };
   meetup_goal: string;
   meetup_timeframe?: string;
+  meetup_days?: number;
+  meetup_deadline?: string | null;
   status: "forming" | "complete";
   created_at: string;
   image_url?: string;
@@ -269,6 +271,8 @@ export const getActiveCircleForUser = async (
     },
     meetupGoal: row.meetup_goal,
     meetupTimeframe: row.meetup_timeframe,
+    meetupDays: row.meetup_days,
+    meetupDeadline: row.meetup_deadline ? new Date(row.meetup_deadline) : null,
     status: row.status,
     createdAt: new Date(row.created_at),
   };
@@ -309,6 +313,8 @@ export const getCircleById = async (
     },
     meetupGoal: row.meetup_goal,
     meetupTimeframe: row.meetup_timeframe,
+    meetupDays: row.meetup_days,
+    meetupDeadline: row.meetup_deadline ? new Date(row.meetup_deadline) : null,
     status: row.status,
     createdAt: new Date(row.created_at),
   };
@@ -350,6 +356,8 @@ export const getLatestCircleForUser = async (
     },
     meetupGoal: row.meetup_goal,
     meetupTimeframe: row.meetup_timeframe,
+    meetupDays: row.meetup_days,
+    meetupDeadline: row.meetup_deadline ? new Date(row.meetup_deadline) : null,
     status: row.status,
     createdAt: new Date(row.created_at),
   };
@@ -570,6 +578,8 @@ export interface CircleCandidate {
   filters: JoinCircleFilters;
   meetupGoal: string;
   meetupTimeframe?: string;
+  meetupDays?: number;
+  meetupDeadline?: Date | null;
   status: "forming" | "complete";
   createdAt: Date;
   distance?: number;
@@ -619,6 +629,10 @@ export const getCircleCandidates = async (
       },
       meetupGoal: row.meetup_goal,
       meetupTimeframe: row.meetup_timeframe,
+      meetupDays: row.meetup_days,
+      meetupDeadline: row.meetup_deadline
+        ? new Date(row.meetup_deadline)
+        : null,
       status: row.status,
       createdAt: new Date(row.created_at),
       imageUrl: row.image_url,

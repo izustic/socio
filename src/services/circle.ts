@@ -1,6 +1,7 @@
 import type { RealtimeChannel } from "@supabase/supabase-js";
 import * as Crypto from "expo-crypto";
 import { Circle, Interest, ProfileTrait } from "../types";
+import { clampMeetupDays, createMeetupDeadline } from "../utils/circleDeadline";
 import { supabase } from "./supabase";
 
 interface CreateCircleInput {
@@ -14,6 +15,8 @@ interface CreateCircleInput {
   vibe?: string;
   meetupGoal?: string;
   meetupTimeframe?: string;
+  meetupDays?: number;
+  meetupDeadline?: Date | string;
   genderMix?: "Male" | "Female" | "Both";
   traits?: ProfileTrait[];
 }
@@ -38,6 +41,8 @@ interface CircleRow {
   filters: CircleFilters;
   meetup_goal: string;
   meetup_timeframe?: string;
+  meetup_days?: number;
+  meetup_deadline?: string | null;
   status: "forming" | "complete";
   created_at: string;
 }
@@ -57,6 +62,8 @@ const rowToCircle = (row: CircleRow): Circle => ({
   filters: row.filters,
   meetupGoal: row.meetup_goal,
   meetupTimeframe: row.meetup_timeframe,
+  meetupDays: row.meetup_days,
+  meetupDeadline: row.meetup_deadline ? new Date(row.meetup_deadline) : null,
   status: row.status,
   createdAt: new Date(row.created_at),
 });
@@ -66,6 +73,13 @@ export const createCircle = async (
 ): Promise<string> => {
   try {
     const circleId = Crypto.randomUUID();
+    const meetupDays = clampMeetupDays(input.meetupDays ?? 3);
+    const meetupDeadline =
+      input.meetupDeadline instanceof Date
+        ? input.meetupDeadline
+        : input.meetupDeadline
+          ? new Date(input.meetupDeadline)
+          : createMeetupDeadline(meetupDays);
     const payload = {
       id: circleId,
       name: input.name,
@@ -84,7 +98,9 @@ export const createCircle = async (
         traits: input.traits || [],
       },
       meetup_goal: input.meetupGoal || "",
-      meetup_timeframe: input.meetupTimeframe || "Within 3 days",
+      meetup_timeframe: input.meetupTimeframe || `Within ${meetupDays} days`,
+      meetup_days: meetupDays,
+      meetup_deadline: meetupDeadline.toISOString(),
       status: "forming",
     };
 
@@ -236,6 +252,13 @@ export const updateCircle = async (
       dbUpdates.meetup_goal = updates.meetupGoal;
     if (updates.meetupTimeframe !== undefined)
       dbUpdates.meetup_timeframe = updates.meetupTimeframe;
+    if (updates.meetupDays !== undefined)
+      dbUpdates.meetup_days = updates.meetupDays;
+    if (updates.meetupDeadline !== undefined)
+      dbUpdates.meetup_deadline =
+        updates.meetupDeadline instanceof Date
+          ? updates.meetupDeadline.toISOString()
+          : updates.meetupDeadline;
     if (updates.status !== undefined) dbUpdates.status = updates.status;
 
     const { error } = await supabase

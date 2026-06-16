@@ -5,6 +5,7 @@ import { useAuth } from "@/src/context/AuthContext";
 import { getCircle, getLatestCircleForParticipant } from "@/src/services/circle";
 import { getUsersByIds, SwipeCandidate } from "@/src/services/swipe";
 import { Circle } from "@/src/types";
+import { getCircleMeetupDeadline, getCountdownParts } from "@/src/utils/circleDeadline";
 import { router, useLocalSearchParams } from "expo-router";
 import React, { useEffect, useMemo, useState } from "react";
 import {
@@ -16,10 +17,6 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-type CircleWithDeadline = Circle & {
-  meetupDeadline?: string | Date | null;
-};
-
 const arrangeMembers = (
   memberIds: string[],
   profiles: SwipeCandidate[],
@@ -30,29 +27,10 @@ const arrangeMembers = (
     .filter((profile): profile is SwipeCandidate => Boolean(profile));
 };
 
-const getCountdown = (deadline?: string | Date | null, now = Date.now()) => {
-  if (!deadline) {
-    return { days: "02", hours: "14", minutes: "30" };
-  }
-
-  const target = deadline instanceof Date ? deadline : new Date(deadline);
-  const diffMs = Math.max(0, target.getTime() - now);
-  const totalMinutes = Math.floor(diffMs / 60000);
-  const days = Math.floor(totalMinutes / 1440);
-  const hours = Math.floor((totalMinutes % 1440) / 60);
-  const minutes = totalMinutes % 60;
-
-  return {
-    days: String(days).padStart(2, "0"),
-    hours: String(hours).padStart(2, "0"),
-    minutes: String(minutes).padStart(2, "0"),
-  };
-};
-
 export default function CircleCompleteScreen() {
   const { user } = useAuth();
   const params = useLocalSearchParams<{ circleId?: string }>();
-  const [circle, setCircle] = useState<CircleWithDeadline | null>(null);
+  const [circle, setCircle] = useState<Circle | null>(null);
   const [members, setMembers] = useState<SwipeCandidate[]>([]);
   const [loading, setLoading] = useState(true);
   const [now, setNow] = useState(Date.now());
@@ -69,7 +47,7 @@ export default function CircleCompleteScreen() {
         : await getLatestCircleForParticipant(user.id);
 
       if (!active) return;
-      setCircle(targetCircle as CircleWithDeadline | null);
+      setCircle(targetCircle);
       setLoading(false);
     };
 
@@ -103,16 +81,16 @@ export default function CircleCompleteScreen() {
   }, [circle]);
 
   useEffect(() => {
-    if (!circle?.meetupDeadline) return;
+    if (!circle) return;
 
     const interval = setInterval(() => {
       setNow(Date.now());
-    }, 60000);
+    }, 1000);
 
     return () => {
       clearInterval(interval);
     };
-  }, [circle?.meetupDeadline]);
+  }, [circle]);
 
   const memberNames = useMemo(() => {
     if (!user) return members.map((m) => m.name.split(" ")[0]).join(", ");
@@ -122,9 +100,16 @@ export default function CircleCompleteScreen() {
       .join(", ");
   }, [members, user]);
 
+  const meetupDeadline = useMemo(
+    () => (circle ? getCircleMeetupDeadline(circle) : null),
+    [circle],
+  );
   const countdown = useMemo(
-    () => getCountdown(circle?.meetupDeadline, now),
-    [circle?.meetupDeadline, now],
+    () =>
+      meetupDeadline
+        ? getCountdownParts(meetupDeadline, now)
+        : { days: "00", hours: "00", minutes: "00", seconds: "00" },
+    [meetupDeadline, now],
   );
 
   if (loading) {
@@ -173,7 +158,9 @@ export default function CircleCompleteScreen() {
         <Text style={styles.memberLine}>{memberNames}</Text>
 
         <View style={styles.countdownCard}>
-          <Text style={styles.countdownLabel}>COFFEE MEETUP IN</Text>
+          <Text style={styles.countdownLabel}>
+            {(circle!.meetupGoal || "Circle meetup").toUpperCase()} IN
+          </Text>
           <View style={styles.countdownColumns}>
             <View style={styles.countdownColumn}>
               <Text style={styles.countdownValue}>{countdown.days}</Text>
@@ -186,6 +173,10 @@ export default function CircleCompleteScreen() {
             <View style={styles.countdownColumn}>
               <Text style={styles.countdownValue}>{countdown.minutes}</Text>
               <Text style={styles.countdownUnit}>MIN</Text>
+            </View>
+            <View style={styles.countdownColumn}>
+              <Text style={styles.countdownValue}>{countdown.seconds}</Text>
+              <Text style={styles.countdownUnit}>SEC</Text>
             </View>
           </View>
         </View>

@@ -25,12 +25,20 @@ export default function CreateCircleBasicsScreen() {
   const [radius, setRadius] = useState(8);
   const [radiusUnit, setRadiusUnit] = useState<'km' | 'mi'>('km');
   const [meetupGoal, setMeetupGoal] = useState('Coffee');
+  const [meetupDays, setMeetupDays] = useState(3);
   const [trackWidth, setTrackWidth] = useState(0);
+  const [dayTrackWidth, setDayTrackWidth] = useState(0);
 
   const handleRadiusPress = (event: GestureResponderEvent) => {
     if (!trackWidth) return;
     const ratio = clamp(event.nativeEvent.locationX / trackWidth, 0, 1);
     setRadius(Math.round(1 + ratio * 24));
+  };
+
+  const handleMeetupDaysPress = (event: GestureResponderEvent) => {
+    if (!dayTrackWidth) return;
+    const ratio = clamp(event.nativeEvent.locationX / dayTrackWidth, 0, 1);
+    setMeetupDays(Math.round(3 + ratio * 7));
   };
 
   const handleNext = () => {
@@ -43,6 +51,7 @@ export default function CreateCircleBasicsScreen() {
         radius: String(radius),
         radiusUnit,
         meetupGoal,
+        meetupDays: String(meetupDays),
       },
     });
   };
@@ -156,7 +165,28 @@ export default function CreateCircleBasicsScreen() {
               );
             })}
           </View>
-          <Text style={styles.helperText}>Within 3 days</Text>
+        </View>
+
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.label}>DAY TO MEET</Text>
+            <Text style={styles.valueLabel}>
+              Within {meetupDays} {meetupDays === 1 ? 'day' : 'days'}
+            </Text>
+          </View>
+          <TouchableOpacity
+            activeOpacity={0.95}
+            style={styles.sliderTrack}
+            onLayout={(event) => setDayTrackWidth(event.nativeEvent.layout.width)}
+            onPress={handleMeetupDaysPress}
+          >
+            <View style={[styles.sliderFill, { width: `${((meetupDays - 3) / 7) * 100}%` }]} />
+            <View style={[styles.sliderThumb, { left: `${((meetupDays - 3) / 7) * 100}%` }]} />
+          </TouchableOpacity>
+          <View style={styles.radiusMeta}>
+            <Text style={styles.helperText}>3 days</Text>
+            <Text style={styles.helperText}>10 days</Text>
+          </View>
         </View>
       </ScrollView>
 

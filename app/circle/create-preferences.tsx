@@ -67,6 +67,7 @@ export default function CreateCirclePreferencesScreen() {
     radius?: string;
     radiusUnit?: string;
     meetupGoal?: string;
+    meetupDays?: string;
   }>();
   const { user, profile } = useAuth();
   const [ageRange, setAgeRange] = useState<[number, number]>([22, 32]);
@@ -131,8 +132,10 @@ export default function CreateCirclePreferencesScreen() {
       radius: Number(asString(params.radius, "8")),
       radiusUnit: asString(params.radiusUnit, "km"),
       meetupGoal: asString(params.meetupGoal, "Coffee"),
+      meetupDays: Number(asString(params.meetupDays, "3")),
     }),
     [
+      params.meetupDays,
       params.name,
       params.radius,
       params.radiusUnit,
@@ -212,7 +215,8 @@ export default function CreateCirclePreferencesScreen() {
         genderMix,
         vibe: circleBasics.meetupGoal,
         meetupGoal: circleBasics.meetupGoal,
-        meetupTimeframe: "Within 3 days",
+        meetupDays: circleBasics.meetupDays,
+        meetupTimeframe: `Within ${circleBasics.meetupDays} days`,
       });
 
       router.replace("/(tabs)/swipe");

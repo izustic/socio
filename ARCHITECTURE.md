@@ -2,9 +2,12 @@
 
 ## Implementation Guide
 
-> Version 2.0 | Prepared by: Izu Obikanyi
-> Status: FULL SUPABASE MIGRATION COMPLETE (Firebase removed)
-> Updated: May 2026 — Migrated from Firebase + Supabase (split) to Supabase only (single backend)
+> Version 2.1 | Prepared by: Izu Obikanyi
+> Status: CORE LOOP SCAFFOLDED, NOT PRODUCTION-READY
+> Updated: June 2026 — Reconciled with `TODO.md` / `PLAN.md` / `README.md`.
+> Every layer in the Tech Stack table is now annotated with an actual status
+> (`DONE` / `PARTIAL` / `NOT STARTED`) and the Security Checklist has been
+> updated to reflect what is actually in the repo.
 
 ---
 
@@ -34,18 +37,22 @@ Onboard → Profile setup → NoCircle → Join Circle → Set preferences
 
 ## 2. TECH STACK OVERVIEW
 
+> Status legend: `DONE` = implemented in code, `PARTIAL` = scaffolded but not
+> verified, `NOT STARTED` = not yet in the repo. This replaces the old
+> "✅ DONE" table, which overstated reality.
+
 ```
-Layer               Service                       Status
-─────────────────────────────────────────────────────────
-Authentication      Supabase Auth                ✅ DONE
-Database (app data) Supabase PostgreSQL          ✅ DONE
-File Storage        Supabase Storage             ✅ DONE
-Real-time Chat      Supabase Realtime            ✅ DONE
-User Roles/Reports  Supabase PostgreSQL           ✅ DONE
-Group Calls (E2EE)  Livekit Cloud                ✅ DONE
-Call Tokens         Supabase Edge Function       ✅ DONE
-Location Services   Expo Location + Nominatim    ✅ DONE
-Notifications       Supabase PostgreSQL           ✅ DONE
+Layer               Service                       Status        Notes
+─────────────────────────────────────────────────────────────────────────────
+Authentication      Supabase Auth                 DONE          Email/pwd, Google, Facebook, OTP — flows exist; real-device verification still pending
+Database (app data) Supabase PostgreSQL           PARTIAL       Migrations committed; deployed schema, RLS, and policies need project-level verification
+File Storage        Supabase Storage              PARTIAL       Upload helpers exist; `avatars` and `chat-media` buckets/policies not yet verified
+Real-time Chat      Supabase Realtime             PARTIAL       Service subscribes; chat screen integration, access control, and media end-to-end tests still pending
+User Roles/Reports  Supabase PostgreSQL           PARTIAL       Columns and service functions exist; admin/moderator screens are placeholders; RLS role enforcement pending
+Group Calls (E2EE)  Livekit Cloud                 NOT STARTED   Packages installed and hook exists, but real room join + E2EE keys not yet implemented on client
+Call Tokens         Supabase Edge Function        PARTIAL       Source exists; not yet deployed; auth of caller + Circle-member restriction pending
+Location Services   Expo Location + Nominatim     PARTIAL       Service and util exist; device verification and onboarding flow still pending
+Notifications       Supabase PostgreSQL           PARTIAL       Realtime list and service exist; creation is client-triggered (should be server-side); push tokens not stored
 ```
 
 ### Golden Rule
@@ -1028,16 +1035,26 @@ export const Colors = {
 
 ## 12. SECURITY CHECKLIST
 
+This is the **actual** state, reconciled with the repo and `TODO.md`. Items
+that look "done" in the old checklist but are not yet true in the codebase
+have been moved to `TODO.md` with `[ ]` or `[~]` markers.
+
 - [x] Supabase Auth is the single identity source
-- [x] Supabase RLS policies enabled on all tables
-- [x] LiveKit API Secret only in Supabase Edge Function, never in the app
+- [~] Supabase RLS policies enabled on all tables — represented in SQL
+  migrations, but **not yet verified** against the deployed Supabase project
+- [x] LiveKit API Secret is intended to live in the Supabase Edge Function
+      only (the app uses `EXPO_PUBLIC_*` for non-secret values)
 - [x] Media file size limits enforced before upload
-- [x] Role checks happen on both frontend (UI) AND backend (Supabase RLS)
-- [x] Banned users blocked at navigation level
-- [x] All moderation actions written to audit log
-- [x] `.env` file in `.gitignore`
+- [~] Role checks happen on both frontend and backend — UI checks exist,
+  **backend/RLS role enforcement is still pending**
+- [x] Banned users blocked at navigation level (banned/suspended screens exist)
+- [ ] All moderation actions written to audit log — `moderation_logs` table
+      exists in migrations, but writes from the moderation service are not yet
+      implemented
+- [ ] `.env` file in `.gitignore` — `.env` is currently tracked; only
+      `.env*.local` is ignored. Fix tracked in `TODO.md`
 
 ---
 
 _This document should be kept updated as the architecture evolves._
-_Last updated: May 2026 — v2.0 (Full Supabase migration complete)_
+_Last updated: June 2026 — v2.1 (Status table and security checklist reconciled with `TODO.md` / `PLAN.md` / `README.md`. The previous "✅ DONE" on every layer was overstated.)_

@@ -1,9 +1,19 @@
 import Avatar from "@/src/components/ui/Avatar";
 import { Colors, Radius, Spacing, Typography } from "@/src/constants/theme";
 import { useAuth } from "@/src/context/AuthContext";
-import { getCircle, getLatestCircleForParticipant, removeMember } from "@/src/services/circle";
+import {
+  closeCircle,
+  getCircle,
+  getLatestCircleForParticipant,
+  removeMember,
+} from "@/src/services/circle";
 import { getUsersByIds, SwipeCandidate } from "@/src/services/swipe";
 import { Circle } from "@/src/types";
+import {
+  getCircleMeetupDeadline,
+  getCountdownParts,
+  hasMeetupDeadlineElapsed,
+} from "@/src/utils/circleDeadline";
 import { router, useLocalSearchParams } from "expo-router";
 import {
   Calendar,
@@ -11,6 +21,7 @@ import {
   Crown,
   LogOut,
   MapPin,
+  Trash2,
 } from "lucide-react-native";
 import React, { useEffect, useMemo, useState } from "react";
 import {
@@ -48,6 +59,8 @@ export default function CircleInfoScreen() {
   const [members, setMembers] = useState<SwipeCandidate[]>([]);
   const [loading, setLoading] = useState(true);
   const [leaving, setLeaving] = useState(false);
+  const [closing, setClosing] = useState(false);
+  const [now, setNow] = useState(Date.now());
 
   useEffect(() => {
     let active = true;
@@ -86,6 +99,18 @@ export default function CircleInfoScreen() {
     };
   }, [params.circleId, user]);
 
+  useEffect(() => {
+    if (!circle) return;
+
+    const interval = setInterval(() => {
+      setNow(Date.now());
+    }, 1000);
+
+    return () => {
+      clearInterval(interval);
+    };
+  }, [circle]);
+
   const host = useMemo(
     () => members.find((member) => member.uid === circle?.creatorId) ?? null,
     [circle?.creatorId, members],
@@ -96,18 +121,22 @@ export default function CircleInfoScreen() {
     : host?.location
       ? "Host location shared"
       : "Location not shared";
-  const canLeave = Boolean(circle && user && circle.creatorId !== user.id);
+  const meetupDeadline = circle ? getCircleMeetupDeadline(circle) : null;
+  const countdown = meetupDeadline ? getCountdownParts(meetupDeadline, now) : null;
+  const deadlineElapsed = Boolean(
+    circle && hasMeetupDeadlineElapsed(circle, now),
+  );
+  const canLeave = Boolean(
+    circle && user && circle.creatorId !== user.id && deadlineElapsed,
+  );
+  const canClose = Boolean(
+    circle && user && circle.creatorId === user.id && deadlineElapsed,
+  );
 
   const confirmLeaveCircle = () => {
     if (!circle || !user || leaving) return;
 
-    if (!canLeave) {
-      Alert.alert(
-        "Host Circle",
-        "Hosts cannot leave their own Circle from this screen.",
-      );
-      return;
-    }
+    if (!canLeave) return;
 
     Alert.alert(
       "Leave Circle?",
@@ -127,6 +156,34 @@ export default function CircleInfoScreen() {
               Alert.alert("Could not leave Circle", "Please try again.");
             } finally {
               setLeaving(false);
+            }
+          },
+        },
+      ],
+    );
+  };
+
+  const confirmCloseCircle = () => {
+    if (!circle || !user || closing || !canClose) return;
+
+    Alert.alert(
+      "Close Circle?",
+      `This will delete ${circle.name} and remove everyone from the Circle. This cannot be undone.`,
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Close Circle",
+          style: "destructive",
+          onPress: async () => {
+            setClosing(true);
+            try {
+              await closeCircle(circle.id);
+              router.replace("/(tabs)/home");
+            } catch (error) {
+              console.error("Error closing circle:", error);
+              Alert.alert("Could not close Circle", "Please try again.");
+            } finally {
+              setClosing(false);
             }
           },
         },
@@ -232,6 +289,20 @@ export default function CircleInfoScreen() {
               {circle.size} members
             </Text>
           </View>
+          {meetupDeadline && (
+            <>
+              <View style={styles.infoDivider} />
+              <View style={styles.infoRow}>
+                <Calendar size={18} color={Colors.textSecondary} strokeWidth={2.1} />
+                <Text style={styles.infoText}>
+                  Meet by {formatDate(meetupDeadline)}
+                  {!deadlineElapsed && countdown
+                    ? ` · ${countdown.days}d ${countdown.hours}h ${countdown.minutes}m`
+                    : " · window ended"}
+                </Text>
+              </View>
+            </>
+          )}
         </View>
 
         <View style={styles.sectionHeader}>
@@ -268,21 +339,45 @@ export default function CircleInfoScreen() {
           })}
         </View>
 
-        <TouchableOpacity
-          activeOpacity={0.76}
-          style={[styles.leaveButton, leaving && styles.leaveButtonDisabled]}
-          onPress={confirmLeaveCircle}
-          disabled={leaving}
-        >
-          {leaving ? (
-            <ActivityIndicator size="small" color={Colors.danger} />
-          ) : (
-            <>
-              <LogOut size={18} color={Colors.danger} strokeWidth={2.1} />
-              <Text style={styles.leaveText}>Leave Circle</Text>
-            </>
-          )}
-        </TouchableOpacity>
+        {canLeave && (
+          <TouchableOpacity
+            activeOpacity={0.76}
+            style={[styles.leaveButton, leaving && styles.leaveButtonDisabled]}
+            onPress={confirmLeaveCircle}
+            disabled={leaving}
+          >
+            {leaving ? (
+              <ActivityIndicator size="small" color={Colors.danger} />
+            ) : (
+              <>
+                <LogOut size={18} color={Colors.danger} strokeWidth={2.1} />
+                <Text style={styles.leaveText}>Leave Circle</Text>
+              </>
+            )}
+          </TouchableOpacity>
+        )}
+        {canClose && (
+          <TouchableOpacity
+            activeOpacity={0.76}
+            style={[styles.leaveButton, closing && styles.leaveButtonDisabled]}
+            onPress={confirmCloseCircle}
+            disabled={closing}
+          >
+            {closing ? (
+              <ActivityIndicator size="small" color={Colors.danger} />
+            ) : (
+              <>
+                <Trash2 size={18} color={Colors.danger} strokeWidth={2.1} />
+                <Text style={styles.leaveText}>Close Circle</Text>
+              </>
+            )}
+          </TouchableOpacity>
+        )}
+        {!deadlineElapsed && countdown && (
+          <Text style={styles.leaveUnavailableText}>
+            {circle.creatorId === user?.id ? "Close" : "Leave"} unlocks after the meetup window ends.
+          </Text>
+        )}
       </ScrollView>
     </SafeAreaView>
   );
@@ -474,6 +569,12 @@ const styles = StyleSheet.create({
     ...Typography.body,
     fontWeight: "700",
     color: Colors.danger,
+  },
+  leaveUnavailableText: {
+    ...Typography.bodySmall,
+    marginTop: Spacing.md,
+    color: Colors.textSecondary,
+    textAlign: "center",
   },
   emptyTitle: {
     ...Typography.h3,

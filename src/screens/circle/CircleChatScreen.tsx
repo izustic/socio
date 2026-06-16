@@ -9,6 +9,8 @@ import { useAuth } from "@/src/context/AuthContext";
 import {
   getCircle,
   getLatestCircleForParticipant,
+  closeCircle,
+  removeMember,
 } from "@/src/services/circle";
 import {
   getMessages,
@@ -23,6 +25,7 @@ import {
 } from "@/src/services/polls";
 import { uploadChatMedia } from "@/src/services/supabase";
 import { Circle, Message } from "@/src/types";
+import { hasMeetupDeadlineElapsed } from "@/src/utils/circleDeadline";
 import { Audio, ResizeMode, Video } from "expo-av";
 import * as Crypto from "expo-crypto";
 import * as FileSystem from "expo-file-system";
@@ -37,9 +40,11 @@ import {
   Download,
   GalleryHorizontal,
   Info,
+  LogOut,
   MoreHorizontal,
   Phone,
   Search,
+  Trash2,
   X,
 } from "lucide-react-native";
 import React, { useEffect, useMemo, useRef, useState } from "react";
@@ -210,6 +215,7 @@ export default function CircleChatRoute() {
   const [chatMenuVisible, setChatMenuVisible] = useState(false);
   const [searchVisible, setSearchVisible] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [now, setNow] = useState(Date.now());
 
   const searchResults = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
@@ -221,6 +227,18 @@ export default function CircleChatRoute() {
       )
       .reverse();
   }, [messages, searchQuery]);
+  const canLeaveCircle = Boolean(
+    circle &&
+      user &&
+      circle.creatorId !== user.id &&
+      hasMeetupDeadlineElapsed(circle, now),
+  );
+  const canCloseCircle = Boolean(
+    circle &&
+      user &&
+      circle.creatorId === user.id &&
+      hasMeetupDeadlineElapsed(circle, now),
+  );
 
   useEffect(() => {
     let active = true;
@@ -337,6 +355,18 @@ export default function CircleChatRoute() {
       recordingRef.current?.stopAndUnloadAsync().catch(() => undefined);
     };
   }, []);
+
+  useEffect(() => {
+    if (!circle) return;
+
+    const interval = setInterval(() => {
+      setNow(Date.now());
+    }, 1000);
+
+    return () => {
+      clearInterval(interval);
+    };
+  }, [circle]);
 
   const handleSendMessage = async (text: string) => {
     if (!circle || !user || sending) return;
@@ -691,6 +721,58 @@ export default function CircleChatRoute() {
         circleId: circle.id,
       },
     });
+  };
+
+  const confirmLeaveCircle = () => {
+    if (!circle || !user || !canLeaveCircle) return;
+
+    setChatMenuVisible(false);
+    Alert.alert(
+      "Leave Circle?",
+      `You will leave ${circle.name} and lose access to its chat.`,
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Leave",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await removeMember(circle.id, user.id);
+              router.replace("/(tabs)/home");
+            } catch (error) {
+              console.error("Error leaving circle:", error);
+              Alert.alert("Could not leave Circle", "Please try again.");
+            }
+          },
+        },
+      ],
+    );
+  };
+
+  const confirmCloseCircle = () => {
+    if (!circle || !user || !canCloseCircle) return;
+
+    setChatMenuVisible(false);
+    Alert.alert(
+      "Close Circle?",
+      `This will delete ${circle.name} and remove everyone from the Circle. This cannot be undone.`,
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Close Circle",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await closeCircle(circle.id);
+              router.replace("/(tabs)/home");
+            } catch (error) {
+              console.error("Error closing circle:", error);
+              Alert.alert("Could not close Circle", "Please try again.");
+            }
+          },
+        },
+      ],
+    );
   };
 
   const getMediaFileName = (media: OpenMedia) => {
@@ -1054,6 +1136,54 @@ export default function CircleChatRoute() {
                   strokeWidth={2.1}
                 />
               </TouchableOpacity>
+              {canLeaveCircle && (
+                <>
+                  <View style={styles.menuDivider} />
+                  <TouchableOpacity
+                    activeOpacity={0.76}
+                    style={styles.menuItem}
+                    onPress={confirmLeaveCircle}
+                  >
+                    <LogOut
+                      size={20}
+                      color={Colors.danger}
+                      strokeWidth={2.1}
+                    />
+                    <Text style={[styles.menuText, styles.menuTextDanger]}>
+                      Leave Circle
+                    </Text>
+                    <ChevronRight
+                      size={18}
+                      color={Colors.textSecondary}
+                      strokeWidth={2.1}
+                    />
+                  </TouchableOpacity>
+                </>
+              )}
+              {canCloseCircle && (
+                <>
+                  <View style={styles.menuDivider} />
+                  <TouchableOpacity
+                    activeOpacity={0.76}
+                    style={styles.menuItem}
+                    onPress={confirmCloseCircle}
+                  >
+                    <Trash2
+                      size={20}
+                      color={Colors.danger}
+                      strokeWidth={2.1}
+                    />
+                    <Text style={[styles.menuText, styles.menuTextDanger]}>
+                      Close Circle
+                    </Text>
+                    <ChevronRight
+                      size={18}
+                      color={Colors.textSecondary}
+                      strokeWidth={2.1}
+                    />
+                  </TouchableOpacity>
+                </>
+              )}
             </View>
           </TouchableOpacity>
         </Modal>
@@ -1353,6 +1483,10 @@ const styles = StyleSheet.create({
     ...Typography.body,
     flex: 1,
     color: Colors.textPrimary,
+  },
+  menuTextDanger: {
+    color: Colors.danger,
+    fontWeight: "700",
   },
   menuDivider: {
     height: 1,

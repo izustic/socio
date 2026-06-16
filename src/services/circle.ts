@@ -339,6 +339,19 @@ export const removeMember = async (
   }
 };
 
+export const closeCircle = async (circleId: string): Promise<void> => {
+  try {
+    const { error } = await supabase.rpc("close_circle", {
+      p_circle_id: circleId,
+    });
+
+    if (error) throw error;
+  } catch (error) {
+    console.error("Error closing circle:", error);
+    throw error;
+  }
+};
+
 export const addPendingJoiner = async (
   circleId: string,
   userId: string,

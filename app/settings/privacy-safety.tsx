@@ -26,6 +26,7 @@ import {
   Lock,
   MapPin,
   ShieldCheck,
+  Trash2,
   UserX,
 } from "lucide-react-native";
 import type { LucideIcon } from "lucide-react-native";
@@ -316,6 +317,12 @@ export default function PrivacySafetyScreen() {
                 Icon={Download}
                 title={exporting ? "Preparing data..." : "Download my data"}
                 onPress={handleExportData}
+              />
+              <ActionRow
+                Icon={Trash2}
+                title="Delete account"
+                onPress={() => router.push("/settings/delete-account")}
+                danger
                 last
               />
             </View>
@@ -387,12 +394,14 @@ function ActionRow({
   rightText,
   onPress,
   last = false,
+  danger = false,
 }: {
   Icon: LucideIcon;
   title: string;
   rightText?: string;
   onPress: () => void;
   last?: boolean;
+  danger?: boolean;
 }) {
   return (
     <TouchableOpacity
@@ -400,8 +409,14 @@ function ActionRow({
       style={[styles.actionRow, !last && styles.rowBorder]}
       onPress={onPress}
     >
-      <Icon size={19} color={Colors.textPrimary} strokeWidth={2.1} />
-      <Text style={styles.actionTitle}>{title}</Text>
+      <Icon
+        size={19}
+        color={danger ? Colors.danger : Colors.textPrimary}
+        strokeWidth={2.1}
+      />
+      <Text style={[styles.actionTitle, danger && styles.actionTitleDanger]}>
+        {title}
+      </Text>
       {rightText ? <Text style={styles.actionRight}>{rightText}</Text> : null}
       <ChevronRight size={18} color={Colors.textSecondary} strokeWidth={2.1} />
     </TouchableOpacity>
@@ -552,6 +567,9 @@ const styles = StyleSheet.create({
     flex: 1,
     color: Colors.textPrimary,
     fontWeight: "600",
+  },
+  actionTitleDanger: {
+    color: Colors.danger,
   },
   actionRight: {
     ...Typography.bodySmall,

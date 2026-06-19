@@ -92,7 +92,12 @@ export default function ProfileScreen() {
               onPress={() => router.push("/settings/privacy-safety")}
             />
             <SettingsRow icon={LogOut} title="Log out" onPress={() => setLogoutVisible(true)} />
-            <SettingsRow icon={Trash2} title="Delete account" danger />
+            <SettingsRow
+              icon={Trash2}
+              title="Delete account"
+              danger
+              onPress={() => router.push("/settings/delete-account")}
+            />
           </View>
         </View>
       </ScrollView>

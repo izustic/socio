@@ -80,8 +80,17 @@ export default function ProfileScreen() {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Settings</Text>
           <View style={styles.settingsCard}>
-            <SettingsRow icon={Bell} title="Notifications" rightText="On" />
-            <SettingsRow icon={Shield} title="Privacy & safety" />
+            <SettingsRow
+              icon={Bell}
+              title="Notifications"
+              rightText={profile?.notificationsEnabled ? "On" : "Off"}
+              onPress={() => router.push("/settings/notifications")}
+            />
+            <SettingsRow
+              icon={Shield}
+              title="Privacy & safety"
+              onPress={() => router.push("/settings/privacy-safety")}
+            />
             <SettingsRow icon={LogOut} title="Log out" onPress={() => setLogoutVisible(true)} />
             <SettingsRow icon={Trash2} title="Delete account" danger />
           </View>

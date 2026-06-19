@@ -18,6 +18,7 @@ interface ToastProps {
   userAge?: number;
   circleName?: string;
   isHost?: boolean;
+  statusText?: string;
   onDismiss?: () => void;
 }
 
@@ -28,6 +29,7 @@ export default function Toast({
   userAge,
   circleName,
   isHost = false,
+  statusText,
   onDismiss,
 }: ToastProps) {
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -140,7 +142,7 @@ export default function Toast({
           <View style={styles.statusContainer}>
             <Text style={styles.clockIcon}>⏰</Text>
             <Text style={styles.statusText}>
-              {isMatchStarted ? 'Waiting on Marcus' : 'Waiting on host'}
+              {statusText ?? (isMatchStarted ? `Waiting on ${userName}` : 'Waiting on host')}
             </Text>
           </View>
         </View>

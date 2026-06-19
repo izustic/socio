@@ -7,6 +7,7 @@ import {
     User,
 } from "../types";
 import { supabase } from "./supabase";
+import { createNotification, createNotifications } from "./notifications";
 
 export interface SwipeCandidate extends User {
   uid: string;
@@ -37,6 +38,8 @@ interface CircleRow {
   };
   meetup_goal: string;
   meetup_timeframe?: string;
+  meetup_days?: number;
+  meetup_deadline?: string | null;
   status: "forming" | "complete";
   created_at: string;
   image_url?: string;
@@ -56,6 +59,162 @@ interface UserRow {
   bio: string;
   created_at: string;
 }
+
+interface NotificationCircleRow {
+  id: string;
+  name: string;
+  creator_id: string;
+  size: number;
+  members: string[];
+}
+
+const getUserDisplayName = async (userId: string): Promise<string> => {
+  const { data, error } = await supabase
+    .from("users")
+    .select("display_name, email")
+    .eq("id", userId)
+    .maybeSingle();
+
+  if (error) {
+    console.error("Error getting notification actor:", error);
+    return "Someone";
+  }
+
+  return data?.display_name || data?.email?.split("@")[0] || "Someone";
+};
+
+const getNotificationCircle = async (
+  circleId: string,
+): Promise<NotificationCircleRow | null> => {
+  const { data, error } = await supabase
+    .from("circles")
+    .select("id, name, creator_id, size, members")
+    .eq("id", circleId)
+    .maybeSingle();
+
+  if (error) {
+    console.error("Error getting circle for notification:", error);
+    return null;
+  }
+
+  return data as NotificationCircleRow | null;
+};
+
+const notifyCircleProgress = async (
+  circle: NotificationCircleRow,
+) => {
+  const members = (circle.members || []).map((memberId) => String(memberId));
+  const remaining = Math.max(circle.size - members.length, 0);
+
+  if (remaining === 0) {
+    await createNotifications(
+      members,
+      "circle_complete",
+      "Your Circle is complete!",
+      `${circle.name} is ready to meet.`,
+      {
+        action: "circle_complete",
+        circleId: circle.id,
+      },
+    );
+    return;
+  }
+
+  if (remaining === 1) {
+    await createNotification(
+      circle.creator_id,
+      "circle_almost_full",
+      "Circle almost full",
+      "1 more person to fill your Circle.",
+      {
+        action: "circle_progress",
+        circleId: circle.id,
+      },
+    );
+  }
+};
+
+const notifySwipeOutcome = async ({
+  circleId,
+  actorId,
+  targetUserId,
+  liked,
+  result,
+  source,
+}: {
+  circleId: string;
+  actorId: string;
+  targetUserId?: string;
+  liked: boolean;
+  result: {
+    mutualMatch: boolean;
+    addedToCircle: boolean;
+    circleComplete: boolean;
+  };
+  source: "host" | "joiner";
+}) => {
+  if (!liked) return;
+
+  try {
+    const [circle, actorName] = await Promise.all([
+      getNotificationCircle(circleId),
+      getUserDisplayName(actorId),
+    ]);
+
+    if (!circle) return;
+
+    if (source === "joiner") {
+      if (result.addedToCircle) {
+        await createNotification(
+          circle.creator_id,
+          "circle_accepted",
+          `${actorName} accepted`,
+          `Welcome them to ${circle.name}.`,
+          {
+            action: "circle_progress",
+            actorId,
+            circleId,
+          },
+        );
+      } else {
+        await createNotification(
+          circle.creator_id,
+          "circle_invite",
+          `${actorName} wants to join`,
+          `${actorName} liked ${circle.name}.`,
+          {
+            action: "review_joiner",
+            actorId,
+            circleId,
+          },
+        );
+      }
+    }
+
+    if (source === "host" && targetUserId && result.addedToCircle) {
+      await createNotification(
+        targetUserId,
+        "circle_accepted",
+        `${actorName} accepted`,
+        `You both wanted to be in ${circle.name}.`,
+        {
+          action: "circle_progress",
+          actorId,
+          circleId,
+        },
+      );
+    }
+
+    if (result.addedToCircle || result.circleComplete) {
+      const updatedCircle = await getNotificationCircle(circleId);
+      if (updatedCircle) {
+        await notifyCircleProgress(updatedCircle);
+      }
+    }
+  } catch (error) {
+    console.error("Error creating swipe notifications:", error);
+  }
+};
 
 const getDistanceKm = (
   from: { lat: number; lng: number },
@@ -99,7 +258,7 @@ export const getActiveCircleForUser = async (
     name: row.name,
     creatorId: row.creator_id,
     size: row.size,
-    members: row.members,
+    members: (row.members || []).map((id) => String(id)),
     pendingSwipes: row.pending_swipes,
     filters: {
       ageRange: row.filters.age_range,
@@ -112,6 +271,8 @@ export const getActiveCircleForUser = async (
     },
     meetupGoal: row.meetup_goal,
     meetupTimeframe: row.meetup_timeframe,
+    meetupDays: row.meetup_days,
+    meetupDeadline: row.meetup_deadline ? new Date(row.meetup_deadline) : null,
     status: row.status,
     createdAt: new Date(row.created_at),
   };
@@ -139,7 +300,7 @@ export const getCircleById = async (
     name: row.name,
     creatorId: row.creator_id,
     size: row.size,
-    members: row.members,
+    members: (row.members || []).map((id) => String(id)),
     pendingSwipes: row.pending_swipes,
     filters: {
       ageRange: row.filters.age_range,
@@ -152,6 +313,8 @@ export const getCircleById = async (
     },
     meetupGoal: row.meetup_goal,
     meetupTimeframe: row.meetup_timeframe,
+    meetupDays: row.meetup_days,
+    meetupDeadline: row.meetup_deadline ? new Date(row.meetup_deadline) : null,
     status: row.status,
     createdAt: new Date(row.created_at),
   };
@@ -180,7 +343,7 @@ export const getLatestCircleForUser = async (
     name: row.name,
     creatorId: row.creator_id,
     size: row.size,
-    members: row.members,
+    members: (row.members || []).map((id) => String(id)),
     pendingSwipes: row.pending_swipes,
     filters: {
       ageRange: row.filters.age_range,
@@ -193,6 +356,8 @@ export const getLatestCircleForUser = async (
     },
     meetupGoal: row.meetup_goal,
     meetupTimeframe: row.meetup_timeframe,
+    meetupDays: row.meetup_days,
+    meetupDeadline: row.meetup_deadline ? new Date(row.meetup_deadline) : null,
     status: row.status,
     createdAt: new Date(row.created_at),
   };
@@ -330,6 +495,15 @@ export const getSwipeCandidates = async ({
       }
 
       return true;
+    })
+    .sort((a, b) => {
+      const aAlreadyLikedCircle = circle.pendingSwipes?.[a.uid]?.includes(circle.id)
+        ? 1
+        : 0;
+      const bAlreadyLikedCircle = circle.pendingSwipes?.[b.uid]?.includes(circle.id)
+        ? 1
+        : 0;
+      return bAlreadyLikedCircle - aAlreadyLikedCircle;
     });
 };
 
@@ -338,65 +512,51 @@ export const submitSwipe = async (
   currentUserId: string,
   targetUserId: string,
   liked: boolean,
-): Promise<{ mutualMatch: boolean; circleComplete: boolean }> => {
-  // Get current circle data
-  const { data: circle, error: fetchError } = await supabase
-    .from("circles")
-    .select("*")
-    .eq("id", circleId)
-    .single();
-
-  if (fetchError || !circle) {
-    throw new Error("Circle not found.");
+): Promise<{
+  mutualMatch: boolean;
+  addedToCircle: boolean;
+  circleComplete: boolean;
+}> => {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user || user.id !== currentUserId) {
+    throw new Error("Not authenticated");
   }
 
-  const circleRow = circle as CircleRow;
-  const pendingSwipes = { ...(circleRow.pending_swipes || {}) };
-  const skippedSwipes = { ...(circleRow.skipped_swipes || {}) };
-  const members = [...(circleRow.members || [])];
-  const size = circleRow.size || 5;
-
-  const upsertUserArray = (
-    obj: Record<string, string[]>,
-    uid: string,
-    value: string,
-  ) => {
-    const current = new Set(obj[uid] || []);
-    current.add(value);
-    obj[uid] = Array.from(current);
-  };
-
-  let mutualMatch = false;
-  if (liked) {
-    upsertUserArray(pendingSwipes, currentUserId, targetUserId);
-    const targetSwipes = new Set(pendingSwipes[targetUserId] || []);
-    mutualMatch = targetSwipes.has(currentUserId);
-
-    if (mutualMatch && !members.includes(targetUserId)) {
-      members.push(targetUserId);
-    }
-  } else {
-    upsertUserArray(skippedSwipes, currentUserId, targetUserId);
-  }
-
-  const circleComplete = members.length >= size;
-
-  const { error } = await supabase
-    .from("circles")
-    .update({
-      pending_swipes: pendingSwipes,
-      skipped_swipes: skippedSwipes,
-      members: members,
-      status: circleComplete ? "complete" : "forming",
-    })
-    .eq("id", circleId);
+  const { data, error } = await supabase.rpc("submit_host_swipe", {
+    p_circle_id: circleId,
+    p_target_user_id: targetUserId,
+    p_liked: liked,
+  });
 
   if (error) {
-    console.error("Error updating circle:", error);
+    console.error("Error submitting host swipe:", error);
     throw error;
   }
 
-  return { mutualMatch, circleComplete };
+  const result = data as {
+    mutualMatch?: boolean;
+    addedToCircle?: boolean;
+    circleComplete?: boolean;
+  } | null;
+
+  const swipeResult = {
+    mutualMatch: Boolean(result?.mutualMatch),
+    addedToCircle: Boolean(result?.addedToCircle),
+    circleComplete: Boolean(result?.circleComplete),
+  };
+
+  await notifySwipeOutcome({
+    circleId,
+    actorId: currentUserId,
+    targetUserId,
+    liked,
+    result: swipeResult,
+    source: "host",
+  });
+
+  return swipeResult;
 };
 
 export interface JoinCircleFilters {
@@ -418,6 +578,8 @@ export interface CircleCandidate {
   filters: JoinCircleFilters;
   meetupGoal: string;
   meetupTimeframe?: string;
+  meetupDays?: number;
+  meetupDeadline?: Date | null;
   status: "forming" | "complete";
   createdAt: Date;
   distance?: number;
@@ -444,6 +606,12 @@ export const getCircleCandidates = async (
   const userLocation = userProfile?.location;
 
   return (circlesData as CircleRow[])
+    .filter((row) => {
+      if ((row.members || []).includes(userId)) return false;
+      if ((row.pending_swipes?.[userId] || []).includes(row.id)) return false;
+      if ((row.skipped_swipes?.[userId] || []).includes(row.id)) return false;
+      return true;
+    })
     .map((row) => ({
       id: row.id,
       name: row.name,
@@ -461,6 +629,10 @@ export const getCircleCandidates = async (
       },
       meetupGoal: row.meetup_goal,
       meetupTimeframe: row.meetup_timeframe,
+      meetupDays: row.meetup_days,
+      meetupDeadline: row.meetup_deadline
+        ? new Date(row.meetup_deadline)
+        : null,
       status: row.status,
       createdAt: new Date(row.created_at),
       imageUrl: row.image_url,
@@ -535,65 +707,47 @@ export const submitCircleSwipe = async (
   circleId: string,
   userId: string,
   liked: boolean,
-): Promise<{ mutualMatch: boolean; addedToCircle: boolean }> => {
-  // Get current circle data
-  const { data: circle, error: fetchError } = await supabase
-    .from("circles")
-    .select("*")
-    .eq("id", circleId)
-    .single();
-
-  if (fetchError || !circle) {
-    throw new Error("Circle not found.");
+): Promise<{
+  mutualMatch: boolean;
+  addedToCircle: boolean;
+  circleComplete: boolean;
+}> => {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user || user.id !== userId) {
+    throw new Error("Not authenticated");
   }
 
-  const circleRow = circle as CircleRow;
-  const pendingSwipes = { ...(circleRow.pending_swipes || {}) };
-  const skippedSwipes = { ...(circleRow.skipped_swipes || {}) };
-  const members = [...(circleRow.members || [])];
-  const size = circleRow.size || 5;
-
-  let mutualMatch = false;
-  let addedToCircle = false;
-
-  if (liked) {
-    // Add user to pending swipes for this circle
-    const currentPending = new Set(pendingSwipes[circleRow.creator_id] || []);
-    currentPending.add(userId);
-    pendingSwipes[circleRow.creator_id] = Array.from(currentPending);
-
-    // Check if creator already liked this user (mutual match)
-    const creatorPending = new Set(pendingSwipes[circleRow.creator_id] || []);
-    mutualMatch = creatorPending.has(userId);
-
-    // If mutual match and circle not full, add user
-    if (mutualMatch && members.length < size && !members.includes(userId)) {
-      members.push(userId);
-      addedToCircle = true;
-    }
-  } else {
-    // Add to skipped
-    const currentSkipped = new Set(skippedSwipes[circleRow.creator_id] || []);
-    currentSkipped.add(userId);
-    skippedSwipes[circleRow.creator_id] = Array.from(currentSkipped);
-  }
-
-  const circleComplete = members.length >= size;
-
-  const { error } = await supabase
-    .from("circles")
-    .update({
-      pending_swipes: pendingSwipes,
-      skipped_swipes: skippedSwipes,
-      members: members,
-      status: circleComplete ? "complete" : "forming",
-    })
-    .eq("id", circleId);
+  const { data, error } = await supabase.rpc("submit_circle_swipe", {
+    p_circle_id: circleId,
+    p_liked: liked,
+  });
 
   if (error) {
-    console.error("Error updating circle:", error);
+    console.error("Error submitting circle swipe:", error);
     throw error;
   }
 
-  return { mutualMatch, addedToCircle };
+  const result = data as {
+    mutualMatch?: boolean;
+    addedToCircle?: boolean;
+    circleComplete?: boolean;
+  } | null;
+
+  const swipeResult = {
+    mutualMatch: Boolean(result?.mutualMatch),
+    addedToCircle: Boolean(result?.addedToCircle),
+    circleComplete: Boolean(result?.circleComplete),
+  };
+
+  await notifySwipeOutcome({
+    circleId,
+    actorId: userId,
+    liked,
+    result: swipeResult,
+    source: "joiner",
+  });
+
+  return swipeResult;
 };

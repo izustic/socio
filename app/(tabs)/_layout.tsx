@@ -1,20 +1,29 @@
 import { Colors } from '@/src/constants/theme';
-import { Tabs } from 'expo-router';
+import { SwipeTabVisibilityProvider, useSwipeTabVisibility } from '@/src/context/SwipeTabVisibilityContext';
+import { Tabs, useFocusEffect } from 'expo-router';
 import { Bell, Layers, User, Users } from 'lucide-react-native';
+import { useCallback } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-export default function TabLayout() {
+function TabLayoutInner() {
   const insets = useSafeAreaInsets();
+  const { swipeTabVisible, refreshSwipeTabVisibility } = useSwipeTabVisibility();
+
+  useFocusEffect(
+    useCallback(() => {
+      refreshSwipeTabVisibility();
+    }, [refreshSwipeTabVisibility]),
+  );
 
   return (
     <Tabs
       screenOptions={{
         tabBarActiveTintColor: Colors.primary,
-        tabBarInactiveTintColor: '#AAAAAA', // Inactive color from architecture
+        tabBarInactiveTintColor: '#AAAAAA',
         headerShown: false,
         tabBarStyle: {
           backgroundColor: Colors.white,
-          borderTopWidth: 0, // No border on tab bar
+          borderTopWidth: 0,
           elevation: 0,
           height: 60 + insets.bottom,
           paddingBottom: insets.bottom,
@@ -32,6 +41,7 @@ export default function TabLayout() {
         name="swipe"
         options={{
           title: 'Swipe',
+          href: swipeTabVisible ? undefined : null,
           tabBarIcon: ({ color, size }) => <Layers size={size} color={color} strokeWidth={2.2} />,
         }}
       />
@@ -50,5 +60,13 @@ export default function TabLayout() {
         }}
       />
     </Tabs>
+  );
+}
+
+export default function TabLayout() {
+  return (
+    <SwipeTabVisibilityProvider>
+      <TabLayoutInner />
+    </SwipeTabVisibilityProvider>
   );
 }

@@ -1,8 +1,13 @@
 # SOCIO — SYSTEM ARCHITECTURE
+
 ## Implementation Guide
-> Version 2.0 | Prepared by: Izu Obikanyi
-> Status: FULL SUPABASE MIGRATION COMPLETE (Firebase removed)
-> Updated: May 2026 — Migrated from Firebase + Supabase (split) to Supabase only (single backend)
+
+> Version 2.1 | Prepared by: Izu Obikanyi
+> Status: CORE LOOP SCAFFOLDED, NOT PRODUCTION-READY
+> Updated: June 2026 — Reconciled with `TODO.md` / `PLAN.md` / `README.md`.
+> Every layer in the Tech Stack table is now annotated with an actual status
+> (`DONE` / `PARTIAL` / `NOT STARTED`) and the Security Checklist has been
+> updated to reflect what is actually in the repo.
 
 ---
 
@@ -23,6 +28,7 @@ Onboard → Profile setup → NoCircle → Join Circle → Set preferences
 ```
 
 ### Matching Logic
+
 - Joiner likes a Circle → host sees that user **prioritized** in their swipe deck
 - Host likes the joiner back → mutual match → joiner added to Circle
 - Both land in ChatScreen once Circle is complete
@@ -31,21 +37,26 @@ Onboard → Profile setup → NoCircle → Join Circle → Set preferences
 
 ## 2. TECH STACK OVERVIEW
 
+> Status legend: `DONE` = implemented in code, `PARTIAL` = scaffolded but not
+> verified, `NOT STARTED` = not yet in the repo. This replaces the old
+> "✅ DONE" table, which overstated reality.
+
 ```
-Layer               Service                       Status
-─────────────────────────────────────────────────────────
-Authentication      Supabase Auth                ✅ DONE
-Database (app data) Supabase PostgreSQL          ✅ DONE
-File Storage        Supabase Storage             ✅ DONE
-Real-time Chat      Supabase Realtime            ✅ DONE
-User Roles/Reports  Supabase PostgreSQL           ✅ DONE
-Group Calls (E2EE)  Livekit Cloud                ✅ DONE
-Call Tokens         Supabase Edge Function       ✅ DONE
-Location Services   Expo Location + Nominatim    ✅ DONE
-Notifications       Supabase PostgreSQL           ✅ DONE
+Layer               Service                       Status        Notes
+─────────────────────────────────────────────────────────────────────────────
+Authentication      Supabase Auth                 DONE          Email/pwd, Google, Facebook, OTP — flows exist; real-device verification still pending
+Database (app data) Supabase PostgreSQL           PARTIAL       Migrations committed; deployed schema, RLS, and policies need project-level verification
+File Storage        Supabase Storage              PARTIAL       Upload helpers exist; `avatars` and `chat-media` buckets/policies not yet verified
+Real-time Chat      Supabase Realtime             PARTIAL       Service subscribes; chat screen integration, access control, and media end-to-end tests still pending
+User Roles/Reports  Supabase PostgreSQL           PARTIAL       Columns and service functions exist; admin/moderator screens are placeholders; RLS role enforcement pending
+Group Calls (E2EE)  Livekit Cloud                 NOT STARTED   Packages installed and hook exists, but real room join + E2EE keys not yet implemented on client
+Call Tokens         Supabase Edge Function        PARTIAL       Source exists; not yet deployed; auth of caller + Circle-member restriction pending
+Location Services   Expo Location + Nominatim     PARTIAL       Service and util exist; device verification and onboarding flow still pending
+Notifications       Supabase PostgreSQL           PARTIAL       Realtime list and service exist; creation is client-triggered (should be server-side); push tokens not stored
 ```
 
 ### Golden Rule
+
 > Each service does exactly ONE job. Never duplicate logic across services.
 
 ```
@@ -217,6 +228,7 @@ socio/
 ### 5.1 Authentication (`src/services/auth.ts`)
 
 Supabase Auth handles all authentication with support for:
+
 - Email/password signup and login
 - Google OAuth (via ID token)
 - Facebook OAuth (via access token)
@@ -224,14 +236,14 @@ Supabase Auth handles all authentication with support for:
 - Password reset
 
 ```typescript
-import { supabase } from './supabase';
+import { supabase } from "./supabase";
 
 // Sign up with email/password
 export const signUpWithEmail = async (email: string, password: string) => {
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
-    options: { data: { display_name: email.split('@')[0] } }
+    options: { data: { display_name: email.split("@")[0] } },
   });
   if (error) throw error;
   return data.user;
@@ -248,9 +260,12 @@ export const signInWithEmail = async (email: string, password: string) => {
 };
 
 // Sign in with Google ID token
-export const signInWithGoogleIdToken = async (idToken: string, accessToken?: string) => {
+export const signInWithGoogleIdToken = async (
+  idToken: string,
+  accessToken?: string,
+) => {
   const { data, error } = await supabase.auth.signInWithIdToken({
-    provider: 'google',
+    provider: "google",
     token: idToken,
     access_token: accessToken,
   });
@@ -275,7 +290,7 @@ export const verifyOTP = async (phone: string, token: string) => {
   const { data, error } = await supabase.auth.verifyOtp({
     phone,
     token,
-    type: 'sms',
+    type: "sms",
   });
   if (error) throw error;
   return data.user;
@@ -292,14 +307,14 @@ export const resetPassword = async (email: string) => {
 ### 5.2 User Profiles (`src/services/user.ts`)
 
 ```typescript
-import { supabase } from './supabase';
-import { User } from '../types';
+import { supabase } from "./supabase";
+import { User } from "../types";
 
 export const getUserProfile = async (userId: string): Promise<User | null> => {
   const { data, error } = await supabase
-    .from('users')
-    .select('*')
-    .eq('id', userId)
+    .from("users")
+    .select("*")
+    .eq("id", userId)
     .maybeSingle();
 
   if (error) throw error;
@@ -307,19 +322,25 @@ export const getUserProfile = async (userId: string): Promise<User | null> => {
   return data ? mapRowToUser(data) : null;
 };
 
-export const updateUserProfile = async (userId: string, updates: Partial<User>) => {
+export const updateUserProfile = async (
+  userId: string,
+  updates: Partial<User>,
+) => {
   const dbUpdates = mapUserToDb(updates);
   const { error } = await supabase
-    .from('users')
+    .from("users")
     .update(dbUpdates)
-    .eq('id', userId);
+    .eq("id", userId);
 
   if (error) throw error;
 };
 
-export const syncUserOnboarding = async (uid: string, draft: OnboardingDraft) => {
+export const syncUserOnboarding = async (
+  uid: string,
+  draft: OnboardingDraft,
+) => {
   const { error } = await supabase
-    .from('users')
+    .from("users")
     .update({
       display_name: draft.name,
       age: draft.age,
@@ -330,7 +351,7 @@ export const syncUserOnboarding = async (uid: string, draft: OnboardingDraft) =>
       bio: draft.bio,
       profile_complete: true,
     })
-    .eq('id', uid);
+    .eq("id", uid);
 
   if (error) throw error;
 };
@@ -339,12 +360,12 @@ export const syncUserOnboarding = async (uid: string, draft: OnboardingDraft) =>
 ### 5.3 Circles (`src/services/circle.ts`)
 
 ```typescript
-import { supabase } from './supabase';
-import { Circle } from '../types';
+import { supabase } from "./supabase";
+import { Circle } from "../types";
 
 export const createCircle = async (input: CreateCircleInput) => {
   const { data, error } = await supabase
-    .from('circles')
+    .from("circles")
     .insert({
       name: input.name,
       creator_id: input.creatorId,
@@ -356,29 +377,38 @@ export const createCircle = async (input: CreateCircleInput) => {
         education_level: input.educationLevel,
         location_radius: input.locationRadius,
         interests: input.interests,
-        vibe: input.vibe || '',
+        vibe: input.vibe || "",
       },
-      meetup_goal: input.meetupGoal || '',
-      status: 'forming',
+      meetup_goal: input.meetupGoal || "",
+      status: "forming",
     })
-    .select('id')
+    .select("id")
     .single();
 
   if (error) throw error;
   return data.id;
 };
 
-export const getCircle = async (circleId: string) => { /* ... */ };
+export const getCircle = async (circleId: string) => {
+  /* ... */
+};
 
-export const subscribeToCircle = (circleId: string, callback: (payload) => void) => {
+export const subscribeToCircle = (
+  circleId: string,
+  callback: (payload) => void,
+) => {
   return supabase
     .channel(`circle:${circleId}`)
-    .on('postgres_changes', {
-      event: '*',
-      schema: 'public',
-      table: 'circles',
-      filter: `id=eq.${circleId}`,
-    }, callback)
+    .on(
+      "postgres_changes",
+      {
+        event: "*",
+        schema: "public",
+        table: "circles",
+        filter: `id=eq.${circleId}`,
+      },
+      callback,
+    )
     .subscribe();
 };
 ```
@@ -386,7 +416,7 @@ export const subscribeToCircle = (circleId: string, callback: (payload) => void)
 ### 5.4 Messages (`src/services/messages.ts`)
 
 ```typescript
-import { supabase } from './supabase';
+import { supabase } from "./supabase";
 
 export const sendMessage = async (
   circleId: string,
@@ -394,19 +424,22 @@ export const sendMessage = async (
   senderName: string,
   text: string,
   mediaUrl?: string,
-  mediaType?: 'image' | 'video'
+  mediaType?: "image" | "video" | "audio",
+  mediaUrls?: string[],
+  replyTo?: MessageReplyInput | null,
+  pollId?: string,
 ) => {
   const { data, error } = await supabase
-    .from('messages')
+    .from("messages")
     .insert({
       circle_id: circleId,
       sender_id: senderId,
       sender_name: senderName,
       text,
       media_url: mediaUrl ?? null,
-      media_type: mediaType ?? null,
+      poll_id: pollId ?? null,
     })
-    .select('id')
+    .select("id")
     .single();
 
   if (error) throw error;
@@ -416,27 +449,57 @@ export const sendMessage = async (
 export const subscribeToMessages = (circleId: string, callback) => {
   return supabase
     .channel(`messages:${circleId}`)
-    .on('postgres_changes', {
-      event: 'INSERT',
-      schema: 'public',
-      table: 'messages',
-      filter: `circle_id=eq.${circleId}`,
-    }, callback)
+    .on(
+      "postgres_changes",
+      {
+        event: "INSERT",
+        schema: "public",
+        table: "messages",
+        filter: `circle_id=eq.${circleId}`,
+      },
+      callback,
+    )
     .subscribe();
 };
 ```
 
-### 5.5 Notifications (`src/services/notifications.ts`)
+### 5.5 Polls (`src/services/polls.ts`)
 
 ```typescript
-import { supabase } from './supabase';
+import { supabase } from "./supabase";
+import type { PollData } from "@/src/components/chat/PollComponents";
+
+export const createPoll = async (
+  circleId: string,
+  pollData: Omit<PollData, "id" | "createdAt">,
+): Promise<PollData> => {
+  // create poll row and poll options
+};
+
+export const getPollsByIds = async (pollIds: string[]): Promise<PollData[]> => {
+  // load poll metadata, poll options, and vote rows
+};
+
+export const addPollVote = async (
+  pollId: string,
+  optionIds: string[],
+  userId: string,
+): Promise<PollData> => {
+  // replace the user's vote rows and return the updated poll
+};
+```
+
+### 5.6 Notifications (`src/services/notifications.ts`)
+
+```typescript
+import { supabase } from "./supabase";
 
 export const getNotifications = async (userId: string) => {
   const { data, error } = await supabase
-    .from('notifications')
-    .select('*')
-    .eq('user_id', userId)
-    .order('created_at', { ascending: false })
+    .from("notifications")
+    .select("*")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false })
     .limit(50);
 
   if (error) throw error;
@@ -446,12 +509,16 @@ export const getNotifications = async (userId: string) => {
 export const subscribeToNotifications = (userId: string, callback) => {
   return supabase
     .channel(`notifications:${userId}`)
-    .on('postgres_changes', {
-      event: 'INSERT',
-      schema: 'public',
-      table: 'notifications',
-      filter: `user_id=eq.${userId}`,
-    }, callback)
+    .on(
+      "postgres_changes",
+      {
+        event: "INSERT",
+        schema: "public",
+        table: "notifications",
+        filter: `user_id=eq.${userId}`,
+      },
+      callback,
+    )
     .subscribe();
 };
 ```
@@ -459,8 +526,8 @@ export const subscribeToNotifications = (userId: string, callback) => {
 ### 5.6 Supabase Client (`src/services/supabase.ts`)
 
 ```typescript
-import { createClient, SupabaseClient } from '@supabase/supabase-js';
-import * as SecureStore from 'expo-secure-store';
+import { createClient, SupabaseClient } from "@supabase/supabase-js";
+import * as SecureStore from "expo-secure-store";
 
 const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL!;
 const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY!;
@@ -490,38 +557,47 @@ const SecureStoreAdapter = {
   },
 };
 
-export const supabase: SupabaseClient = createClient(supabaseUrl, supabaseAnonKey, {
-  auth: {
-    storage: SecureStoreAdapter,
-    autoRefreshToken: true,
-    persistSession: true,
-    detectSessionInUrl: false,
+export const supabase: SupabaseClient = createClient(
+  supabaseUrl,
+  supabaseAnonKey,
+  {
+    auth: {
+      storage: SecureStoreAdapter,
+      autoRefreshToken: true,
+      persistSession: true,
+      detectSessionInUrl: false,
+    },
   },
-});
+);
 
 // User sync and role fetching
-export const syncUserToSupabase = async (userId, email, displayName, photoURL) => {
+export const syncUserToSupabase = async (
+  userId,
+  email,
+  displayName,
+  photoURL,
+) => {
   // Check if user exists, create if not
   const { data: existing } = await supabase
-    .from('users')
-    .select('id, role, status, suspended_until')
-    .eq('id', userId)
+    .from("users")
+    .select("id, role, status, suspended_until")
+    .eq("id", userId)
     .maybeSingle();
 
   if (existing) return existing;
 
   // Create new user
   const { data, error } = await supabase
-    .from('users')
+    .from("users")
     .insert({
       id: userId,
-      email: email ?? '',
+      email: email ?? "",
       display_name: displayName,
       photo_url: photoURL,
-      role: 'user',
-      status: 'active',
+      role: "user",
+      status: "active",
     })
-    .select('id, role, status, suspended_until')
+    .select("id, role, status, suspended_until")
     .single();
 
   if (error) throw error;
@@ -530,9 +606,9 @@ export const syncUserToSupabase = async (userId, email, displayName, photoURL) =
 
 export const getUserRole = async (uid: string) => {
   const { data, error } = await supabase
-    .from('users')
-    .select('role, status, suspended_until')
-    .eq('id', uid)
+    .from("users")
+    .select("role, status, suspended_until")
+    .eq("id", uid)
     .maybeSingle();
 
   if (error) throw error;
@@ -540,8 +616,17 @@ export const getUserRole = async (uid: string) => {
 };
 
 // Storage functions
-export const uploadAvatar = async (userId: string, imageUri: string) => { /* ... */ };
-export const uploadChatMedia = async (circleId: string, messageId: string, mediaUri: string, type) => { /* ... */ };
+export const uploadAvatar = async (userId: string, imageUri: string) => {
+  /* ... */
+};
+export const uploadChatMedia = async (
+  circleId: string,
+  messageId: string,
+  mediaUri: string,
+  type,
+) => {
+  /* ... */
+};
 ```
 
 ---
@@ -686,9 +771,38 @@ CREATE TABLE messages (
   sender_id TEXT REFERENCES users(id),
   sender_name TEXT,
   text TEXT,
+  poll_id TEXT REFERENCES polls(id),
   media_url TEXT,
-  media_type TEXT,
   created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Polls table
+CREATE TABLE polls (
+  id TEXT PRIMARY KEY,
+  circle_id TEXT REFERENCES circles(id),
+  created_by TEXT REFERENCES users(id),
+  question TEXT NOT NULL,
+  allow_multiple BOOLEAN NOT NULL DEFAULT false,
+  expires_at TIMESTAMP,
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Poll options table
+CREATE TABLE poll_options (
+  id TEXT PRIMARY KEY,
+  poll_id TEXT REFERENCES polls(id) ON DELETE CASCADE,
+  text TEXT NOT NULL,
+  sort_index INTEGER NOT NULL DEFAULT 0
+);
+
+-- Poll votes table
+CREATE TABLE poll_votes (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  poll_id TEXT REFERENCES polls(id) ON DELETE CASCADE,
+  option_id TEXT REFERENCES poll_options(id),
+  user_id TEXT REFERENCES users(id),
+  created_at TIMESTAMP DEFAULT NOW(),
+  UNIQUE (poll_id, user_id, option_id)
 );
 
 -- Notifications table
@@ -763,9 +877,9 @@ CREATE POLICY "Users read own notifications" ON notifications FOR SELECT USING (
 
 Create two buckets in Supabase Dashboard → Storage:
 
-| Bucket | Purpose |
-|--------|---------|
-| `avatars` | Profile photos |
+| Bucket       | Purpose                    |
+| ------------ | -------------------------- |
+| `avatars`    | Profile photos             |
 | `chat-media` | Chat images, videos, audio |
 
 ### File Path Conventions
@@ -804,30 +918,30 @@ CREATE POLICY "Members upload chat media" ON storage.objects FOR INSERT WITH CHE
 ### `supabase/functions/get-livekit-token/index.ts`
 
 ```typescript
-import { createClient } from '@supabase/supabase-js';
-import { AccessToken } from 'livekit-server-sdk';
+import { createClient } from "@supabase/supabase-js";
+import { AccessToken } from "livekit-server-sdk";
 
-const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 Deno.serve(async (req) => {
   const { circleId, userId, userName } = await req.json();
 
   if (!circleId || !userId) {
-    return new Response(JSON.stringify({ error: 'Missing required fields' }), {
+    return new Response(JSON.stringify({ error: "Missing required fields" }), {
       status: 400,
     });
   }
 
-  const apiKey = Deno.env.get('LIVEKIT_API_KEY')!;
-  const apiSecret = Deno.env.get('LIVEKIT_API_SECRET')!;
-  const livekitUrl = Deno.env.get('LIVEKIT_URL')!;
+  const apiKey = Deno.env.get("LIVEKIT_API_KEY")!;
+  const apiSecret = Deno.env.get("LIVEKIT_API_SECRET")!;
+  const livekitUrl = Deno.env.get("LIVEKIT_URL")!;
 
   const token = new AccessToken(apiKey, apiSecret, {
     identity: userId,
     name: userName,
-    ttl: '2h',
+    ttl: "2h",
   });
 
   token.addGrant({
@@ -838,12 +952,13 @@ Deno.serve(async (req) => {
   });
 
   return new Response(JSON.stringify({ token: await token.toJwt() }), {
-    headers: { 'Content-Type': 'application/json' },
+    headers: { "Content-Type": "application/json" },
   });
 });
 ```
 
 Deploy:
+
 ```bash
 supabase functions deploy get-livekit-token
 ```
@@ -855,27 +970,28 @@ supabase functions deploy get-livekit-token
 ```typescript
 // src/constants/theme.ts
 export const Colors = {
-  primary: '#FFB60C',
-  primaryDark: '#D98F00',
-  primaryLight: '#FFF4DD',
-  orange: '#FFB60C',
-  background: '#FFFFFF',
-  surface: '#FFFFFF',
-  inputBg: '#F5F5F5',
-  textPrimary: '#1A1A1A',
-  textSecondary: '#6B6B6B',
-  textDisabled: '#AAAAAA',
-  divider: '#EFEFEF',
-  placeholder: '#D4D4D4',
-  border: '#E5E5E5',
-  success: '#34C759',
-  warning: '#FF9500',
-  danger: '#FF3B30',
-  white: '#FFFFFF',
+  primary: "#FFB60C",
+  primaryDark: "#D98F00",
+  primaryLight: "#FFF4DD",
+  orange: "#FFB60C",
+  background: "#FFFFFF",
+  surface: "#FFFFFF",
+  inputBg: "#F5F5F5",
+  textPrimary: "#1A1A1A",
+  textSecondary: "#6B6B6B",
+  textDisabled: "#AAAAAA",
+  divider: "#EFEFEF",
+  placeholder: "#D4D4D4",
+  border: "#E5E5E5",
+  success: "#34C759",
+  warning: "#FF9500",
+  danger: "#FF3B30",
+  white: "#FFFFFF",
 };
 ```
 
 ### Global Style Rules
+
 - No shadows or elevation
 - No borders or outlines (except interactive dashed chips)
 - Primary CTA: always `#FFB60C` with black text
@@ -890,22 +1006,22 @@ export const Colors = {
 
 ### What Changed
 
-| Before (Firebase + Supabase) | After (Supabase Only) |
-|------------------------------|----------------------|
-| Firebase Auth for identity | Supabase Auth |
-| Firestore for circles, messages | PostgreSQL |
-| Firebase Cloud Functions | Supabase Edge Functions |
-| Firebase Cloud Messaging | PostgreSQL + realtime |
+| Before (Firebase + Supabase)    | After (Supabase Only)   |
+| ------------------------------- | ----------------------- |
+| Firebase Auth for identity      | Supabase Auth           |
+| Firestore for circles, messages | PostgreSQL              |
+| Firebase Cloud Functions        | Supabase Edge Functions |
+| Firebase Cloud Messaging        | PostgreSQL + realtime   |
 
 ### Service Mapping
 
-| Old (Firebase) | New (Supabase) |
-|----------------|----------------|
-| `src/services/firebase.ts` | Removed |
-| `src/services/firestore.ts` | Removed |
-| `firebase.auth` | `supabase.auth` |
-| `firestore.collection('users')` | `supabase.from('users')` |
-| `onSnapshot` | `supabase.channel().on('postgres_changes')` |
+| Old (Firebase)                                | New (Supabase)                                   |
+| --------------------------------------------- | ------------------------------------------------ |
+| `src/services/firebase.ts`                    | Removed                                          |
+| `src/services/firestore.ts`                   | Removed                                          |
+| `firebase.auth`                               | `supabase.auth`                                  |
+| `firestore.collection('users')`               | `supabase.from('users')`                         |
+| `onSnapshot`                                  | `supabase.channel().on('postgres_changes')`      |
 | `httpsCallable(functions, 'getLivekitToken')` | `supabase.functions.invoke('get-livekit-token')` |
 
 ### Key Implementation Details
@@ -919,16 +1035,26 @@ export const Colors = {
 
 ## 12. SECURITY CHECKLIST
 
+This is the **actual** state, reconciled with the repo and `TODO.md`. Items
+that look "done" in the old checklist but are not yet true in the codebase
+have been moved to `TODO.md` with `[ ]` or `[~]` markers.
+
 - [x] Supabase Auth is the single identity source
-- [x] Supabase RLS policies enabled on all tables
-- [x] LiveKit API Secret only in Supabase Edge Function, never in the app
+- [~] Supabase RLS policies enabled on all tables — represented in SQL
+  migrations, but **not yet verified** against the deployed Supabase project
+- [x] LiveKit API Secret is intended to live in the Supabase Edge Function
+      only (the app uses `EXPO_PUBLIC_*` for non-secret values)
 - [x] Media file size limits enforced before upload
-- [x] Role checks happen on both frontend (UI) AND backend (Supabase RLS)
-- [x] Banned users blocked at navigation level
-- [x] All moderation actions written to audit log
-- [x] `.env` file in `.gitignore`
+- [~] Role checks happen on both frontend and backend — UI checks exist,
+  **backend/RLS role enforcement is still pending**
+- [x] Banned users blocked at navigation level (banned/suspended screens exist)
+- [ ] All moderation actions written to audit log — `moderation_logs` table
+      exists in migrations, but writes from the moderation service are not yet
+      implemented
+- [ ] `.env` file in `.gitignore` — `.env` is currently tracked; only
+      `.env*.local` is ignored. Fix tracked in `TODO.md`
 
 ---
 
-*This document should be kept updated as the architecture evolves.*
-*Last updated: May 2026 — v2.0 (Full Supabase migration complete)*
+_This document should be kept updated as the architecture evolves._
+_Last updated: June 2026 — v2.1 (Status table and security checklist reconciled with `TODO.md` / `PLAN.md` / `README.md`. The previous "✅ DONE" on every layer was overstated.)_

@@ -11,7 +11,14 @@ import { useAuth } from "@/src/context/AuthContext";
 import { createCircle } from "@/src/services/circle";
 import { Interest, ProfileTrait } from "@/src/types";
 import { router, useLocalSearchParams } from "expo-router";
-import { ChevronDown, ChevronLeft } from "lucide-react-native";
+import {
+  ChevronDown,
+  ChevronLeft,
+  Mars,
+  Venus,
+  VenusAndMars,
+} from "lucide-react-native";
+import type { LucideIcon } from "lucide-react-native";
 import { useMemo, useState } from "react";
 import {
   GestureResponderEvent,
@@ -28,10 +35,10 @@ import {
 
 type GenderMix = "Male" | "Female" | "Both";
 
-const GENDER_OPTIONS: { label: GenderMix; icon: string }[] = [
-  { label: "Male", icon: "👨" },
-  { label: "Female", icon: "👩" },
-  { label: "Both", icon: "🌈" },
+const GENDER_OPTIONS: { label: GenderMix; Icon: LucideIcon }[] = [
+  { label: "Male", Icon: Mars },
+  { label: "Female", Icon: Venus },
+  { label: "Both", Icon: VenusAndMars },
 ];
 
 const MIN_AGE = 18;
@@ -60,6 +67,7 @@ export default function CreateCirclePreferencesScreen() {
     radius?: string;
     radiusUnit?: string;
     meetupGoal?: string;
+    meetupDays?: string;
   }>();
   const { user, profile } = useAuth();
   const [ageRange, setAgeRange] = useState<[number, number]>([22, 32]);
@@ -124,8 +132,10 @@ export default function CreateCirclePreferencesScreen() {
       radius: Number(asString(params.radius, "8")),
       radiusUnit: asString(params.radiusUnit, "km"),
       meetupGoal: asString(params.meetupGoal, "Coffee"),
+      meetupDays: Number(asString(params.meetupDays, "3")),
     }),
     [
+      params.meetupDays,
       params.name,
       params.radius,
       params.radiusUnit,
@@ -205,7 +215,8 @@ export default function CreateCirclePreferencesScreen() {
         genderMix,
         vibe: circleBasics.meetupGoal,
         meetupGoal: circleBasics.meetupGoal,
-        meetupTimeframe: "Within 3 days",
+        meetupDays: circleBasics.meetupDays,
+        meetupTimeframe: `Within ${circleBasics.meetupDays} days`,
       });
 
       router.replace("/(tabs)/swipe");
@@ -291,6 +302,7 @@ export default function CreateCirclePreferencesScreen() {
           <View style={styles.genderRow}>
             {GENDER_OPTIONS.map((option) => {
               const selected = genderMix === option.label;
+              const GenderIcon = option.Icon;
               return (
                 <TouchableOpacity
                   key={option.label}
@@ -298,7 +310,7 @@ export default function CreateCirclePreferencesScreen() {
                   style={[styles.genderTile, selected && styles.selectedChip]}
                   onPress={() => setGenderMix(option.label)}
                 >
-                  <Text style={styles.genderIcon}>{option.icon}</Text>
+                  <GenderIcon size={24} color={Colors.textPrimary} strokeWidth={2.2} />
                   <Text
                     style={[
                       styles.genderLabel,
@@ -582,9 +594,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: 4,
-  },
-  genderIcon: {
-    fontSize: 22,
   },
   genderLabel: {
     ...Typography.bodySmall,

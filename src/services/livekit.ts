@@ -1,64 +1,86 @@
-// LiveKit service for E2EE group calls
-// This will be implemented in Phase 7
+import { supabase } from "./supabase";
 
-export interface CallToken {
+export interface LiveKitTokenResponse {
   token: string;
-  roomName: string;
-  participantName: string;
+  url?: string;
+  roomName?: string;
 }
 
-// Generate call token (will be implemented via Firebase Cloud Functions)
-export const generateCallToken = async (circleId: string, userId: string): Promise<CallToken> => {
+type FunctionErrorWithContext = Error & {
+  context?: Response;
+};
+
+const getFunctionErrorDetail = async (
+  error: FunctionErrorWithContext,
+): Promise<{ status?: number; message?: string }> => {
+  const response = error.context;
+  if (!response) return {};
+
   try {
-    // TODO: Implement call token generation
-    // This will call Firebase Cloud Functions which will generate secure tokens
-    throw new Error('Call token generation not implemented yet');
-  } catch (error) {
-    console.error('Error generating call token:', error);
-    throw error;
+    const body = await response.clone().text();
+    if (!body) return { status: response.status };
+
+    try {
+      const parsed = JSON.parse(body) as {
+        error?: unknown;
+        message?: unknown;
+      };
+      const message =
+        typeof parsed.error === "string"
+          ? parsed.error
+          : typeof parsed.message === "string"
+            ? parsed.message
+            : body;
+
+      return { status: response.status, message };
+    } catch {
+      return { status: response.status, message: body };
+    }
+  } catch {
+    return { status: response.status };
   }
 };
 
-// Join a call room
-export const joinCall = async (token: CallToken) => {
-  try {
-    // TODO: Implement LiveKit room connection
-    throw new Error('LiveKit integration not implemented yet');
-  } catch (error) {
-    console.error('Error joining call:', error);
-    throw error;
-  }
+const buildTokenError = async (error: Error): Promise<Error> => {
+  const { status, message } = await getFunctionErrorDetail(
+    error as FunctionErrorWithContext,
+  );
+  const statusText = status ? ` (${status})` : "";
+  const detail = message || error.message;
+
+  console.error("LiveKit token request failed:", {
+    status,
+    message: detail,
+  });
+
+  return new Error(`Failed to get LiveKit token${statusText}: ${detail}`);
 };
 
-// Leave a call room
-export const leaveCall = async () => {
-  try {
-    // TODO: Implement LiveKit room disconnection
-    throw new Error('LiveKit integration not implemented yet');
-  } catch (error) {
-    console.error('Error leaving call:', error);
-    throw error;
+export const getLivekitToken = async (
+  circleId: string,
+  userName: string,
+): Promise<LiveKitTokenResponse> => {
+  if (!circleId) {
+    throw new Error("Cannot join call without a Circle ID");
   }
-};
 
-// Toggle microphone
-export const toggleMicrophone = async (enabled: boolean) => {
-  try {
-    // TODO: Implement microphone toggle
-    throw new Error('Microphone control not implemented yet');
-  } catch (error) {
-    console.error('Error toggling microphone:', error);
-    throw error;
-  }
-};
+  const { data, error } = await supabase.functions.invoke("get-livekit-token", {
+    body: { circleId, userName },
+  });
 
-// Toggle camera
-export const toggleCamera = async (enabled: boolean) => {
-  try {
-    // TODO: Implement camera toggle
-    throw new Error('Camera control not implemented yet');
-  } catch (error) {
-    console.error('Error toggling camera:', error);
-    throw error;
+  if (error) throw await buildTokenError(error);
+
+  if (data?.error && typeof data.error === "string") {
+    throw new Error(`Failed to get LiveKit token: ${data.error}`);
   }
+
+  if (!data?.token) {
+    throw new Error("Failed to get LiveKit token: no token returned");
+  }
+
+  return {
+    token: data.token,
+    url: data.url,
+    roomName: data.roomName,
+  };
 };

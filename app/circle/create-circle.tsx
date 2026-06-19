@@ -55,6 +55,8 @@ export default function CreateCircleScreen() {
   const [education, setEducation] = useState("Any");
   const [selectedInterests, setSelectedInterests] = useState<string[]>([]);
   const [selectedGoal, setSelectedGoal] = useState("Coffee ☕");
+  const [meetupDays, setMeetupDays] = useState(3);
+  const [dayTrackWidth, setDayTrackWidth] = useState(0);
   const [loading, setLoading] = useState(false);
   const [alertState, setAlertState] = useState<AlertState>({
     visible: false,
@@ -98,6 +100,12 @@ export default function CreateCircleScreen() {
     );
   };
 
+  const handleMeetupDaysPress = (event: any) => {
+    if (!dayTrackWidth) return;
+    const ratio = Math.max(0, Math.min(1, event.nativeEvent.locationX / dayTrackWidth));
+    setMeetupDays(Math.round(3 + ratio * 7));
+  };
+
   const handleCreateCircle = async () => {
     if (!user) {
       showAlert("Not signed in", "Please sign in again to create a circle.");
@@ -124,7 +132,8 @@ export default function CreateCircleScreen() {
         interests: selectedInterests as Interest[],
         vibe: vibe.trim(),
         meetupGoal: selectedGoal,
-        meetupTimeframe: "Within 3 days",
+        meetupDays,
+        meetupTimeframe: `Within ${meetupDays} days`,
       };
       console.log("create circle payload:", payload);
 
@@ -242,6 +251,26 @@ export default function CreateCircleScreen() {
             ))}
           </ScrollView>
         </View>
+
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.label}>DAY TO MEET</Text>
+            <Text style={styles.valueLabel}>Within {meetupDays} days</Text>
+          </View>
+          <TouchableOpacity
+            activeOpacity={0.95}
+            style={styles.dayTrack}
+            onLayout={(event) => setDayTrackWidth(event.nativeEvent.layout.width)}
+            onPress={handleMeetupDaysPress}
+          >
+            <View style={[styles.dayFill, { width: `${((meetupDays - 3) / 7) * 100}%` }]} />
+            <View style={[styles.dayThumb, { left: `${((meetupDays - 3) / 7) * 100}%` }]} />
+          </TouchableOpacity>
+          <View style={styles.dayMeta}>
+            <Text style={styles.helperText}>3 days</Text>
+            <Text style={styles.helperText}>10 days</Text>
+          </View>
+        </View>
       </ScrollView>
 
       <View style={styles.footer}>
@@ -286,8 +315,18 @@ const styles = StyleSheet.create({
   section: {
     gap: Spacing.sm,
   },
+  sectionHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
   label: {
     ...Typography.label,
+  },
+  valueLabel: {
+    ...Typography.bodySmall,
+    color: Colors.textPrimary,
+    fontWeight: "700",
   },
   multilineInput: {
     minHeight: 80,
@@ -327,6 +366,35 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     flexWrap: "wrap",
     gap: Spacing.sm,
+  },
+  dayTrack: {
+    height: 10,
+    borderRadius: Radius.full,
+    backgroundColor: Colors.inputBg,
+    justifyContent: "center",
+  },
+  dayFill: {
+    height: 10,
+    borderRadius: Radius.full,
+    backgroundColor: Colors.primary,
+  },
+  dayThumb: {
+    position: "absolute",
+    width: 22,
+    height: 22,
+    marginLeft: -11,
+    borderRadius: Radius.full,
+    backgroundColor: Colors.primary,
+    borderWidth: 3,
+    borderColor: Colors.white,
+  },
+  dayMeta: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+  },
+  helperText: {
+    ...Typography.bodySmall,
+    color: Colors.textSecondary,
   },
   footer: {
     paddingHorizontal: Spacing.screenPadding,

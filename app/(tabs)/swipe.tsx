@@ -1,11 +1,12 @@
 import { Colors, Spacing, Typography } from "@/src/constants/theme";
 import { useAuth } from "@/src/context/AuthContext";
-import {
-  getActiveCircleForUser,
-  JoinCircleFilters,
-} from "@/src/services/swipe";
-import { useLocalSearchParams } from "expo-router";
-import React, { useEffect, useMemo, useState } from "react";
+import { useSwipeTabVisibility } from "@/src/context/SwipeTabVisibilityContext";
+import SwipeCirclesScreen from "@/src/screens/circle/SwipeCirclesScreen";
+import SwipeUsersScreen from "@/src/screens/circle/SwipeUsersScreen";
+import { getUserCircleParticipation } from "@/src/services/circle";
+import { JoinCircleFilters } from "@/src/services/swipe";
+import { router, useLocalSearchParams } from "expo-router";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   SafeAreaView,
@@ -14,13 +15,16 @@ import {
   Text,
   View,
 } from "react-native";
-import SwipeCirclesScreen from "../circle/swipe-circles";
-import SwipeUsersScreen from "../circle/swipe-users";
 
 export default function SwipeTabScreen() {
   const { user } = useAuth();
+  const { swipeTabVisible, loading: tabVisibilityLoading } =
+    useSwipeTabVisibility();
   const [loading, setLoading] = useState(true);
-  const [hasCircle, setHasCircle] = useState(false);
+  const [participationRole, setParticipationRole] = useState<
+    "host" | "joiner" | null
+  >(null);
+  const hasResolvedInitialVisibility = useRef(false);
   const params = useLocalSearchParams<{
     distance?: string;
     ageMin?: string;
@@ -55,20 +59,36 @@ export default function SwipeTabScreen() {
       }
 
       try {
-        const activeCircle = await getActiveCircleForUser(user.id);
-        setHasCircle(!!activeCircle);
+        const { role } = await getUserCircleParticipation(user.id);
+        setParticipationRole(role);
       } catch (error) {
         console.error("Error checking circle status:", error);
-        setHasCircle(false);
+        setParticipationRole(null);
       } finally {
         setLoading(false);
       }
     };
 
     checkUserStatus();
-  }, [user]);
+  }, [user, swipeTabVisible]);
 
-  if (loading) {
+  useEffect(() => {
+    if (tabVisibilityLoading || loading) return;
+
+    if (!hasResolvedInitialVisibility.current) {
+      hasResolvedInitialVisibility.current = true;
+      if (!swipeTabVisible) {
+        router.replace("/(tabs)/home");
+      }
+      return;
+    }
+
+    if (!swipeTabVisible) {
+      return;
+    }
+  }, [swipeTabVisible, tabVisibilityLoading, loading]);
+
+  if (loading || tabVisibilityLoading) {
     return (
       <SafeAreaView style={styles.container}>
         <StatusBar barStyle="dark-content" />
@@ -80,11 +100,11 @@ export default function SwipeTabScreen() {
     );
   }
 
-  return hasCircle ? (
-    <SwipeUsersScreen />
-  ) : (
-    <SwipeCirclesScreen filters={filters} />
-  );
+  if (participationRole === "host") {
+    return <SwipeUsersScreen />;
+  }
+
+  return <SwipeCirclesScreen filters={filters} />;
 }
 
 const styles = StyleSheet.create({

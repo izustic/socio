@@ -1,7 +1,7 @@
-import NoCircleScreen from "@/app/circle/no-circle";
-import CircleChatRoute from "@/app/circle/chat";
-import CircleCompleteScreen from "@/app/circle/complete";
-import CircleProgressScreen from "@/app/circle/progress";
+import CircleChatRoute from "@/src/screens/circle/CircleChatScreen";
+import CircleCompleteScreen from "@/src/screens/circle/CircleCompleteScreen";
+import CircleProgressScreen from "@/src/screens/circle/CircleProgressScreen";
+import NoCircleScreen from "@/src/screens/circle/NoCircleScreen";
 import { Colors, Spacing } from "@/src/constants/theme";
 import { useAuth } from "@/src/context/AuthContext";
 import { getLatestCircleForParticipant } from "@/src/services/circle";
@@ -53,7 +53,7 @@ export default function CircleTabScreen() {
       return () => {
         active = false;
       };
-    }, [authLoading, user]),
+    }, [authLoading, user, params.circleView]),
   );
 
   if (requestedView === "chat") {

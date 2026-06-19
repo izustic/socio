@@ -83,6 +83,8 @@ export interface Circle {
   filters: CircleFilters;
   meetupGoal?: string;
   meetupTimeframe?: string;
+  meetupDays?: number;
+  meetupDeadline?: Date | null;
   status: CircleStatus;
   createdAt: Date;
 }
@@ -103,7 +105,15 @@ export interface Message {
   senderId: string;
   senderName: string;
   text: string;
+  pollId?: string | null;
   mediaUrl?: string | null;
-  mediaType?: "image" | "video" | null;
+  mediaUrls?: string[];
+  mediaType?: "image" | "video" | "audio" | null;
+  replyTo?: {
+    messageId: string;
+    senderName: string;
+    text: string;
+    mediaType?: "image" | "video" | "audio" | null;
+  } | null;
   timestamp: Date;
 }

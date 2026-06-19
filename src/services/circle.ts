@@ -1,6 +1,7 @@
 import type { RealtimeChannel } from "@supabase/supabase-js";
 import * as Crypto from "expo-crypto";
 import { Circle, Interest, ProfileTrait } from "../types";
+import { clampMeetupDays, createMeetupDeadline } from "../utils/circleDeadline";
 import { supabase } from "./supabase";
 
 interface CreateCircleInput {
@@ -14,6 +15,8 @@ interface CreateCircleInput {
   vibe?: string;
   meetupGoal?: string;
   meetupTimeframe?: string;
+  meetupDays?: number;
+  meetupDeadline?: Date | string;
   genderMix?: "Male" | "Female" | "Both";
   traits?: ProfileTrait[];
 }
@@ -38,20 +41,29 @@ interface CircleRow {
   filters: CircleFilters;
   meetup_goal: string;
   meetup_timeframe?: string;
+  meetup_days?: number;
+  meetup_deadline?: string | null;
   status: "forming" | "complete";
   created_at: string;
 }
 
+const normalizeMemberIds = (members: unknown): string[] => {
+  if (!Array.isArray(members)) return [];
+  return members.map((id) => String(id));
+};
+
 const rowToCircle = (row: CircleRow): Circle => ({
   id: row.id,
   name: row.name,
-  creatorId: row.creator_id,
+  creatorId: String(row.creator_id),
   size: row.size,
-  members: row.members,
+  members: normalizeMemberIds(row.members),
   pendingSwipes: row.pending_swipes,
   filters: row.filters,
   meetupGoal: row.meetup_goal,
   meetupTimeframe: row.meetup_timeframe,
+  meetupDays: row.meetup_days,
+  meetupDeadline: row.meetup_deadline ? new Date(row.meetup_deadline) : null,
   status: row.status,
   createdAt: new Date(row.created_at),
 });
@@ -61,6 +73,13 @@ export const createCircle = async (
 ): Promise<string> => {
   try {
     const circleId = Crypto.randomUUID();
+    const meetupDays = clampMeetupDays(input.meetupDays ?? 3);
+    const meetupDeadline =
+      input.meetupDeadline instanceof Date
+        ? input.meetupDeadline
+        : input.meetupDeadline
+          ? new Date(input.meetupDeadline)
+          : createMeetupDeadline(meetupDays);
     const payload = {
       id: circleId,
       name: input.name,
@@ -79,7 +98,9 @@ export const createCircle = async (
         traits: input.traits || [],
       },
       meetup_goal: input.meetupGoal || "",
-      meetup_timeframe: input.meetupTimeframe || "Within 3 days",
+      meetup_timeframe: input.meetupTimeframe || `Within ${meetupDays} days`,
+      meetup_days: meetupDays,
+      meetup_deadline: meetupDeadline.toISOString(),
       status: "forming",
     };
 
@@ -115,6 +136,57 @@ export const getCircle = async (circleId: string): Promise<Circle | null> => {
   } catch (error) {
     console.error("Error getting circle:", error);
     return null;
+  }
+};
+
+export type CircleParticipationRole = "host" | "joiner";
+
+/** Hide Swipe tab when user has joined a circle or their hosted circle is full. */
+export const shouldHideSwipeTab = async (userId: string): Promise<boolean> => {
+  const circle = await getLatestCircleForParticipant(userId);
+  if (!circle) return false;
+
+  const isMember = circle.members.includes(userId);
+  const isHost = circle.creatorId === userId;
+  const isFull =
+    circle.status === "complete" || circle.members.length >= circle.size;
+
+  if (isMember && !isHost) return true;
+  if (isHost && isFull) return true;
+
+  return false;
+};
+
+/** Circle the user hosts (forming) or has joined as a member. */
+export const getUserCircleParticipation = async (
+  userId: string,
+): Promise<{ circle: Circle | null; role: CircleParticipationRole | null }> => {
+  try {
+    const { data: hostData, error: hostError } = await supabase
+      .from("circles")
+      .select("*")
+      .eq("creator_id", userId)
+      .eq("status", "forming")
+      .order("created_at", { ascending: false })
+      .limit(1);
+
+    if (hostError) throw hostError;
+    if (hostData && hostData.length > 0) {
+      return {
+        circle: rowToCircle(hostData[0] as CircleRow),
+        role: "host",
+      };
+    }
+
+    const participantCircle = await getLatestCircleForParticipant(userId);
+    if (participantCircle?.members.includes(userId)) {
+      return { circle: participantCircle, role: "joiner" };
+    }
+
+    return { circle: null, role: null };
+  } catch (error) {
+    console.error("Error getting user circle participation:", error);
+    return { circle: null, role: null };
   }
 };
 
@@ -180,6 +252,13 @@ export const updateCircle = async (
       dbUpdates.meetup_goal = updates.meetupGoal;
     if (updates.meetupTimeframe !== undefined)
       dbUpdates.meetup_timeframe = updates.meetupTimeframe;
+    if (updates.meetupDays !== undefined)
+      dbUpdates.meetup_days = updates.meetupDays;
+    if (updates.meetupDeadline !== undefined)
+      dbUpdates.meetup_deadline =
+        updates.meetupDeadline instanceof Date
+          ? updates.meetupDeadline.toISOString()
+          : updates.meetupDeadline;
     if (updates.status !== undefined) dbUpdates.status = updates.status;
 
     const { error } = await supabase
@@ -256,6 +335,19 @@ export const removeMember = async (
     if (error) throw error;
   } catch (error) {
     console.error("Error removing member:", error);
+    throw error;
+  }
+};
+
+export const closeCircle = async (circleId: string): Promise<void> => {
+  try {
+    const { error } = await supabase.rpc("close_circle", {
+      p_circle_id: circleId,
+    });
+
+    if (error) throw error;
+  } catch (error) {
+    console.error("Error closing circle:", error);
     throw error;
   }
 };

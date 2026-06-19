@@ -22,6 +22,7 @@ interface OnboardingLayoutProps {
   primaryLabel?: string;
   onPrimaryPress?: () => void;
   primaryDisabled?: boolean;
+  primaryLoading?: boolean;
   secondaryLabel?: string;
   onSecondaryPress?: () => void;
   onBackPress?: () => void;
@@ -38,6 +39,7 @@ export default function OnboardingLayout({
   primaryLabel,
   onPrimaryPress,
   primaryDisabled,
+  primaryLoading,
   secondaryLabel,
   onSecondaryPress,
   onBackPress,
@@ -97,6 +99,7 @@ export default function OnboardingLayout({
                 title={primaryLabel}
                 onPress={onPrimaryPress}
                 disabled={primaryDisabled}
+                loading={primaryLoading}
               />
             ) : null}
             {secondaryLabel && onSecondaryPress ? (

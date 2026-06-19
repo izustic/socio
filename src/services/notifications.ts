@@ -4,7 +4,13 @@ import type { RealtimeChannel } from '@supabase/supabase-js';
 export interface AppNotification {
   id: string;
   userId: string;
-  type: 'circle_invite' | 'circle_accepted' | 'circle_complete' | 'message' | 'system';
+  type:
+    | 'circle_invite'
+    | 'circle_accepted'
+    | 'circle_almost_full'
+    | 'circle_complete'
+    | 'message'
+    | 'system';
   title: string;
   body: string;
   data?: Record<string, unknown>;
@@ -23,10 +29,29 @@ interface NotificationRow {
   created_at: string;
 }
 
+export interface NotificationRealtimePayload {
+  new?: AppNotification;
+  old?: Partial<AppNotification>;
+  eventType: 'INSERT' | 'UPDATE' | 'DELETE' | string;
+}
+
 const rowToNotification = (row: NotificationRow): AppNotification => ({
   id: row.id,
   userId: row.user_id,
   type: row.type as AppNotification['type'],
+  title: row.title,
+  body: row.body,
+  data: row.data ?? undefined,
+  read: row.read,
+  createdAt: row.created_at,
+});
+
+const partialRowToNotification = (
+  row: Partial<NotificationRow>,
+): Partial<AppNotification> => ({
+  id: row.id,
+  userId: row.user_id,
+  type: row.type as AppNotification['type'] | undefined,
   title: row.title,
   body: row.body,
   data: row.data ?? undefined,
@@ -110,23 +135,66 @@ export const createNotification = async (
   }
 };
 
+export const createNotifications = async (
+  userIds: string[],
+  type: AppNotification['type'],
+  title: string,
+  body: string,
+  data?: Record<string, unknown>
+): Promise<void> => {
+  const uniqueUserIds = Array.from(new Set(userIds)).filter(Boolean);
+  if (uniqueUserIds.length === 0) return;
+
+  try {
+    const { error } = await supabase.from('notifications').insert(
+      uniqueUserIds.map((userId) => ({
+        user_id: userId,
+        type,
+        title,
+        body,
+        data: data ?? null,
+        read: false,
+      })),
+    );
+
+    if (error) throw error;
+  } catch (error) {
+    console.error('Error creating notifications:', error);
+    throw error;
+  }
+};
+
 export const subscribeToNotifications = (
   userId: string,
-  callback: (payload: { new: NotificationRow; eventType: string }) => void
+  callback: (payload: NotificationRealtimePayload) => void
 ): RealtimeChannel => {
   const channel = supabase
     .channel(`notifications:${userId}`)
     .on(
       'postgres_changes',
       {
-        event: 'INSERT',
+        event: '*',
         schema: 'public',
         table: 'notifications',
         filter: `user_id=eq.${userId}`,
       },
       (payload) => {
+        const hasNew =
+          payload.eventType !== 'DELETE' &&
+          payload.new &&
+          Object.keys(payload.new).length > 0;
+        const hasOld =
+          payload.eventType !== 'INSERT' &&
+          payload.old &&
+          Object.keys(payload.old).length > 0;
+
         callback({
-          new: payload.new as NotificationRow,
+          new: hasNew
+            ? rowToNotification(payload.new as NotificationRow)
+            : undefined,
+          old: hasOld
+            ? partialRowToNotification(payload.old as Partial<NotificationRow>)
+            : undefined,
           eventType: payload.eventType,
         });
       }

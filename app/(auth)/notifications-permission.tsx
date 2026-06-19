@@ -1,17 +1,60 @@
 import OnboardingLayout from '@/src/components/onboarding/OnboardingLayout';
 import { Colors, Spacing, Typography } from '@/src/constants/theme';
 import { useOnboarding } from '@/src/context/OnboardingContext';
-import { StyleSheet, Text, View } from 'react-native';
+import { requestNotificationPermissionStatus } from '@/src/services/notificationPermission';
+import { useState } from 'react';
+import { Alert, Linking, StyleSheet, Text, View } from 'react-native';
 
 export default function NotificationsPermissionScreen() {
   const { mergeDraft, setStep } = useOnboarding();
+  const [isRequestingPermission, setIsRequestingPermission] = useState(false);
 
-  const goNext = (enabled: boolean) => {
+  const continueToIntro = (enabled: boolean) => {
     mergeDraft({
       notificationsEnabled: enabled,
       notificationsPermissionResolved: true,
     });
     setStep('onboarding-intro');
+  };
+
+  const handleAllowNotifications = async () => {
+    if (isRequestingPermission) return;
+
+    setIsRequestingPermission(true);
+    try {
+      const permission = await requestNotificationPermissionStatus();
+      if (permission.status !== 'granted') {
+        if (!permission.canAskAgain) {
+          Alert.alert(
+            'Notifications are blocked',
+            'Notification permission was already denied for Socio. Open your device settings to allow notifications, or continue without them for now.',
+            [
+              {
+                text: 'Continue without them',
+                style: 'cancel',
+                onPress: () => continueToIntro(false),
+              },
+              {
+                text: 'Open Settings',
+                onPress: () => Linking.openSettings(),
+              },
+            ]
+          );
+          return;
+        }
+
+        Alert.alert(
+          'Notifications turned off',
+          'You can keep going for now, but you may miss updates when your Circle grows or it is time to meet.'
+        );
+        continueToIntro(false);
+        return;
+      }
+
+      continueToIntro(true);
+    } finally {
+      setIsRequestingPermission(false);
+    }
   };
 
   return (
@@ -20,10 +63,18 @@ export default function NotificationsPermissionScreen() {
       subtitle={"We'll let you know when your Circle grows, someone accepts, or it's time to meet."}
       stepNumber="04  NOTIFICATIONS PERMISSION"
       primaryLabel="Allow Notifications"
-      onPrimaryPress={() => goNext(true)}
+      onPrimaryPress={handleAllowNotifications}
+      primaryLoading={isRequestingPermission}
+      primaryDisabled={isRequestingPermission}
       secondaryLabel="Not now"
-      onSecondaryPress={() => goNext(false)}
-      onBackPress={() => setStep('location-permission')}
+      onSecondaryPress={() => {
+        if (isRequestingPermission) return;
+        continueToIntro(false);
+      }}
+      onBackPress={() => {
+        if (isRequestingPermission) return;
+        setStep('location-permission');
+      }}
       centerContent
     >
       <View style={styles.card}>

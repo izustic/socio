@@ -2,56 +2,65 @@ import OnboardingLayout from '@/src/components/onboarding/OnboardingLayout';
 import { Colors, Radius, Spacing, Typography } from '@/src/constants/theme';
 import { useOnboarding } from '@/src/context/OnboardingContext';
 import { getLocationWithCity, requestLocationPermissionStatus } from '@/src/services/location';
+import { useState } from 'react';
 import { Alert, Linking, StyleSheet, Text, View } from 'react-native';
 
 export default function LocationPermissionScreen() {
   const { mergeDraft, setStep } = useOnboarding();
+  const [isSettingLocation, setIsSettingLocation] = useState(false);
 
   const continueToNotifications = () => {
     setStep('notifications-permission');
   };
 
   const handleEnableLocation = async () => {
-    const permission = await requestLocationPermissionStatus();
-    if (permission.status !== 'granted') {
-      if (!permission.canAskAgain) {
-        Alert.alert(
-          'Location is blocked',
-          'Location permission was already denied for Socio. Open your device settings to allow location access, or continue without it for now.',
-          [
-            {
-              text: 'Continue without it',
-              style: 'cancel',
-              onPress: () => {
-                mergeDraft({ locationEnabled: false, locationPermissionResolved: true, location: null });
-                continueToNotifications();
+    if (isSettingLocation) return;
+
+    setIsSettingLocation(true);
+    try {
+      const permission = await requestLocationPermissionStatus();
+      if (permission.status !== 'granted') {
+        if (!permission.canAskAgain) {
+          Alert.alert(
+            'Location is blocked',
+            'Location permission was already denied for Socio. Open your device settings to allow location access, or continue without it for now.',
+            [
+              {
+                text: 'Continue without it',
+                style: 'cancel',
+                onPress: () => {
+                  mergeDraft({ locationEnabled: false, locationPermissionResolved: true, location: null });
+                  continueToNotifications();
+                },
               },
-            },
-            {
-              text: 'Open Settings',
-              onPress: () => Linking.openSettings(),
-            },
-          ]
+              {
+                text: 'Open Settings',
+                onPress: () => Linking.openSettings(),
+              },
+            ]
+          );
+          return;
+        }
+
+        Alert.alert(
+          'Location turned off',
+          'You can keep going for now, but circles nearby work better when location is enabled.'
         );
+        mergeDraft({ locationEnabled: false, locationPermissionResolved: true, location: null });
+        continueToNotifications();
         return;
       }
 
-      Alert.alert(
-        'Location turned off',
-        'You can keep going for now, but circles nearby work better when location is enabled.'
-      );
-      mergeDraft({ locationEnabled: false, locationPermissionResolved: true, location: null });
+      const location = await getLocationWithCity();
+      mergeDraft({
+        locationEnabled: true,
+        locationPermissionResolved: true,
+        location,
+      });
       continueToNotifications();
-      return;
+    } finally {
+      setIsSettingLocation(false);
     }
-
-    const location = await getLocationWithCity();
-    mergeDraft({
-      locationEnabled: true,
-      locationPermissionResolved: true,
-      location,
-    });
-    continueToNotifications();
   };
 
   return (
@@ -61,12 +70,18 @@ export default function LocationPermissionScreen() {
       stepNumber="03  LOCATION PERMISSION"
       primaryLabel="Set Location Services"
       onPrimaryPress={handleEnableLocation}
+      primaryLoading={isSettingLocation}
+      primaryDisabled={isSettingLocation}
       secondaryLabel="Maybe later"
       onSecondaryPress={() => {
+        if (isSettingLocation) return;
         mergeDraft({ locationEnabled: false, locationPermissionResolved: true, location: null });
         continueToNotifications();
       }}
-      onBackPress={() => setStep('otp')}
+      onBackPress={() => {
+        if (isSettingLocation) return;
+        setStep('otp');
+      }}
       centerContent
     >
       <View style={styles.ringWrap}>

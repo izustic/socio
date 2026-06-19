@@ -213,6 +213,38 @@ export const uploadChatMedia = async (
 
   if (error) throw error;
 
-  const { data } = supabase.storage.from("chat-media").getPublicUrl(filePath);
-  return data.publicUrl;
+  return filePath;
+};
+
+const getChatMediaPath = (urlOrPath: string): string | null => {
+  const publicMarker = "/storage/v1/object/public/chat-media/";
+  const signedMarker = "/storage/v1/object/sign/chat-media/";
+
+  if (!urlOrPath.startsWith("http")) return urlOrPath;
+
+  const marker = urlOrPath.includes(publicMarker) ? publicMarker : signedMarker;
+  const [, pathWithQuery] = urlOrPath.split(marker);
+  if (!pathWithQuery) return null;
+
+  return decodeURIComponent(pathWithQuery.split("?")[0]);
+};
+
+export const getSignedChatMediaUrl = async (urlOrPath: string): Promise<string> => {
+  const path = getChatMediaPath(urlOrPath);
+  if (!path) return urlOrPath;
+
+  const { data, error } = await supabase.storage
+    .from("chat-media")
+    .createSignedUrl(path, 60 * 60);
+
+  if (error) {
+    console.error("Error creating signed chat media URL:", error);
+    return urlOrPath;
+  }
+
+  return data.signedUrl;
+};
+
+export const getSignedChatMediaUrls = async (urlOrPaths: string[]): Promise<string[]> => {
+  return Promise.all(urlOrPaths.map((urlOrPath) => getSignedChatMediaUrl(urlOrPath)));
 };

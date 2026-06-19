@@ -1,6 +1,8 @@
 # Socio TODO
 
-Updated: June 2026 — rewritten as a prioritized, ordered backlog.
+Updated: June 19, 2026 — rewritten after a full pass over the codebase and
+`ARCHITECTURE.md`. Reflects what's actually in the repo right now (not what's
+in old sections of the plan).
 
 Legend:
 
@@ -9,12 +11,56 @@ Legend:
 - `[ ]` still to do
 - `[P0]` / `[P1]` / `[P2]` = priority for a production-ready v1
   - `P0` — must be fixed before any real users touch the app (security, data loss, broken core loop)
-  - `P1` — required for a credible v1 launch (Circle creation/matching, chat, notifications)
-  - `P2` — polish, moderation tooling, release readiness
+  - `P1` — required for a credible v1 launch (Circle creation/matching, chat, notifications, moderation)
+  - `P2` — polish, release readiness
 
 > Source of truth: `ARCHITECTURE.md` (v2.1) plus the current codebase.
 > See `PLAN.md` for the higher-level phase plan and `README.md` for the public
 > project description.
+
+---
+
+## Current state (verified June 19, 2026)
+
+**Working end to end in code (pending device verification):**
+
+- Auth + onboarding flow (welcome → email/OTP → permissions → 4-step profile)
+- Auth/role redirect: `app/index.tsx` correctly routes banned / suspended /
+  moderator / admin / incomplete-profile users
+- Bottom tab shell with circle / swipe / alerts / profile
+- Host and joiner swipe flows, with `SwipeUsersScreen` and
+  `SwipeCirclesScreen` under `src/screens/circle/`
+- Chat screen (`CircleChatScreen`) — wired to realtime messages, polls,
+  replies, media, and a call-entry button in the header
+- Call screen (`app/circle/call.tsx`) — real `VideoView`, mic/camera
+  toggles, error and connection states
+- `useCircleCall` hook and `src/services/livekit.ts` token service
+- `get-livekit-token` Edge Function — authenticates the caller, verifies
+  circle membership, requires `circle.status = 'complete'`
+- `delete-account` Edge Function source exists
+- Notifications tab with realtime list, mark-one / mark-all read
+- Profile screen with edit form (5 media slots, age, gender, interests,
+  traits, bio, location)
+- Settings routes: notifications, privacy-safety, delete-account
+
+**Verified gaps:**
+
+- ~~`.env` is currently tracked by git AND is not in `.gitignore` (only
+  `.env*.local` is). This is the #1 P0.~~ **Fixed:** `.env` is untracked
+  and `.gitignore` now ignores it. `.env.example` is in the repo.
+  **Still need to rotate the leaked keys** (see Section 3) before any
+  real-user launch.
+- `app/circle/create.tsx` and `app/circle/create-circle.tsx` both exist —
+  duplicate creation routes.
+- Four admin/moderator screens are literal "coming soon" placeholder text:
+  `app/admin/dashboard.tsx`, `app/admin/user-management.tsx`,
+  `app/moderator/dashboard.tsx`, `app/moderator/report-detail.tsx`.
+- Chat RLS lives in `202605260001_messages_member_rls.sql` and
+  `202605260005_chat_media_member_storage_policies.sql` — needs a careful
+  read-through to confirm the policy actually requires
+  `circle.status = 'complete'` and user is in `circle.members`.
+- 23 lint warnings remain (0 errors), all unused-vars in services.
+- ~~App identifier is still `com.anonymous.demoapp` / `demoapp`.~~ **Fixed:** renamed to `com.izustic.socio` / `socio` scheme.
 
 ---
 
@@ -23,16 +69,40 @@ Legend:
 These are the highest-leverage items to pick up in order. Doing only these
 unblocks the rest of the backlog.
 
-1. **[P0] Stop tracking `.env`, add it to `.gitignore`, add `.env.example`**, then rotate any keys already committed.
-2. **[P0] Reconcile `ARCHITECTURE.md` with reality** (done in v2.1 — keep it honest going forward).
-3. **[P0] Verify deployed Supabase schema, RLS, and storage buckets** (`users`, `circles`, `circle_pending`, `messages`, `notifications`, `reports`, `moderation_logs`, `polls`, `poll_options`, `poll_votes`; `avatars` and `chat-media` buckets) match `ARCHITECTURE.md`.
-4. **[P0] Consolidate auth/role redirect logic** into one route guard so banned/suspended/incomplete-profile paths are enforced consistently across `app/index.tsx`, `app/_layout.tsx`, and tab screens.
-5. **[P0] Consolidate Circle creation routes** (`create.tsx` vs `create-circle.tsx`) and finish stage-1 fields (name, vibe, size, radius, meetup goal, meetup timeframe).
-6. **[P1] Wire `ChatInput` / `MessageBubble` / `MediaMessage` into `app/circle/chat.tsx`** with realtime messages, reply UI, and polls.
-7. **[P1] Enforce chat access only for complete Circles and members** (UI + RLS).
-8. **[P1] Verify host deck prioritizes joiners who liked the Circle** and verify full Circle completion end-to-end.
-9. **[P1] Verify joiner "like Circle" → host "like back" → joiner added → routed to chat** end-to-end against real Supabase data.
-10. **[P1] Replace placeholder admin/moderator screens** with real data-backed reports queue, report detail, and user management; write to `moderation_logs` on every action.
+1. **[P0] ~~Stop tracking `.env`, add it to `.gitignore`, add `.env.example`~~ DONE.** Run `git rm --cached .env` (done), confirm `.env` is in `.gitignore` (done), commit `.env.example` (TODO). **Still required: rotate any keys that were committed** — see Section 3.
+2. **[P0] Replace the four admin/moderator placeholder screens** with real
+   data-backed views: reports queue, report detail (with
+   ban / suspend / dismiss actions), admin user management. Every action
+   must write to `moderation_logs` via `src/services/moderation.ts`.
+3. **[P0] Verify deployed Supabase schema, RLS, and storage buckets**
+   (`users`, `circles`, `circle_pending`, `messages`, `notifications`,
+   `reports`, `moderation_logs`, `polls`, `poll_options`, `poll_votes`;
+   `avatars` and `chat-media` buckets) match `ARCHITECTURE.md` and the
+   24 migrations under `supabase/migrations/`.
+4. **[P0] Enforce chat access in RLS** — confirm
+   `202605260001_messages_member_rls.sql` and
+   `202605260005_chat_media_member_storage_policies.sql` actually
+   require the user to be in `circle.members` AND `circle.status =
+'complete'`. UI already gates this; RLS must back it up.
+5. **[P0] Consolidate Circle creation routes** — pick one of
+   `app/circle/create.tsx` or `app/circle/create-circle.tsx`, delete the
+   other, and fix any `router.push` callsites that referenced the
+   removed route. Finish stage-1 fields (name, vibe, size, radius, meetup
+   goal, meetup timeframe).
+6. **[P1] Verify host deck prioritizes joiners who liked the Circle** and
+   verify full Circle completion end-to-end against a real Supabase
+   project.
+7. **[P1] Verify joiner "like Circle" → host "like back" → joiner added →
+   routed to chat** end-to-end against real Supabase data.
+8. **[P1] Deploy `get-livekit-token` and run a real device call** between
+   two Circle members to validate token issuance, room join, and media.
+9. **[P1] Verify real-device auth flows** — phone OTP, Google OAuth,
+   Facebook OAuth. `src/services/auth.ts` is implemented; the gap is
+   device-only.
+10. **[P1] Move notification creation server-side.** Currently
+    `src/services/notifications.ts` creates notifications from the
+    client. Move to Postgres triggers or a server-side function so a
+    malicious client cannot fabricate notifications.
 
 ---
 
@@ -48,7 +118,7 @@ unblocks the rest of the backlog.
 - [x] Lottie splash screen
 - [~] Legacy Expo starter components still exist under top-level `components/`
 - [ ] **P2** Remove duplicate starter-era components if no longer used
-- [ ] **P2** Reduce lint warnings from unused imports, hook dependencies, and style cleanup (24 warnings remain)
+- [ ] **P2** Reduce lint warnings from unused imports, hook dependencies, and style cleanup (23 warnings remain)
 
 ## 2. Supabase Backend
 
@@ -75,14 +145,22 @@ unblocks the rest of the backlog.
 
 - [x] Banned and suspended screens exist
 - [x] Role/status fields are loaded through auth context
-- [~] `.env` exists and is currently tracked by git
-- [~] `.gitignore` ignores `.env*.local`, but not plain `.env`
-- [~] LiveKit secrets are documented as backend-only
-- [ ] **P0** Stop tracking `.env`
-- [ ] **P0** Add `.env` to `.gitignore`
-- [ ] **P0** Add `.env.example`
-- [ ] **P0** Rotate any credentials that were committed or shared
-- [ ] **P0** Remove or rotate any sensitive Firebase/Google config if `google-services.json` is not required
+- [x] `.env` is no longer tracked by git (untracked with `git rm --cached`)
+- [x] `.gitignore` now ignores `.env` (in addition to `.env*.local`)
+- [x] `.env.example` committed with empty values for all required keys
+- [x] LiveKit secrets are documented as backend-only
+- [ ] **P0** **Rotate** the keys that were already committed to git history:
+  - Supabase anon key (regenerate in Supabase Dashboard → Settings → API)
+  - Google OAuth client ID (rotate in Google Cloud Console, or create a new
+    OAuth client for the deployed app and keep the old one revoked)
+  - Facebook App ID (rotate or unpublish the old app in Meta for Developers)
+  - **CRITICAL: the LiveKit API key/secret** (`LIVEKIT_API_KEY`,
+    `LIVEKIT_API_SECRET`) were committed in plaintext. These are server-side
+    secrets and must be rotated immediately in the LiveKit Cloud dashboard.
+    Treat them as fully compromised and audit recent token issuance if the
+    project was ever deployed.
+- [x] ~~If `google-services.json` is not actually used, remove it from
+      the repo~~ **DONE:** removed (project uses Supabase Auth, not Firebase).
 - [ ] **P0** Enforce admin/moderator/member checks in Supabase policies, not just UI
 - [ ] **P0** Confirm banned/suspended users are blocked consistently across routes and data access
 
@@ -123,19 +201,19 @@ unblocks the rest of the backlog.
 - [x] Circle home tab chooses no-circle, progress, complete, or chat views
 - [x] Swipe tab chooses host user-swipe or joiner Circle-swipe views
 - [x] Notifications tab with realtime Supabase-backed list UI
+- [x] Auth/role redirect consolidated in `app/index.tsx` (banned / suspended / moderator / admin / incomplete-profile all routed)
+- [x] Auth layout redirect for incomplete profiles in `app/(auth)/_layout.tsx`
 - [~] Profile tab exists
-- [ ] **P0** Consolidate auth/role redirect logic between `app/index.tsx`, layouts, and tab screens
 - [ ] **P1** Add polished loading, empty, and error states across tabs
 
 ## 6. Profile
 
 - [x] Profile screen reads current auth/profile data
 - [x] Edit profile route exists
-- [~] Edit profile screen is currently a placeholder
-- [ ] **P1** Build full edit profile form
-- [ ] **P1** Add save actions and validation
-- [ ] **P1** Support profile media updates, reordering, and main-photo selection
-- [ ] **P1** Support notification/location preference updates
+- [x] Edit profile form is fully built (5 media slots, age, gender, interests, traits, bio, location, upload progress)
+- [~] Edit profile media reordering and main-photo selection need device verification
+- [~] Edit profile save flow + notification/location preference updates need device verification
+- [ ] **P1** Add validation, loading states, and user-facing error states to edit profile
 
 ## 7. Circle Creation
 
@@ -236,14 +314,15 @@ unblocks the rest of the backlog.
 - [x] Admin routes exist
 - [x] Report service function exists
 - [x] Ban/suspend service functions exist
-- [~] Moderator dashboard exists but needs production functionality verification
-- [~] Report detail route exists but needs production functionality verification
-- [~] Admin dashboard and user management routes exist but need production functionality verification
-- [ ] **P1** Build or verify reports list against real data
-- [ ] **P1** Build or verify report resolution flow
-- [ ] **P1** Build or verify admin user management actions
-- [ ] **P1** Add unban/promote/demote actions if missing
-- [ ] **P1** Add moderation audit log writes for every action
+- [~] Moderator dashboard, report detail, admin dashboard, and user
+  management routes exist but are currently literal "coming soon"
+  placeholder text — need real data-backed UIs
+- [ ] **P0** Build reports list against real `reports` data
+- [ ] **P0** Build report resolution flow (ban / suspend / dismiss actions)
+- [ ] **P0** Build admin user management actions
+- [ ] **P0** Add unban / promote / demote actions
+- [ ] **P0** Write `moderation_logs` audit entry on every moderation action
+- [ ] **P1** Enforce role checks in Supabase RLS, not just in UI
 
 ## 14. Tooling, Release, and Docs
 
@@ -252,24 +331,28 @@ unblocks the rest of the backlog.
 - [x] `README.md` describes current project status
 - [x] `TODO.md` updated with current done/remaining work (this file)
 - [x] `npm run lint` passes with zero errors
-- [~] 24 lint warnings remain for unrelated unused imports and hook dependencies
+- [~] 23 lint warnings remain for unrelated unused imports and hook dependencies
 - [ ] **P2** Add automated tests for services and critical flows
 - [ ] **P2** Add CI checks
 - [ ] **P2** Add release/build instructions for EAS or native builds
-- [ ] **P2** Update app identifiers from `com.anonymous.demoapp` / `demoapp` before production
+- [x] ~~Update app identifiers from `com.anonymous.demoapp` / `demoapp`~~ **DONE:** renamed to `com.izustic.socio` / `socio` (app.json, iOS Info.plist + pbxproj, Android build.gradle + AndroidManifest + Java sources, TS deeplink scheme).
 
 ---
 
 ## Priority summary
 
-- **P0 (security + core loop integrity):** env hygiene, credential rotation,
-  Supabase schema/RLS/storage verification, route-guard consolidation,
-  Circle creation consolidation + completion, chat access enforcement.
-- **P1 (credible v1 launch):** onboarding polish (real OAuth/OTP, push
-  tokens, media reorder), edit profile form, full host/joiner swipe loop
-  verified end-to-end, chat media end-to-end, LiveKit Edge Function deployed
-  and member-restricted, real admin/moderator screens, moderation audit
-  log writes, server-side notifications.
-- **P2 (polish + release):** E2EE keys, push delivery, message deletion,
-  automated tests, CI, EAS release process, app identifier rename,
-  starter-component cleanup, lint warning cleanup.
+- **P0 (security + core loop integrity):** env hygiene + credential
+  rotation; replacing the four admin/moderator stub screens with real
+  data-backed views writing to `moderation_logs`; verifying deployed
+  Supabase schema, RLS, and storage buckets; enforcing chat access in
+  RLS (not just UI); consolidating the two Circle creation routes.
+- **P1 (credible v1 launch):** host/joiner swipe loop verified
+  end-to-end against real Supabase data; deploying `get-livekit-token`
+  and running a real device call; real-device auth (OTP, Google,
+  Facebook); server-side notification creation; Expo push token
+  storage; media upload end-to-end (image / video / audio); edit
+  profile media reordering + main-photo.
+- **P2 (polish + release):** E2EE keys, message deletion UI, automated
+  tests, CI, EAS release process, app identifier rename
+  (`com.izustic.socio` → real bundle id for Play Store / App Store), starter-component
+  cleanup, lint warning cleanup, crash reporting.

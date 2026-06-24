@@ -34,6 +34,10 @@ Onboard → Profile setup → NoCircle → Join Circle → Set preferences
 - Both land in ChatScreen once Circle is complete
 - Joiner swipe deck refreshes on focus and realtime `circles` updates so
   completed Circles disappear immediately
+- Swipe cards advance optimistically on tap, then reconcile with the server
+  response in the background
+- Swipe tab visibility is refreshed silently so routine swipes do not force
+  the tab wrapper back through a loading screen
 
 ---
 

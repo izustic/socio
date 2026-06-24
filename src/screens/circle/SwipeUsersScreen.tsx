@@ -201,7 +201,12 @@ export default function SwipeUsersScreen() {
     if (!user || !circle || !currentCandidate || swiping) return;
     const swipedCandidate = currentCandidate;
     const swipedCandidateName = swipedCandidate.name;
+    const previousCandidates = candidates;
     setSwiping(true);
+    setCandidates((prev) =>
+      prev.filter((candidate) => candidate.uid !== swipedCandidate.uid),
+    );
+    setCurrentMediaIndex(0);
 
     try {
       const result = await submitSwipe(
@@ -211,15 +216,11 @@ export default function SwipeUsersScreen() {
         liked,
       );
 
-      setCandidates((prev) =>
-        prev.filter((candidate) => candidate.uid !== swipedCandidate.uid),
-      );
-
       if (liked && (result.addedToCircle || result.circleComplete)) {
         await syncCircleAfterSwipe(circle.id);
       }
 
-      await refreshSwipeTabVisibility();
+      await refreshSwipeTabVisibility({ silent: true });
 
       if (result.circleComplete) {
         showAlert(
@@ -265,6 +266,8 @@ export default function SwipeUsersScreen() {
         await syncCircleAfterSwipe(circle.id);
       }
     } catch (error: any) {
+      setCandidates(previousCandidates);
+      setCurrentMediaIndex(0);
       showAlert("Swipe failed", error?.message || "Please try again.");
     } finally {
       setSwiping(false);

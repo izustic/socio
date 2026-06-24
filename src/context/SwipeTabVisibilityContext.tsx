@@ -11,7 +11,9 @@ import React, {
 interface SwipeTabVisibilityContextType {
   swipeTabVisible: boolean;
   loading: boolean;
-  refreshSwipeTabVisibility: () => Promise<void>;
+  refreshSwipeTabVisibility: (options?: {
+    silent?: boolean;
+  }) => Promise<void>;
 }
 
 const SwipeTabVisibilityContext =
@@ -26,16 +28,23 @@ export const SwipeTabVisibilityProvider = ({
   const [swipeTabVisible, setSwipeTabVisible] = useState(true);
   const [loading, setLoading] = useState(true);
 
-  const refreshSwipeTabVisibility = useCallback(async () => {
+  const refreshSwipeTabVisibility = useCallback(
+    async (options?: { silent?: boolean }) => {
+      const silent = options?.silent ?? false;
+
     if (authLoading) return;
 
     if (!user) {
       setSwipeTabVisible(true);
-      setLoading(false);
+      if (!silent) {
+        setLoading(false);
+      }
       return;
     }
 
-    setLoading(true);
+    if (!silent) {
+      setLoading(true);
+    }
     try {
       const hide = await shouldHideSwipeTab(user.id);
       setSwipeTabVisible(!hide);
@@ -43,9 +52,13 @@ export const SwipeTabVisibilityProvider = ({
       console.error("Error checking swipe tab visibility:", error);
       setSwipeTabVisible(true);
     } finally {
-      setLoading(false);
+      if (!silent) {
+        setLoading(false);
+      }
     }
-  }, [authLoading, user]);
+    },
+    [authLoading, user],
+  );
 
   useEffect(() => {
     refreshSwipeTabVisibility();

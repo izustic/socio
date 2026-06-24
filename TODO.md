@@ -40,6 +40,10 @@ Legend:
   circle membership, requires `circle.status = 'complete'`
 - Swipe Circles refreshes on focus and `circles` table changes so completed
   Circles fall out of the deck without a manual reload.
+- Swipe actions now advance optimistically so the next card appears
+  immediately instead of waiting on the network round-trip.
+- Swipe tab visibility checks now refresh silently so the wrapper no longer
+  flashes a loading state after each swipe.
 - `delete-account` Edge Function source exists
 - Notifications tab with realtime list, mark-one / mark-all read
 - Moderation-event notifications now originate from database triggers

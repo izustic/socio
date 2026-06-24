@@ -113,7 +113,7 @@ export default function CircleProgressScreen() {
     previousStatusRef.current = circle.status;
 
     if (becameComplete || fullWhileForming) {
-      refreshSwipeTabVisibility();
+      void refreshSwipeTabVisibility({ silent: true });
       router.replace("/(tabs)/home?circleView=complete");
     }
   }, [circle, refreshSwipeTabVisibility]);

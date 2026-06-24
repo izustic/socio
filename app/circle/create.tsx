@@ -21,6 +21,8 @@ const clamp = (value: number, min: number, max: number) => Math.max(min, Math.mi
 
 export default function CreateCircleBasicsScreen() {
   const [name, setName] = useState('');
+  const [nameError, setNameError] = useState<string | null>(null);
+  const [vibe, setVibe] = useState('');
   const [size, setSize] = useState(5);
   const [radius, setRadius] = useState(8);
   const [radiusUnit, setRadiusUnit] = useState<'km' | 'mi'>('km');
@@ -42,15 +44,20 @@ export default function CreateCircleBasicsScreen() {
   };
 
   const handleNext = () => {
-    if (!name.trim()) return;
+    if (!name.trim()) {
+      setNameError("Please name your Circle to continue.");
+      return;
+    }
+    setNameError(null);
     router.push({
       pathname: '/circle/create-preferences',
-      params: {
-        name: name.trim(),
-        size: String(size),
-        radius: String(radius),
-        radiusUnit,
-        meetupGoal,
+        params: {
+          name: name.trim(),
+          vibe: vibe.trim(),
+          size: String(size),
+          radius: String(radius),
+          radiusUnit,
+          meetupGoal,
         meetupDays: String(meetupDays),
       },
     });
@@ -84,11 +91,28 @@ export default function CreateCircleBasicsScreen() {
           <Text style={styles.label}>NAME</Text>
           <TextInput
             value={name}
-            onChangeText={setName}
+            onChangeText={(value) => {
+              setName(value);
+              if (nameError && value.trim()) setNameError(null);
+            }}
             placeholder="Sunday Coffee Crew"
             placeholderTextColor={Colors.textDisabled}
             style={styles.input}
             autoCapitalize="words"
+          />
+          {nameError ? <Text style={styles.errorText}>{nameError}</Text> : null}
+        </View>
+
+        <View style={styles.section}>
+          <Text style={styles.label}>VIBE</Text>
+          <TextInput
+            value={vibe}
+            onChangeText={setVibe}
+            placeholder="Easygoing brunches, late-night talks, and zero pressure."
+            placeholderTextColor={Colors.textDisabled}
+            style={[styles.input, styles.multilineInput]}
+            multiline
+            textAlignVertical="top"
           />
         </View>
 
@@ -301,6 +325,10 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: Colors.textPrimary,
   },
+  multilineInput: {
+    minHeight: 88,
+    paddingTop: 16,
+  },
   sizeRow: {
     flexDirection: 'row',
     gap: 8,
@@ -351,6 +379,11 @@ const styles = StyleSheet.create({
   helperText: {
     ...Typography.bodySmall,
     color: Colors.textSecondary,
+  },
+  errorText: {
+    ...Typography.bodySmall,
+    color: "#B42318",
+    marginTop: 6,
   },
   segment: {
     flexDirection: 'row',

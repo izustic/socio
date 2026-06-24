@@ -94,8 +94,9 @@ Create a local `.env` file in the project root:
 EXPO_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
 EXPO_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
 
-EXPO_PUBLIC_GOOGLE_CLIENT_ID=your-google-client-id
-EXPO_PUBLIC_FACEBOOK_APP_ID=your-facebook-app-id
+# Google Sign-In
+EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID=your-google-web-client-id
+EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID=your-ios-google-client-id
 
 EXPO_PUBLIC_LIVEKIT_URL=wss://your-project.livekit.cloud
 
@@ -104,6 +105,8 @@ LIVEKIT_API_SECRET=your-livekit-api-secret
 ```
 
 Only variables prefixed with `EXPO_PUBLIC_` are safe to expose to the app bundle. LiveKit API secrets must stay backend-only and should be configured as Supabase Edge Function secrets for production use.
+
+Google sign-in uses the native `@react-native-google-signin/google-signin` package on iOS and Android, so you need a development build rather than Expo Go. The web client ID is required because the native SDK mints the ID token against it, and Supabase verifies that audience.
 
 Important: `.env` should not be committed. If it has already been committed, rotate any exposed secrets before using them in production.
 

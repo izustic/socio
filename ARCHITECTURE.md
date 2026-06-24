@@ -32,6 +32,12 @@ Onboard → Profile setup → NoCircle → Join Circle → Set preferences
 - Joiner likes a Circle → host sees that user **prioritized** in their swipe deck
 - Host likes the joiner back → mutual match → joiner added to Circle
 - Both land in ChatScreen once Circle is complete
+- Joiner swipe deck refreshes on focus and realtime `circles` updates so
+  completed Circles disappear immediately
+- Swipe cards advance optimistically on tap, then reconcile with the server
+  response in the background
+- Swipe tab visibility is refreshed silently so routine swipes do not force
+  the tab wrapper back through a loading screen
 
 ---
 
@@ -44,16 +50,21 @@ Onboard → Profile setup → NoCircle → Join Circle → Set preferences
 ```
 Layer               Service                       Status        Notes
 ─────────────────────────────────────────────────────────────────────────────
-Authentication      Supabase Auth                 DONE          Email/pwd, Google, Facebook, OTP — flows exist; real-device verification still pending
+Authentication      Supabase Auth                 DONE          Email/pwd, native Google Sign-In, OTP — flows exist; real-device verification still pending
 Database (app data) Supabase PostgreSQL           PARTIAL       Migrations committed; deployed schema, RLS, and policies need project-level verification
 File Storage        Supabase Storage              PARTIAL       Upload helpers exist; `avatars` and `chat-media` buckets/policies not yet verified
 Real-time Chat      Supabase Realtime             PARTIAL       Service subscribes; chat screen integration, access control, and media end-to-end tests still pending
-User Roles/Reports  Supabase PostgreSQL           PARTIAL       Columns and service functions exist; admin/moderator screens are placeholders; RLS role enforcement pending
+User Roles/Reports  Supabase PostgreSQL           PARTIAL       Columns and service functions exist; admin/moderator screens are data-backed; RLS role enforcement and deployed verification still pending
 Group Calls (E2EE)  Livekit Cloud                 NOT STARTED   Packages installed and hook exists, but real room join + E2EE keys not yet implemented on client
 Call Tokens         Supabase Edge Function        PARTIAL       Source exists; not yet deployed; auth of caller + Circle-member restriction pending
 Location Services   Expo Location + Nominatim     PARTIAL       Service and util exist; device verification and onboarding flow still pending
-Notifications       Supabase PostgreSQL           PARTIAL       Realtime list and service exist; creation is client-triggered (should be server-side); push tokens not stored
+Notifications       Supabase PostgreSQL           PARTIAL       Realtime list and service exist; moderation-event notifications are server-side via DB triggers, but broader creation is still client-triggered; push tokens not stored
 ```
+
+Repo note: the starter-era top-level `components/` and `hooks/` scaffold has
+been removed. Shared app logic now lives under `src/`, and the pure helper
+modules in `src/services/*.helpers.ts` back the Vitest coverage for auth,
+Circle creation, chat message shaping, and moderation payloads.
 
 ### Golden Rule
 
@@ -80,8 +91,8 @@ EXPO_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
 EXPO_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
 
 # OAuth Providers (configured in Supabase Dashboard)
-EXPO_PUBLIC_GOOGLE_CLIENT_ID=your-google-client-id
-EXPO_PUBLIC_FACEBOOK_APP_ID=your-facebook-app-id
+EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID=your-google-web-client-id
+EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID=your-ios-google-client-id
 
 # Livekit
 EXPO_PUBLIC_LIVEKIT_URL=wss://your-project.livekit.cloud
@@ -124,7 +135,7 @@ socio/
 │   │
 │   ├── circle/                       # Circle flows
 │   │   ├── no-circle.tsx             # Empty state — Create or Join CTA
-│   │   ├── create.tsx                # Stage 1: name, vibe, meetup details
+│   │   ├── create.tsx                # Canonical Stage 1: name, vibe, meetup details
 │   │   ├── create-preferences.tsx    # Stage 2: who to attract (age/gender/interests)
 │   │   ├── join-preferences.tsx      # Joiner: what they're looking for
 │   │   ├── swipe-users.tsx           # Host swipes users (media carousel cards)
@@ -231,7 +242,6 @@ Supabase Auth handles all authentication with support for:
 
 - Email/password signup and login
 - Google OAuth (via ID token)
-- Facebook OAuth (via access token)
 - Phone OTP
 - Password reset
 
@@ -1045,14 +1055,14 @@ have been moved to `TODO.md` with `[ ]` or `[~]` markers.
 - [x] LiveKit API Secret is intended to live in the Supabase Edge Function
       only (the app uses `EXPO_PUBLIC_*` for non-secret values)
 - [x] Media file size limits enforced before upload
-- [~] Role checks happen on both frontend and backend — UI checks exist,
-  **backend/RLS role enforcement is still pending**
+- [~] Role checks happen on both frontend and backend — UI checks exist and
+  local RLS coverage is in place, but deployed verification is still pending
 - [x] Banned users blocked at navigation level (banned/suspended screens exist)
-- [ ] All moderation actions written to audit log — `moderation_logs` table
-      exists in migrations, but writes from the moderation service are not yet
-      implemented
-- [ ] `.env` file in `.gitignore` — `.env` is currently tracked; only
-      `.env*.local` is ignored. Fix tracked in `TODO.md`
+- [x] All moderation actions written to audit log — `moderation_logs` writes
+      now happen from the moderation service and are also surfaced through
+      server-side notification triggers
+- [x] `.env` file in `.gitignore` — `.env` is untracked and ignored; see
+      `TODO.md` for the remaining secret-rotation work
 
 ---
 

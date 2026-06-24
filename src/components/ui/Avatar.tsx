@@ -1,6 +1,6 @@
 import { Colors, Radius } from '@/src/constants/theme';
 import React from 'react';
-import { Image, ImageStyle, StyleProp, StyleSheet, View, ViewStyle } from 'react-native';
+import { Image, StyleProp, StyleSheet, View, ViewStyle } from 'react-native';
 
 type AvatarSize = 'sm' | 'md' | 'lg' | 'xl' | number;
 

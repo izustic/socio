@@ -2,7 +2,6 @@ import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Image } from 'expo-image';
 import { Colors, Radius, Spacing, Typography } from '@/src/constants/theme';
-import Avatar from './Avatar';
 
 interface MediaItem {
   uri: string;

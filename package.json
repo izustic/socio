@@ -8,7 +8,8 @@
     "android": "expo run:android",
     "ios": "expo run:ios",
     "web": "expo start --web",
-    "lint": "expo lint"
+    "lint": "eslint app src constants scripts index.js --ext .js,.ts,.tsx",
+    "test": "vitest run"
   },
   "dependencies": {
     "@config-plugins/react-native-webrtc": "^12.0.0",
@@ -16,12 +17,12 @@
     "@livekit/react-native-expo-plugin": "^1.0.2",
     "@livekit/react-native-webrtc": "^144.1.0",
     "@react-native-async-storage/async-storage": "2.1.2",
+    "@react-native-google-signin/google-signin": "^16.1.2",
     "@react-navigation/bottom-tabs": "^7.2.0",
     "@react-navigation/elements": "^2.3.8",
     "@react-navigation/native": "^7.0.14",
     "@supabase/supabase-js": "^2.105.1",
     "expo": "^53.0.0",
-    "expo-auth-session": "~6.2.1",
     "expo-av": "~15.1.7",
     "expo-blur": "~14.1.5",
     "expo-constants": "~17.1.8",
@@ -44,14 +45,9 @@
     "expo-status-bar": "~2.2.3",
     "expo-symbols": "~0.4.5",
     "expo-system-ui": "~5.0.11",
-    "expo-web-browser": "~14.2.0",
     "livekit-client": "^2.19.1",
     "lottie-react-native": "7.2.2",
     "lucide-react-native": "^1.14.0",
-    "react": "19.0.0",
-    "react-dom": "19.0.0",
-    "react-native": "0.79.6",
-    "react-native-gesture-handler": "~2.24.0",
     "react-native-reanimated": "~3.17.4",
     "react-native-safe-area-context": "5.4.0",
     "react-native-screens": "~4.11.1",
@@ -65,7 +61,7 @@
     "eslint": "^9.25.0",
     "eslint-config-expo": "~9.2.0",
     "eslint-import-resolver-typescript": "^4.4.4",
-    "typescript": "~5.8.3"
-  },
-  "private": true
+    "typescript": "~5.8.3",
+    "vitest": "^4.1.9"
+  }
 }

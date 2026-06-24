@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { Colors, Spacing, Typography } from '@/src/constants/theme';
+import { Colors, Typography } from '@/src/constants/theme';
 import Avatar from './Avatar';
 
 interface AvatarStackProps {

@@ -77,6 +77,7 @@ export default function EditProfileScreen() {
     loading: locationLoading,
   } = useLocation();
   const [saving, setSaving] = useState(false);
+  const [errorText, setErrorText] = useState<string | null>(null);
   const [slotStates, setSlotStates] = useState<Record<number, SlotState>>({});
   const [name, setName] = useState(profile?.name ?? "");
   const [age, setAge] = useState(profile?.age || 26);
@@ -93,7 +94,8 @@ export default function EditProfileScreen() {
     Array.from({ length: SLOT_COUNT }, (_, index) => profile?.media?.[index] ?? null),
   );
 
-  const canSave = name.trim().length > 0 && !saving;
+  const isBusy = saving || Object.keys(slotStates).length > 0;
+  const canSave = name.trim().length > 0 && !isBusy;
   const cityLabel = location?.city || "Location not set";
 
   const setSlotProgress = (slot: number, state: SlotState | null) => {
@@ -121,12 +123,14 @@ export default function EditProfileScreen() {
 
   const handlePickMedia = async (slot: number) => {
     if (!user) {
+      setErrorText("Please sign in again before uploading media.");
       Alert.alert("Not signed in", "Please sign in again before uploading media.");
       return;
     }
 
     const hasPermission = await requestMediaLibraryPermission();
     if (!hasPermission) {
+      setErrorText("Photo library access is required to add media.");
       Alert.alert("Permission needed", "Please allow photo library access to add media.");
       return;
     }
@@ -148,6 +152,7 @@ export default function EditProfileScreen() {
         error instanceof Error
           ? error.message
           : "We could not upload that file. Please try again.";
+      setErrorText(message);
       Alert.alert("Upload failed", message);
     } finally {
       setSlotProgress(slot, null);
@@ -189,6 +194,7 @@ export default function EditProfileScreen() {
   const handleChangeLocation = async () => {
     const currentLocation = await getCurrentLocation();
     if (!currentLocation) {
+      setErrorText("Location access is required to update your location.");
       Alert.alert("Location unavailable", "Please allow location access and try again.");
       return;
     }
@@ -201,9 +207,18 @@ export default function EditProfileScreen() {
   };
 
   const handleSave = async () => {
-    if (!user || !canSave) return;
+    if (!user) {
+      setErrorText("Please sign in again before saving your profile.");
+      return;
+    }
+    if (!name.trim()) {
+      setErrorText("Please add your name before saving.");
+      return;
+    }
+    if (!canSave) return;
 
     setSaving(true);
+    setErrorText(null);
     try {
       const nextMedia = compactMedia(mediaSlots);
       await updateUserProfile(user.id, {
@@ -221,7 +236,10 @@ export default function EditProfileScreen() {
       router.back();
     } catch (error) {
       console.error("Error updating profile:", error);
-      Alert.alert("Could not save profile", "Please try again.");
+      const message =
+        error instanceof Error ? error.message : "Please try again.";
+      setErrorText(message);
+      Alert.alert("Could not save profile", message);
     } finally {
       setSaving(false);
     }
@@ -326,6 +344,12 @@ export default function EditProfileScreen() {
           </TouchableOpacity>
         </View>
 
+        {errorText ? (
+          <View style={styles.errorBanner}>
+            <Text style={styles.errorBannerText}>{errorText}</Text>
+          </View>
+        ) : null}
+
         <ScrollView
           contentContainerStyle={styles.content}
           showsVerticalScrollIndicator={false}
@@ -352,11 +376,17 @@ export default function EditProfileScreen() {
             <Text style={styles.label}>NAME</Text>
             <TextInput
               value={name}
-              onChangeText={setName}
+              onChangeText={(value) => {
+                setName(value);
+                if (errorText) setErrorText(null);
+              }}
               placeholder="Your name"
               placeholderTextColor={Colors.textDisabled}
               style={styles.input}
             />
+            {!name.trim() ? (
+              <Text style={styles.fieldHint}>Your name is required to save changes.</Text>
+            ) : null}
           </View>
 
           <View style={styles.section}>
@@ -552,6 +582,19 @@ const styles = StyleSheet.create({
   saveDisabled: {
     color: Colors.textDisabled,
   },
+  errorBanner: {
+    marginHorizontal: Spacing.screenPadding,
+    marginBottom: 4,
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    backgroundColor: "#FEF3F2",
+  },
+  errorBannerText: {
+    ...Typography.bodySmall,
+    color: "#B42318",
+    fontWeight: "600",
+  },
   content: {
     paddingHorizontal: Spacing.screenPadding,
     paddingTop: Spacing.md,
@@ -576,6 +619,11 @@ const styles = StyleSheet.create({
     color: Colors.textSecondary,
     marginTop: 6,
     marginBottom: 14,
+  },
+  fieldHint: {
+    ...Typography.bodySmall,
+    color: Colors.textSecondary,
+    marginTop: 6,
   },
   mediaLayout: {
     flexDirection: "row",

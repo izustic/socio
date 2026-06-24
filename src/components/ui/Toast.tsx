@@ -1,15 +1,12 @@
 import { Colors, Radius, Spacing, Typography } from '@/src/constants/theme';
-import React, { useEffect, useRef } from 'react';
+import React, { useCallback, useEffect, useRef } from 'react';
 import {
     Animated,
-    Dimensions,
     Image,
     StyleSheet,
     Text,
     View,
 } from 'react-native';
-
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 interface ToastProps {
   visible: boolean;
@@ -35,9 +32,27 @@ export default function Toast({
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const translateY = useRef(new Animated.Value(-100)).current;
 
+  const handleDismiss = useCallback(() => {
+    const fadeOut = Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+        Animated.timing(translateY, {
+          toValue: -100,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+    ]);
+    fadeOut.start(() => {
+      onDismiss?.();
+    });
+  }, [fadeAnim, onDismiss, translateY]);
+
   useEffect(() => {
     if (visible) {
-      Animated.parallel([
+      const fadeIn = Animated.parallel([
         Animated.timing(fadeAnim, {
           toValue: 1,
           duration: 300,
@@ -48,7 +63,8 @@ export default function Toast({
           duration: 300,
           useNativeDriver: true,
         }),
-      ]).start();
+      ]);
+      fadeIn.start();
 
       const timer = setTimeout(() => {
         handleDismiss();
@@ -56,24 +72,7 @@ export default function Toast({
 
       return () => clearTimeout(timer);
     }
-  }, [visible]);
-
-  const handleDismiss = () => {
-    Animated.parallel([
-      Animated.timing(fadeAnim, {
-        toValue: 0,
-        duration: 300,
-        useNativeDriver: true,
-      }),
-      Animated.timing(translateY, {
-        toValue: -100,
-        duration: 300,
-        useNativeDriver: true,
-      }),
-    ]).start(() => {
-      onDismiss?.();
-    });
-  };
+  }, [visible, fadeAnim, handleDismiss, translateY]);
 
   if (!visible) return null;
 

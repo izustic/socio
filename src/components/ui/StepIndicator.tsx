@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { Colors, Radius, Spacing, Typography } from '@/src/constants/theme';
+import { Colors, Spacing, Typography } from '@/src/constants/theme';
 
 interface StepIndicatorProps {
   currentStep: number;

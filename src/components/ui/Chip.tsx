@@ -1,4 +1,4 @@
-import { Colors, Radius } from '@/src/constants/theme';
+import { Radius } from '@/src/constants/theme';
 import React from 'react';
 import { StyleSheet, Text, TouchableOpacity, TouchableOpacityProps } from 'react-native';
 import { BlurView } from 'expo-blur';

@@ -11,7 +11,7 @@ function TabLayoutInner() {
 
   useFocusEffect(
     useCallback(() => {
-      refreshSwipeTabVisibility();
+      void refreshSwipeTabVisibility({ silent: true });
     }, [refreshSwipeTabVisibility]),
   );
 

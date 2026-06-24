@@ -11,11 +11,18 @@ import {
   JoinCircleFilters,
   submitCircleSwipe,
 } from "@/src/services/swipe";
+import { supabase } from "@/src/services/supabase";
 import { getUserProfile } from "@/src/services/user";
 import { LinearGradient } from "expo-linear-gradient";
-import { router } from "expo-router";
+import { router, useFocusEffect } from "expo-router";
 import { Check, MapPin, Users, X } from "lucide-react-native";
-import React, { useEffect, useMemo, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import {
   ActivityIndicator,
   Animated,
@@ -58,6 +65,7 @@ export default function SwipeCirclesScreen({
   } | null>(null);
   const [memberProfiles, setMemberProfiles] = useState<any[]>([]);
   const [hostProfile, setHostProfile] = useState<any>(null);
+  const hasLoadedOnceRef = useRef(false);
   const [alertState, setAlertState] = useState<{
     visible: boolean;
     title: string;
@@ -74,18 +82,21 @@ export default function SwipeCirclesScreen({
     message: "",
   });
 
-  const showAlert = (
-    title: string,
-    message: string,
-    options: Omit<typeof alertState, "visible" | "title" | "message"> = {},
-  ) => {
-    setAlertState({
-      visible: true,
-      title,
-      message,
-      ...options,
-    });
-  };
+  const showAlert = useCallback(
+    (
+      title: string,
+      message: string,
+      options: Omit<typeof alertState, "visible" | "title" | "message"> = {},
+    ) => {
+      setAlertState({
+        visible: true,
+        title,
+        message,
+        ...options,
+      });
+    },
+    [],
+  );
 
   const closeAlert = () => {
     setAlertState((prev) => ({
@@ -177,21 +188,60 @@ export default function SwipeCirclesScreen({
     [circles, currentIndex],
   );
 
-  const loadCircles = async () => {
+  const loadCircles = useCallback(
+    async (options?: { silent?: boolean }) => {
     if (!user) return;
-    setLoading(true);
+    const silent = options?.silent ?? false;
+    if (!silent) {
+      setLoading(true);
+    }
     try {
       const candidates = await getCircleCandidates(user.id, profile, filters);
       setCircles(candidates);
+      setCurrentIndex((previousIndex) =>
+        candidates.length === 0
+          ? 0
+          : Math.min(previousIndex, candidates.length - 1),
+      );
+      hasLoadedOnceRef.current = true;
     } catch (error: any) {
       showAlert(
         "Unable to load circles",
         error?.message || "Please try again.",
       );
     } finally {
-      setLoading(false);
+      if (!silent) {
+        setLoading(false);
+      }
     }
-  };
+  },
+  [filters, profile, showAlert, user],
+  );
+
+  useFocusEffect(
+    useCallback(() => {
+      void loadCircles({ silent: hasLoadedOnceRef.current });
+    }, [loadCircles]),
+  );
+
+  useEffect(() => {
+    if (!user) return;
+
+    const channel = supabase
+      .channel(`swipe-circles:${user.id}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "circles" },
+        () => {
+          void loadCircles({ silent: hasLoadedOnceRef.current });
+        },
+      )
+      .subscribe();
+
+    return () => {
+      void supabase.removeChannel(channel);
+    };
+  }, [loadCircles, user]);
 
   // Onboarding guide animation - flash and fade
   useEffect(() => {
@@ -214,28 +264,27 @@ export default function SwipeCirclesScreen({
     return () => {
       flashAnimation.stop();
     };
-  }, [showGuide]);
-
-  useEffect(() => {
-    loadCircles();
-  }, [user?.id, filters]);
+  }, [guideOpacity, showGuide]);
 
   const handleSwipe = async (liked: boolean) => {
     if (!user || !currentCircle || swiping) return;
+    const swipedCircle = currentCircle;
+    const previousIndex = currentIndex;
     setSwiping(true);
+    setCurrentIndex((prev) => prev + 1);
     try {
-      const result = await submitCircleSwipe(currentCircle.id, user.id, liked);
+      const result = await submitCircleSwipe(swipedCircle.id, user.id, liked);
 
       if (liked && result.mutualMatch && result.addedToCircle) {
-        await refreshSwipeTabVisibility();
+        await refreshSwipeTabVisibility({ silent: true });
         showAlert(
-          `You've been added to ${currentCircle.name}`,
-          `${currentCircle.name} now includes you as a member.`,
+          `You've been added to ${swipedCircle.name}`,
+          `${swipedCircle.name} now includes you as a member.`,
           {
             primaryLabel: "View Circle",
-            imageUri: currentCircle.imageUrl,
-            detail: `${currentCircle.meetupGoal || "Meetup"} · ${
-              currentCircle.meetupTimeframe || "Timeframe coming soon"
+            imageUri: swipedCircle.imageUrl,
+            detail: `${swipedCircle.meetupGoal || "Meetup"} · ${
+              swipedCircle.meetupTimeframe || "Timeframe coming soon"
             }`,
             onConfirm: () => {
               replaceAfterInteractions("/(tabs)/home?circleView=progress");
@@ -247,15 +296,13 @@ export default function SwipeCirclesScreen({
 
       if (liked) {
         setToastData({
-          circleName: currentCircle.name,
+          circleName: swipedCircle.name,
           userName: profile?.name || "You",
         });
         setShowToast(true);
       }
-
-      // Move to next circle
-      setCurrentIndex((prev) => prev + 1);
     } catch (error: any) {
+      setCurrentIndex(previousIndex);
       showAlert("Swipe failed", error?.message || "Please try again.");
     } finally {
       setSwiping(false);

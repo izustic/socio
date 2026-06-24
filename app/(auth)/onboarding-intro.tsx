@@ -1,6 +1,5 @@
 import OnboardingLayout from '@/src/components/onboarding/OnboardingLayout';
-import Chip from '@/src/components/ui/Chip';
-import { Spacing, Typography } from '@/src/constants/theme';
+import { Typography } from '@/src/constants/theme';
 import { useOnboarding } from '@/src/context/OnboardingContext';
 import { StyleSheet, Text, View } from 'react-native';
 
@@ -22,12 +21,6 @@ export default function OnboardingIntroScreen() {
       <View style={styles.hero}>
         <Text style={styles.wordmark}>socio</Text>
       </View>
-      {/* <View style={styles.chips}>
-        <Chip label="📸 Photo" selected />
-        <Chip label="🏷️ Name" selected />
-        <Chip label="💛 Interests" selected />
-        <Chip label="✨ Traits" selected />
-      </View> */}
     </OnboardingLayout>
   );
 }
@@ -43,10 +36,5 @@ const styles = StyleSheet.create({
   },
   wordmark: {
     ...Typography.h2,
-  },
-  chips: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: Spacing.sm,
   },
 });

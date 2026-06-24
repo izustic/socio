@@ -1,74 +1,22 @@
-import type { AuthError, User } from "@supabase/supabase-js";
+import type { User } from "@supabase/supabase-js";
+import {
+  createAuthInputError,
+  getAuthErrorMessage,
+} from "./auth.helpers";
 import { supabase } from "./supabase";
-
-const getAuthErrorMessage = (
-  error: AuthError,
-): { userMessage: string; suggestion?: string } => {
-  const code = error?.code || "unknown";
-  const message = error?.message || "An unknown error occurred";
-
-  const errorMap: Record<string, { userMessage: string; suggestion?: string }> =
-    {
-      // Email/Password Errors
-      already_registered: {
-        userMessage: "This email is already registered",
-        suggestion: "Try signing in instead, or use a different email",
-      },
-      invalid_email: {
-        userMessage: "Please enter a valid email address",
-        suggestion: "Check your email for typos",
-      },
-      invalid_credentials: {
-        userMessage: "Incorrect password or email",
-        suggestion: "Try again or reset your password",
-      },
-      user_not_found: {
-        userMessage: "No account found with this email",
-        suggestion: "Check your email or create an account",
-      },
-      // OAuth Errors
-      identity_provider: {
-        userMessage: "Email already used with different method",
-        suggestion: "Try the original sign-in method",
-      },
-      // Network/Validation
-      network_error: {
-        userMessage: "Network connection failed",
-        suggestion: "Check your internet connection",
-      },
-      weak_password: {
-        userMessage: "Password is too weak",
-        suggestion: "Use at least 8 characters with numbers and symbols",
-      },
-      // Custom validation errors
-      "password-too-short": {
-        userMessage: "Password is too short",
-        suggestion: "Use at least 6 characters",
-      },
-      "missing-fields": {
-        userMessage: "Please fill in all fields",
-        suggestion: "Complete the form to continue",
-      },
-    };
-
-  return (
-    errorMap[code] || {
-      userMessage: "Something went wrong",
-      suggestion: "Please try again",
-    }
-  );
-};
 
 export const signUpWithEmail = async (email: string, password: string) => {
   if (!email || !password) {
-    const error = new Error("Email and password are required");
-    (error as any).code = "missing-fields";
-    throw error;
+    throw createAuthInputError(
+      "missing-fields",
+      "Email and password are required",
+    );
   }
   if (password.length < 6) {
-    const error = new Error("Password must be at least 6 characters");
-    (error as any).code = "password-too-short";
-    throw error;
+    throw createAuthInputError(
+      "password-too-short",
+      "Password must be at least 6 characters",
+    );
   }
   try {
     console.log("Creating user with email:", email);
@@ -103,9 +51,10 @@ export const signInWithEmail = async (
   password: string,
 ): Promise<User> => {
   if (!email || !password) {
-    const error = new Error("Email and password are required");
-    (error as any).code = "missing-fields";
-    throw error;
+    throw createAuthInputError(
+      "missing-fields",
+      "Email and password are required",
+    );
   }
   try {
     console.log("Signing in with email:", email);
@@ -129,7 +78,6 @@ export const signInWithEmail = async (
   }
 };
 
-// Sign in with Google using ID token from expo-auth-session
 export const signInWithGoogleIdToken = async (
   idToken: string,
   accessToken?: string,
@@ -157,57 +105,6 @@ export const signInWithGoogleIdToken = async (
   }
 };
 
-// Legacy OAuth sign-in - initiates OAuth flow (returns URL for web, but for mobile we use ID token)
-export const signInWithGoogle = async () => {
-  try {
-    console.log("Signing in with Google (OAuth)");
-    const { data, error } = await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: {
-        redirectTo: "socio://",
-        scopes: "profile email",
-      },
-    });
-
-    if (error) {
-      console.error("Google OAuth error:", error.code, error.message);
-      const authError = getAuthErrorMessage(error);
-      throw new Error(authError.userMessage);
-    }
-
-    return data;
-  } catch (error: any) {
-    if (error.code) throw error;
-    console.error("Google OAuth error:", error);
-    throw error;
-  }
-};
-
-export const signUpWithFacebook = async (
-  accessToken: string,
-): Promise<User> => {
-  try {
-    console.log("Signing in with Facebook access token");
-    const { data, error } = await supabase.auth.signInWithIdToken({
-      provider: "facebook",
-      token: accessToken,
-    });
-
-    if (error) {
-      console.error("Facebook sign in error:", error.code, error.message);
-      const authError = getAuthErrorMessage(error);
-      throw new Error(authError.userMessage);
-    }
-
-    console.log("Facebook sign in successful:", data.user?.id);
-    return data.user!;
-  } catch (error: any) {
-    if (error.code) throw error;
-    console.error("Facebook sign in error:", error);
-    throw error;
-  }
-};
-
 export const signOut = async () => {
   try {
     console.log("Signing out");
@@ -227,9 +124,7 @@ export const signOut = async () => {
 
 export const sendOTP = async (phone: string) => {
   if (!phone) {
-    const error = new Error("Phone number is required");
-    (error as any).code = "missing-fields";
-    throw error;
+    throw createAuthInputError("missing-fields", "Phone number is required");
   }
   try {
     console.log("Sending OTP to:", phone);
@@ -254,9 +149,10 @@ export const sendOTP = async (phone: string) => {
 
 export const verifyOTP = async (phone: string, token: string) => {
   if (!phone || !token) {
-    const error = new Error("Phone number and token are required");
-    (error as any).code = "missing-fields";
-    throw error;
+    throw createAuthInputError(
+      "missing-fields",
+      "Phone number and token are required",
+    );
   }
   try {
     console.log("Verifying OTP for:", phone);
@@ -283,9 +179,7 @@ export const verifyOTP = async (phone: string, token: string) => {
 
 export const resetPassword = async (email: string) => {
   if (!email) {
-    const error = new Error("Email is required");
-    (error as any).code = "missing-fields";
-    throw error;
+    throw createAuthInputError("missing-fields", "Email is required");
   }
   try {
     console.log("Sending password reset to:", email);

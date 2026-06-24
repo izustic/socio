@@ -15,7 +15,7 @@ import { Circle } from "@/src/types";
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
 import { Check, ChevronLeft, ChevronRight, X } from "lucide-react-native";
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Animated,
@@ -67,18 +67,21 @@ export default function SwipeUsersScreen() {
   });
   const [currentMediaIndex, setCurrentMediaIndex] = useState(0);
 
-  const showAlert = (
-    title: string,
-    message: string,
-    options: Omit<typeof alertState, "visible" | "title" | "message"> = {},
-  ) => {
-    setAlertState({
-      visible: true,
-      title,
-      message,
-      ...options,
-    });
-  };
+  const showAlert = useCallback(
+    (
+      title: string,
+      message: string,
+      options: Omit<typeof alertState, "visible" | "title" | "message"> = {},
+    ) => {
+      setAlertState({
+        visible: true,
+        title,
+        message,
+        ...options,
+      });
+    },
+    [],
+  );
 
   const closeAlert = () => {
     setAlertState((prev) => ({
@@ -136,7 +139,7 @@ export default function SwipeUsersScreen() {
     return `${ratio * 100}%`;
   }, [circle]);
 
-  const loadSwipeData = async () => {
+  const loadSwipeData = useCallback(async () => {
     if (!user) return;
     setLoading(true);
     try {
@@ -158,11 +161,11 @@ export default function SwipeUsersScreen() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [profile, showAlert, user]);
 
   useEffect(() => {
     loadSwipeData();
-  }, [user?.id]);
+  }, [loadSwipeData]);
 
   // Onboarding guide animation - flash and fade
   useEffect(() => {
@@ -184,7 +187,7 @@ export default function SwipeUsersScreen() {
     return () => {
       flashAnimation.stop();
     };
-  }, [showGuide]);
+  }, [guideOpacity, showGuide]);
 
   const syncCircleAfterSwipe = async (circleId: string) => {
     const updatedCircle = await getCircle(circleId);
@@ -198,7 +201,12 @@ export default function SwipeUsersScreen() {
     if (!user || !circle || !currentCandidate || swiping) return;
     const swipedCandidate = currentCandidate;
     const swipedCandidateName = swipedCandidate.name;
+    const previousCandidates = candidates;
     setSwiping(true);
+    setCandidates((prev) =>
+      prev.filter((candidate) => candidate.uid !== swipedCandidate.uid),
+    );
+    setCurrentMediaIndex(0);
 
     try {
       const result = await submitSwipe(
@@ -208,15 +216,11 @@ export default function SwipeUsersScreen() {
         liked,
       );
 
-      setCandidates((prev) =>
-        prev.filter((candidate) => candidate.uid !== swipedCandidate.uid),
-      );
-
       if (liked && (result.addedToCircle || result.circleComplete)) {
         await syncCircleAfterSwipe(circle.id);
       }
 
-      await refreshSwipeTabVisibility();
+      await refreshSwipeTabVisibility({ silent: true });
 
       if (result.circleComplete) {
         showAlert(
@@ -262,6 +266,8 @@ export default function SwipeUsersScreen() {
         await syncCircleAfterSwipe(circle.id);
       }
     } catch (error: any) {
+      setCandidates(previousCandidates);
+      setCurrentMediaIndex(0);
       showAlert("Swipe failed", error?.message || "Please try again.");
     } finally {
       setSwiping(false);

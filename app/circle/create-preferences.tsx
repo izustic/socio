@@ -63,6 +63,7 @@ const asString = (value: string | string[] | undefined, fallback = "") =>
 export default function CreateCirclePreferencesScreen() {
   const params = useLocalSearchParams<{
     name?: string;
+    vibe?: string;
     size?: string;
     radius?: string;
     radiusUnit?: string;
@@ -89,6 +90,7 @@ export default function CreateCirclePreferencesScreen() {
       ],
   );
   const [saving, setSaving] = useState(false);
+  const [errorText, setErrorText] = useState<string | null>(null);
   const [educationLevel, setEducationLevel] = useState<string>("Any");
   const [educationOpen, setEducationOpen] = useState(false);
   const [alertState, setAlertState] = useState<AlertState>({
@@ -128,6 +130,7 @@ export default function CreateCirclePreferencesScreen() {
   const circleBasics = useMemo(
     () => ({
       name: asString(params.name),
+      vibe: asString(params.vibe),
       size: Number(asString(params.size, "5")),
       radius: Number(asString(params.radius, "8")),
       radiusUnit: asString(params.radiusUnit, "km"),
@@ -137,6 +140,7 @@ export default function CreateCirclePreferencesScreen() {
     [
       params.meetupDays,
       params.name,
+      params.vibe,
       params.radius,
       params.radiusUnit,
       params.size,
@@ -180,6 +184,7 @@ export default function CreateCirclePreferencesScreen() {
 
   const handleCreateCircle = async () => {
     if (!user) {
+      setErrorText("Please sign in again before creating a Circle.");
       showAlert(
         "You are signed out",
         "Please sign in again to create a Circle.",
@@ -187,6 +192,7 @@ export default function CreateCirclePreferencesScreen() {
       return;
     }
     if (!circleBasics.name) {
+      setErrorText("Please go back and name your Circle.");
       showAlert(
         "Circle details missing",
         "Please go back and name your Circle.",
@@ -194,6 +200,7 @@ export default function CreateCirclePreferencesScreen() {
       return;
     }
     if (selectedInterests.length < 3) {
+      setErrorText("Pick at least 3 interests to continue.");
       showAlert(
         "Pick at least 3 interests",
         "This helps us find people who fit your Circle.",
@@ -202,8 +209,9 @@ export default function CreateCirclePreferencesScreen() {
     }
 
     setSaving(true);
+    setErrorText(null);
     try {
-      const circleId = await createCircle({
+      await createCircle({
         name: circleBasics.name,
         creatorId: user.id,
         size: circleBasics.size,
@@ -213,7 +221,7 @@ export default function CreateCirclePreferencesScreen() {
         interests: selectedInterests,
         traits: selectedTraits,
         genderMix,
-        vibe: circleBasics.meetupGoal,
+        vibe: circleBasics.vibe,
         meetupGoal: circleBasics.meetupGoal,
         meetupDays: circleBasics.meetupDays,
         meetupTimeframe: `Within ${circleBasics.meetupDays} days`,
@@ -221,6 +229,7 @@ export default function CreateCirclePreferencesScreen() {
 
       router.replace("/(tabs)/swipe");
     } catch (error: any) {
+      setErrorText(error?.message || "We could not create your Circle.");
       showAlert(
         "Unable to create Circle",
         error?.message || "Please try again.",
@@ -358,6 +367,8 @@ export default function CreateCirclePreferencesScreen() {
           emojiMap={TRAIT_EMOJI}
           onToggle={toggleTrait}
         />
+
+        {errorText ? <Text style={styles.errorText}>{errorText}</Text> : null}
       </ScrollView>
 
       <View style={styles.footer}>
@@ -581,6 +592,11 @@ const styles = StyleSheet.create({
   helperText: {
     ...Typography.bodySmall,
     color: Colors.textSecondary,
+  },
+  errorText: {
+    ...Typography.bodySmall,
+    color: "#B42318",
+    marginTop: -10,
   },
   genderRow: {
     flexDirection: "row",

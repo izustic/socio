@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { Colors, Radius, Spacing, Typography } from '@/src/constants/theme';
+import { Colors, Radius, Typography } from '@/src/constants/theme';
 
 interface CapacityBadgeProps {
   current: number;

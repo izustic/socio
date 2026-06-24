@@ -2,17 +2,14 @@ import Button from "@/src/components/ui/Button";
 import Input from "@/src/components/ui/Input";
 import { Colors, Radius, Spacing, Typography } from "@/src/constants/theme";
 import { useOnboarding } from "@/src/context/OnboardingContext";
+import { getFirstIncompleteOnboardingStep } from "@/src/constants/onboarding";
 import {
   signInWithEmail,
   signInWithGoogleIdToken,
   signUpWithEmail,
-  signUpWithFacebook,
 } from "@/src/services/auth";
 import { getUserProfile } from "@/src/services/user";
 import { showErrorAlert } from "@/src/utils/errorHandling";
-import { makeRedirectUri } from "expo-auth-session";
-import * as Facebook from "expo-auth-session/providers/facebook";
-import * as Google from "expo-auth-session/providers/google";
 import { Image } from "expo-image";
 import { router } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
@@ -29,6 +26,13 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import {
+  GoogleSignin,
+  statusCodes,
+  isErrorWithCode,
+  isSuccessResponse,
+} from "@react-native-google-signin/google-signin";
+import type { OnboardingDraft } from "@/src/context/OnboardingContext";
 
 export default function SignUp() {
   const { beginOnboarding } = useOnboarding();
@@ -41,23 +45,21 @@ export default function SignUp() {
   const [emailError, setEmailError] = useState("");
   const [passwordError, setPasswordError] = useState("");
 
-  const redirectUri = makeRedirectUri({ scheme: "socio" });
+  const googleWebClientId = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID;
+  const googleIosClientId = process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID;
+  const canUseGoogleSignIn = Boolean(googleWebClientId) && Platform.OS !== "web";
 
-  const [googleRequest, googleResponse, promptGoogleAsync] =
-    Google.useAuthRequest({
-      clientId: process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID,
+  useEffect(() => {
+    if (!canUseGoogleSignIn || !googleWebClientId) {
+      return;
+    }
+
+    GoogleSignin.configure({
+      webClientId: googleWebClientId,
+      iosClientId: googleIosClientId || undefined,
       scopes: ["profile", "email"],
-      responseType: "id_token",
-      redirectUri,
     });
-
-  const [facebookRequest, facebookResponse, promptFacebookAsync] =
-    Facebook.useAuthRequest({
-      clientId: process.env.EXPO_PUBLIC_FACEBOOK_APP_ID,
-      responseType: "token",
-      scopes: ["public_profile", "email"],
-      redirectUri,
-    });
+  }, [canUseGoogleSignIn, googleWebClientId, googleIosClientId]);
 
   // Validation functions
   const validateEmail = (email: string) => {
@@ -104,83 +106,102 @@ export default function SignUp() {
         return;
       }
 
-      if (!existingProfile) {
-        beginOnboarding(
-          {
+      const nextDraft: OnboardingDraft = existingProfile
+        ? {
+            contactHint,
+            name: existingProfile.name || seed?.name || "",
+            bio: existingProfile.bio || "",
+            age: existingProfile.age || 24,
+            gender: existingProfile.gender || null,
+            media: existingProfile.media || [],
+            interests: existingProfile.interests || [],
+            traits: existingProfile.traits || [],
+            education: existingProfile.education || "",
+            photoURL: existingProfile.photoURL || seed?.photoURL || "",
+            location: existingProfile.location || null,
+            locationEnabled: Boolean(existingProfile.locationEnabled),
+            locationPermissionResolved: Boolean(existingProfile.locationEnabled),
+            notificationsEnabled:
+              existingProfile.notificationsEnabled ?? false,
+            notificationsPermissionResolved: Boolean(
+              existingProfile.notificationsEnabled,
+            ),
+          }
+        : {
             contactHint,
             name: seed?.name || "",
+            bio: "",
+            age: 24,
+            gender: null,
+            media: [],
+            interests: [],
+            traits: [],
+            education: "",
             photoURL: seed?.photoURL || "",
-          },
-          "otp",
-        );
-        return;
-      }
+            location: null,
+            locationEnabled: false,
+            locationPermissionResolved: false,
+            notificationsEnabled: false,
+            notificationsPermissionResolved: false,
+          };
+
+      beginOnboarding(
+        nextDraft,
+        existingProfile ? getFirstIncompleteOnboardingStep(nextDraft) : "otp",
+      );
     },
     [beginOnboarding],
   );
 
-  useEffect(() => {
-    const processGoogleResponse = async () => {
-      if (googleResponse?.type === "success" && googleResponse.authentication) {
-        try {
-          setLoading(true);
-          const { idToken, accessToken } = googleResponse.authentication;
-          if (!idToken) {
-            throw new Error("No ID token received from Google");
-          }
-          const user = await signInWithGoogleIdToken(
-            idToken,
-            accessToken ?? undefined,
-          );
-          await continueIntoOnboarding(
-            user.id,
-            user.email || "your Google account",
-            {
-              name: (user.user_metadata?.display_name as string) || "",
-              photoURL: (user.user_metadata?.avatar_url as string) || "",
-            },
-          );
-        } catch (error: any) {
-          console.error("Google sign in error:", error);
-          const errorInfo = showErrorAlert(error, "Google Sign In");
-          Alert.alert(errorInfo.title, errorInfo.message);
-        } finally {
-          setLoading(false);
-        }
-      }
-    };
-    processGoogleResponse();
-  }, [googleResponse, continueIntoOnboarding]);
+  const handleGoogleSignIn = async () => {
+    if (!canUseGoogleSignIn || !googleWebClientId) {
+      Alert.alert(
+        "Google Sign In",
+        "Google sign-in is not configured for this build. Set EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID to the web OAuth client ID.",
+      );
+      return;
+    }
 
-  useEffect(() => {
-    const processFacebookResponse = async () => {
-      if (
-        facebookResponse?.type === "success" &&
-        facebookResponse.authentication
-      ) {
-        try {
-          setLoading(true);
-          const { accessToken } = facebookResponse.authentication;
-          const user = await signUpWithFacebook(accessToken);
-          await continueIntoOnboarding(
-            user.id,
-            user.email || "your Facebook account",
-            {
-              name: (user.user_metadata?.display_name as string) || "",
-              photoURL: (user.user_metadata?.avatar_url as string) || "",
-            },
-          );
-        } catch (error: any) {
-          console.error("Facebook sign in error:", error);
-          const errorInfo = showErrorAlert(error, "Facebook Sign In");
-          Alert.alert(errorInfo.title, errorInfo.message);
-        } finally {
-          setLoading(false);
-        }
+    setLoading(true);
+    try {
+      await GoogleSignin.hasPlayServices({
+        showPlayServicesUpdateDialog: true,
+      });
+
+      const response = await GoogleSignin.signIn();
+      if (!isSuccessResponse(response)) {
+        return;
       }
-    };
-    processFacebookResponse();
-  }, [facebookResponse, continueIntoOnboarding]);
+
+      const idToken = response.data.idToken;
+      if (!idToken) {
+        throw new Error("No ID token received from Google");
+      }
+
+      const user = await signInWithGoogleIdToken(idToken);
+      await continueIntoOnboarding(
+        user.id,
+        user.email || "your Google account",
+        {
+          name: (user.user_metadata?.display_name as string) || "",
+          photoURL: (user.user_metadata?.avatar_url as string) || "",
+        },
+      );
+    } catch (error: any) {
+      if (
+        isErrorWithCode(error) &&
+        error.code === statusCodes.SIGN_IN_CANCELLED
+      ) {
+        return;
+      }
+
+      console.error("Google sign in error:", error);
+      const errorInfo = showErrorAlert(error, "Google Sign In");
+      Alert.alert(errorInfo.title, errorInfo.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleEmailAuth = async () => {
     clearErrors();
@@ -239,39 +260,26 @@ export default function SignUp() {
       </View>
 
       <View style={styles.actions}>
-        <TouchableOpacity
-          activeOpacity={0.8}
-          style={[
-            styles.socialButton,
-            (!googleRequest || loading) && styles.disabled,
-          ]}
-          disabled={!googleRequest || loading}
-          onPress={() => promptGoogleAsync()}
-        >
-          <Text style={styles.socialIcon}>G</Text>
-          <Text style={styles.socialText}>Continue with Google</Text>
-          <View style={styles.iconSpacer} />
-        </TouchableOpacity>
+        {canUseGoogleSignIn ? (
+          <TouchableOpacity
+            activeOpacity={0.8}
+            style={[styles.socialButton, loading && styles.disabled]}
+            disabled={loading}
+            onPress={handleGoogleSignIn}
+          >
+            <Text style={styles.socialIcon}>G</Text>
+            <Text style={styles.socialText}>Continue with Google</Text>
+            <View style={styles.iconSpacer} />
+          </TouchableOpacity>
+        ) : null}
 
-        <TouchableOpacity
-          activeOpacity={0.8}
-          style={[
-            styles.socialButton,
-            (!facebookRequest || loading) && styles.disabled,
-          ]}
-          disabled={!facebookRequest || loading}
-          onPress={() => promptFacebookAsync()}
-        >
-          <Text style={[styles.socialIcon, styles.facebookIcon]}>f</Text>
-          <Text style={styles.socialText}>Continue with Facebook</Text>
-          <View style={styles.iconSpacer} />
-        </TouchableOpacity>
-
-        <View style={styles.dividerRow}>
-          <View style={styles.dividerLine} />
-          <Text style={styles.dividerText}>or</Text>
-          <View style={styles.dividerLine} />
-        </View>
+        {canUseGoogleSignIn ? (
+          <View style={styles.dividerRow}>
+            <View style={styles.dividerLine} />
+            <Text style={styles.dividerText}>or</Text>
+            <View style={styles.dividerLine} />
+          </View>
+        ) : null}
 
         <Button
           title="Sign up with Email"
@@ -451,10 +459,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "800",
     color: "#DB4437",
-  },
-  facebookIcon: {
-    color: "#1877F2",
-    fontSize: 18,
   },
   socialText: {
     ...Typography.button,

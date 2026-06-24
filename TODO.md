@@ -322,10 +322,6 @@ unblocks the rest of the backlog.
 - [ ] **P1** Verify notification routing against real matched/Circle/message data
 - [ ] **P2** Store Expo push tokens and add push delivery strategy
 
-## 13. Moderation and Admin
-
-- [x] Moderator routes exist
-- [x] Admin routes exist
 - [x] Report service function exists
 - [x] Ban/suspend service functions exist
 - [x] Moderator dashboard, report detail, admin dashboard, and user

@@ -51,6 +51,8 @@ Legend:
 - Circle creation now uses `app/circle/create.tsx` as the single entry
   point, with `vibe` carried through to preferences and the duplicate route
   removed.
+- Host swipe RPC text/UUID mismatch has a local migration fix queued so the
+  deployed database can accept host swipes again.
 - Starter-era root `components/` and `hooks/` scaffolding has been removed,
   and helper tests now cover auth, Circle creation, chat message helpers, and
   moderation helpers.
@@ -243,6 +245,7 @@ unblocks the rest of the backlog.
 - [x] Swipe tab hides when hosted Circle is full
 - [~] Match feedback exists in parts but needs polish
 - [~] Membership updates are implemented through services/RPCs but need integration verification
+- [x] Host swipe RPC text/UUID mismatch fixed in a local migration
 - [ ] **P1** Verify joiners who liked the Circle are prioritized in the host deck
 - [ ] **P1** Verify full Circle completion behavior end to end
 - [ ] **P1** Add empty deck screen behavior

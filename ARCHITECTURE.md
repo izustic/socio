@@ -32,6 +32,8 @@ Onboard → Profile setup → NoCircle → Join Circle → Set preferences
 - Joiner likes a Circle → host sees that user **prioritized** in their swipe deck
 - Host likes the joiner back → mutual match → joiner added to Circle
 - Both land in ChatScreen once Circle is complete
+- Joiner swipe deck refreshes on focus and realtime `circles` updates so
+  completed Circles disappear immediately
 
 ---
 

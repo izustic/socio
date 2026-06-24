@@ -11,9 +11,10 @@ import {
   JoinCircleFilters,
   submitCircleSwipe,
 } from "@/src/services/swipe";
+import { supabase } from "@/src/services/supabase";
 import { getUserProfile } from "@/src/services/user";
 import { LinearGradient } from "expo-linear-gradient";
-import { router } from "expo-router";
+import { router, useFocusEffect } from "expo-router";
 import { Check, MapPin, Users, X } from "lucide-react-native";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
@@ -186,6 +187,11 @@ export default function SwipeCirclesScreen({
     try {
       const candidates = await getCircleCandidates(user.id, profile, filters);
       setCircles(candidates);
+      setCurrentIndex((previousIndex) =>
+        candidates.length === 0
+          ? 0
+          : Math.min(previousIndex, candidates.length - 1),
+      );
     } catch (error: any) {
       showAlert(
         "Unable to load circles",
@@ -195,6 +201,31 @@ export default function SwipeCirclesScreen({
       setLoading(false);
     }
   }, [filters, profile, showAlert, user]);
+
+  useFocusEffect(
+    useCallback(() => {
+      void loadCircles();
+    }, [loadCircles]),
+  );
+
+  useEffect(() => {
+    if (!user) return;
+
+    const channel = supabase
+      .channel(`swipe-circles:${user.id}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "circles" },
+        () => {
+          void loadCircles();
+        },
+      )
+      .subscribe();
+
+    return () => {
+      void supabase.removeChannel(channel);
+    };
+  }, [loadCircles, user]);
 
   // Onboarding guide animation - flash and fade
   useEffect(() => {
@@ -218,10 +249,6 @@ export default function SwipeCirclesScreen({
       flashAnimation.stop();
     };
   }, [guideOpacity, showGuide]);
-
-  useEffect(() => {
-    loadCircles();
-  }, [loadCircles]);
 
   const handleSwipe = async (liked: boolean) => {
     if (!user || !currentCircle || swiping) return;

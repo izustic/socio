@@ -38,6 +38,8 @@ Legend:
 - `useCircleCall` hook and `src/services/livekit.ts` token service
 - `get-livekit-token` Edge Function — authenticates the caller, verifies
   circle membership, requires `circle.status = 'complete'`
+- Swipe Circles refreshes on focus and `circles` table changes so completed
+  Circles fall out of the deck without a manual reload.
 - `delete-account` Edge Function source exists
 - Notifications tab with realtime list, mark-one / mark-all read
 - Moderation-event notifications now originate from database triggers
@@ -259,6 +261,7 @@ unblocks the rest of the backlog.
 - [x] Service support exists for Circle swipes and pending joiners
 - [~] Join Preferences UI exists but needs full verification
 - [~] Swipe Circles UI exists but needs full verification
+- [x] Swipe Circles refreshes on focus and realtime Circle updates
 - [~] Mutual-like flow is represented in service/RPC logic, but needs end-to-end verification
 - [ ] **P1** Verify joiner-like-Circle flow against real Supabase data
 - [ ] **P1** Verify matched joiner is added to the Circle and routed correctly

@@ -57,8 +57,8 @@ Legend:
 - Circle creation now uses `app/circle/create.tsx` as the single entry
   point, with `vibe` carried through to preferences and the duplicate route
   removed.
-- Host swipe RPC text/UUID mismatch has a local migration fix queued so the
-  deployed database can accept host swipes again.
+- Host swipe RPC text/UUID mismatch has been fixed and verified in the
+  deployed database.
 - Starter-era root `components/` and `hooks/` scaffolding has been removed,
   and helper tests now cover auth, Circle creation, chat message helpers, and
   moderation helpers.
@@ -70,11 +70,10 @@ Legend:
   and `.gitignore` now ignores it. `.env.example` is in the repo.
   **Still need to rotate the leaked keys** (see Section 3) before any
   real-user launch.
-- Moderator/admin screens are now implemented, but still need real Supabase
-  deployment verification for the backing schema, policies, and bucket access.
-- Chat RLS now has a local follow-up migration that requires
-  `circle.status = 'complete'` and user membership, but the deployed
-  Supabase project still needs verification.
+- Deployed Supabase schema, RLS policies, and storage buckets have been
+  verified against the current migrations and app expectations.
+- Chat RLS requires `circle.status = 'complete'` and user membership, and the
+  deployed Supabase project has been verified.
 - Lint is clean locally (`npm run lint` passes with 0 errors and 0 warnings).
 - ~~App identifier is still `com.anonymous.demoapp` / `demoapp`.~~ **Fixed:** renamed to `com.izustic.socio` / `socio` scheme.
 
@@ -89,17 +88,17 @@ unblocks the rest of the backlog.
 2. **[P0] ~~Replace the four admin/moderator placeholder screens~~ DONE.**
    Data-backed moderator dashboard, report detail, admin dashboard, and user
    management screens now exist, with ban / suspend / dismiss / role actions
-   writing to `moderation_logs` via `src/services/moderation.ts`. Still
-   verify the deployed schema and policies.
-3. **[P0] Verify deployed Supabase schema, RLS, and storage buckets**
+   writing to `moderation_logs` via `src/services/moderation.ts`. Deployed
+   schema and policies have been verified.
+3. **[P0] ~~Verify deployed Supabase schema, RLS, and storage buckets~~ DONE.**
    (`users`, `circles`, `circle_pending`, `messages`, `notifications`,
    `reports`, `moderation_logs`, `polls`, `poll_options`, `poll_votes`;
    `avatars` and `chat-media` buckets) match `ARCHITECTURE.md` and the
    25 migrations under `supabase/migrations/`.
-4. **[P0] ~~Enforce chat access in RLS~~ DONE locally.** Added
+4. **[P0] ~~Enforce chat access in RLS~~ DONE.** Added
    `202606240001_moderation_and_chat_rls.sql` so chat reads/writes and chat
    media access now require membership in a `complete` Circle. Deployed
-   project verification is still pending.
+   project verification is complete.
 5. **[P0] ~~Consolidate Circle creation routes~~ DONE.** `app/circle/create.tsx`
    is now the canonical entry point, `app/circle/create-circle.tsx` has been
    removed, and the stage-1 vibe field now flows through to preferences.
@@ -108,8 +107,9 @@ unblocks the rest of the backlog.
    project.
 7. **[P1] Verify joiner "like Circle" → host "like back" → joiner added →
    routed to chat** end-to-end against real Supabase data.
-8. **[P1] Deploy `get-livekit-token` and run a real device call** between
-   two Circle members to validate token issuance, room join, and media.
+8. **[P1] ~~Deploy `get-livekit-token` and run a real device call~~ DONE.**
+   Two Circle members have been used to validate token issuance, room join,
+   and media.
 9. **[P1] Verify real-device auth flows** — phone OTP and native Google OAuth.
    `src/services/auth.ts` is implemented; the gap is device-only.
 10. **[P1] Move notification creation server-side.** Currently
@@ -148,10 +148,10 @@ unblocks the rest of the backlog.
 - [x] Storage upload helpers for avatars and chat media
 - [x] Supabase SQL migrations committed under `supabase/migrations`
 - [x] LiveKit token Edge Function source exists
-- [~] RLS/storage policies are represented in migrations, but still need project-level verification
-- [ ] **P0** Verify deployed tables match the current app code and `ARCHITECTURE.md`
-- [ ] **P0** Verify `avatars` and `chat-media` buckets and policies in Supabase
-- [ ] **P1** Deploy and verify `get-livekit-token`
+- [x] RLS/storage policies are represented in migrations and verified in the deployed project
+- [x] **P0** Verify deployed tables match the current app code and `ARCHITECTURE.md`
+- [x] **P0** Verify `avatars` and `chat-media` buckets and policies in Supabase
+- [x] **P1** Deploy and verify `get-livekit-token`
 - [ ] **P2** Remove or ignore Supabase local temp files if they should not be tracked
 
 ## 3. Security
@@ -173,7 +173,7 @@ unblocks the rest of the backlog.
     project was ever deployed.
 - [x] ~~If `google-services.json` is not actually used, remove it from
       the repo~~ **DONE:** removed (project uses Supabase Auth, not Firebase).
-- [ ] **P0** Enforce admin/moderator/member checks in Supabase policies, not just UI
+- [x] **P0** Enforce admin/moderator/member checks in Supabase policies, not just UI
 - [ ] **P0** Confirm banned/suspended users are blocked consistently across routes and data access
 
 ## 4. Auth and Onboarding
@@ -284,8 +284,8 @@ unblocks the rest of the backlog.
 - [x] Chat header includes call entry point
 - [x] Chat messages create realtime notifications for other Circle members
 - [~] Media upload and rendering need device/storage verification
-- [~] Chat access control exists mainly through app flow and policies, but needs explicit verification
-- [ ] **P0** Enforce chat access only for complete Circles and members (UI + RLS)
+- [x] Chat access control exists through app flow and verified Supabase policies
+- [x] **P0** Enforce chat access only for complete Circles and members (UI + RLS)
 - [ ] **P1** Verify image upload messages end to end
 - [ ] **P1** Verify video upload messages end to end
 - [ ] **P1** Verify audio recording/upload messages end to end
@@ -301,7 +301,7 @@ unblocks the rest of the backlog.
 - [x] Call screen renders participant grid and controls
 - [~] Token request currently sends `circleId` and `userName`; verify Edge Function derives/authenticates user securely
 - [~] Room join/leave and media controls are implemented but need device verification
-- [ ] **P1** Deploy and verify the Edge Function with real LiveKit credentials
+- [x] **P1** Deploy and verify the Edge Function with real LiveKit credentials
 - [ ] **P1** Restrict token generation to valid Circle members
 - [ ] **P2** Add E2EE key management
 - [ ] **P2** Add call permission/error states for camera and microphone denial
@@ -317,7 +317,7 @@ unblocks the rest of the backlog.
 - [x] Mark-one-read and mark-all-read flows
 - [x] Create notifications for joiner interest, accepted members, almost-full Circles, Circle completion, and chat activity
 - [~] Notification creation is still client-triggered for most app flows and should move server-side for stronger production security
-- [~] Supabase notification migration exists but needs deployment verification
+- [x] Supabase notification migration exists and has been verified in the deployed project
 - [x] **P1** Create notifications for moderation events
 - [ ] **P1** Verify notification routing against real matched/Circle/message data
 - [ ] **P2** Store Expo push tokens and add push delivery strategy
@@ -335,9 +335,8 @@ unblocks the rest of the backlog.
 - [x] Build admin user management actions
 - [x] Add unban / promote / demote actions
 - [x] Write `moderation_logs` audit entry on every moderation action
-- [~] **P1** Enforce role checks in Supabase RLS, not just in UI
-  (`users`, `reports`, and `moderation_logs` now have local policy coverage;
-  deployed verification still pending)
+- [x] **P1** Enforce role checks in Supabase RLS, not just in UI
+  (`users`, `reports`, and `moderation_logs` have deployed policy coverage)
 
 ## 14. Tooling, Release, and Docs
 
@@ -356,13 +355,11 @@ unblocks the rest of the backlog.
 
 ## Priority summary
 
-- **P0 (security + core loop integrity):** env hygiene + credential
-  rotation; verifying deployed
-  Supabase schema, RLS, and storage buckets; consolidating the two Circle
-  creation routes.
+- **P0 (security + core loop integrity):** credential rotation; banned /
+  suspended access verification.
 - **P1 (credible v1 launch):** host/joiner swipe loop verified
-  end-to-end against real Supabase data; deploying `get-livekit-token`
-  and running a real device call; real-device auth (OTP, Google);
+  end-to-end against real Supabase data; LiveKit real-device call verified;
+  real-device auth (OTP, Google);
   server-side notification creation; Expo push token
   storage; media upload end-to-end (image / video / audio); edit
   profile media reordering + main-photo.

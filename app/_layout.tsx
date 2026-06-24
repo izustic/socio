@@ -42,6 +42,7 @@ export default function RootLayout() {
           <Stack.Screen name="circle/info" />
           <Stack.Screen name="settings/notifications" />
           <Stack.Screen name="settings/privacy-safety" />
+          <Stack.Screen name="settings/delete-account" />
         </Stack>
       </OnboardingProvider>
     </AuthProvider>

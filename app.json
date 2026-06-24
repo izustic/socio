@@ -10,11 +10,11 @@
       "image": "./assets/images/splash.png",
       "resizeMode": "contain"
     },
-    "scheme": "demoapp",
+    "scheme": "socio",
     "userInterfaceStyle": "automatic",
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.anonymous.demoapp",
+      "bundleIdentifier": "com.izustic.socio",
       "infoPlist": {
         "NSUserNotificationsUsageDescription": "We'll let you know when your Circle grows, someone accepts, or it's time to meet.",
         "NSPhotoLibraryAddUsageDescription": "Socio needs permission to save chat photos and videos to your library.",
@@ -29,11 +29,8 @@
         "monochromeImage": "./assets/images/icon.png"
       },
       "predictiveBackGestureEnabled": false,
-      "package": "com.anonymous.demoapp",
-      "permissions": [
-        "CAMERA",
-        "RECORD_AUDIO"
-      ]
+      "package": "com.izustic.socio",
+      "permissions": ["CAMERA", "RECORD_AUDIO"]
     },
     "web": {
       "bundler": "metro",

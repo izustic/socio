@@ -1,4 +1,5 @@
 // @ts-nocheck
+/* eslint-disable import/no-unresolved */
 import { createClient } from "npm:@supabase/supabase-js";
 import { AccessToken } from "npm:livekit-server-sdk";
 

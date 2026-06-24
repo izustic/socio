@@ -1,6 +1,6 @@
 # Socio TODO
 
-Updated: June 19, 2026 — rewritten after a full pass over the codebase and
+Updated: June 24, 2026 — rewritten after a full pass over the codebase and
 `ARCHITECTURE.md`. Reflects what's actually in the repo right now (not what's
 in old sections of the plan).
 
@@ -20,7 +20,7 @@ Legend:
 
 ---
 
-## Current state (verified June 19, 2026)
+## Current state (verified June 24, 2026)
 
 **Working end to end in code (pending device verification):**
 
@@ -42,6 +42,9 @@ Legend:
 - Profile screen with edit form (5 media slots, age, gender, interests,
   traits, bio, location)
 - Settings routes: notifications, privacy-safety, delete-account
+- Moderator and admin routes now render data-backed reports, report detail,
+  and user management screens, with moderation actions written to
+  `moderation_logs`
 
 **Verified gaps:**
 
@@ -52,14 +55,13 @@ Legend:
   real-user launch.
 - `app/circle/create.tsx` and `app/circle/create-circle.tsx` both exist —
   duplicate creation routes.
-- Four admin/moderator screens are literal "coming soon" placeholder text:
-  `app/admin/dashboard.tsx`, `app/admin/user-management.tsx`,
-  `app/moderator/dashboard.tsx`, `app/moderator/report-detail.tsx`.
-- Chat RLS lives in `202605260001_messages_member_rls.sql` and
-  `202605260005_chat_media_member_storage_policies.sql` — needs a careful
-  read-through to confirm the policy actually requires
-  `circle.status = 'complete'` and user is in `circle.members`.
-- 23 lint warnings remain (0 errors), all unused-vars in services.
+- Moderator/admin screens are now implemented, but still need real Supabase
+  deployment verification for the backing schema, policies, and bucket access.
+- Chat RLS now has a local follow-up migration that requires
+  `circle.status = 'complete'` and user membership, but the deployed
+  Supabase project still needs verification.
+- 24 lint warnings remain (0 errors), mostly unrelated unused-vars and hook
+  dependencies elsewhere in the repo.
 - ~~App identifier is still `com.anonymous.demoapp` / `demoapp`.~~ **Fixed:** renamed to `com.izustic.socio` / `socio` scheme.
 
 ---
@@ -70,20 +72,20 @@ These are the highest-leverage items to pick up in order. Doing only these
 unblocks the rest of the backlog.
 
 1. **[P0] ~~Stop tracking `.env`, add it to `.gitignore`, add `.env.example`~~ DONE.** Run `git rm --cached .env` (done), confirm `.env` is in `.gitignore` (done), commit `.env.example` (TODO). **Still required: rotate any keys that were committed** — see Section 3.
-2. **[P0] Replace the four admin/moderator placeholder screens** with real
-   data-backed views: reports queue, report detail (with
-   ban / suspend / dismiss actions), admin user management. Every action
-   must write to `moderation_logs` via `src/services/moderation.ts`.
+2. **[P0] ~~Replace the four admin/moderator placeholder screens~~ DONE.**
+   Data-backed moderator dashboard, report detail, admin dashboard, and user
+   management screens now exist, with ban / suspend / dismiss / role actions
+   writing to `moderation_logs` via `src/services/moderation.ts`. Still
+   verify the deployed schema and policies.
 3. **[P0] Verify deployed Supabase schema, RLS, and storage buckets**
    (`users`, `circles`, `circle_pending`, `messages`, `notifications`,
    `reports`, `moderation_logs`, `polls`, `poll_options`, `poll_votes`;
    `avatars` and `chat-media` buckets) match `ARCHITECTURE.md` and the
    24 migrations under `supabase/migrations/`.
-4. **[P0] Enforce chat access in RLS** — confirm
-   `202605260001_messages_member_rls.sql` and
-   `202605260005_chat_media_member_storage_policies.sql` actually
-   require the user to be in `circle.members` AND `circle.status =
-'complete'`. UI already gates this; RLS must back it up.
+4. **[P0] ~~Enforce chat access in RLS~~ DONE locally.** Added
+   `202606240001_moderation_and_chat_rls.sql` so chat reads/writes and chat
+   media access now require membership in a `complete` Circle. Deployed
+   project verification is still pending.
 5. **[P0] Consolidate Circle creation routes** — pick one of
    `app/circle/create.tsx` or `app/circle/create-circle.tsx`, delete the
    other, and fix any `router.push` callsites that referenced the
@@ -314,15 +316,16 @@ unblocks the rest of the backlog.
 - [x] Admin routes exist
 - [x] Report service function exists
 - [x] Ban/suspend service functions exist
-- [~] Moderator dashboard, report detail, admin dashboard, and user
-  management routes exist but are currently literal "coming soon"
-  placeholder text — need real data-backed UIs
-- [ ] **P0** Build reports list against real `reports` data
-- [ ] **P0** Build report resolution flow (ban / suspend / dismiss actions)
-- [ ] **P0** Build admin user management actions
-- [ ] **P0** Add unban / promote / demote actions
-- [ ] **P0** Write `moderation_logs` audit entry on every moderation action
-- [ ] **P1** Enforce role checks in Supabase RLS, not just in UI
+- [x] Moderator dashboard, report detail, admin dashboard, and user
+  management routes now render real data-backed UIs
+- [x] Build reports list against real `reports` data
+- [x] Build report resolution flow (ban / suspend / dismiss actions)
+- [x] Build admin user management actions
+- [x] Add unban / promote / demote actions
+- [x] Write `moderation_logs` audit entry on every moderation action
+- [~] **P1** Enforce role checks in Supabase RLS, not just in UI
+  (`users`, `reports`, and `moderation_logs` now have local policy coverage;
+  deployed verification still pending)
 
 ## 14. Tooling, Release, and Docs
 
@@ -342,10 +345,9 @@ unblocks the rest of the backlog.
 ## Priority summary
 
 - **P0 (security + core loop integrity):** env hygiene + credential
-  rotation; replacing the four admin/moderator stub screens with real
-  data-backed views writing to `moderation_logs`; verifying deployed
-  Supabase schema, RLS, and storage buckets; enforcing chat access in
-  RLS (not just UI); consolidating the two Circle creation routes.
+  rotation; verifying deployed
+  Supabase schema, RLS, and storage buckets; consolidating the two Circle
+  creation routes.
 - **P1 (credible v1 launch):** host/joiner swipe loop verified
   end-to-end against real Supabase data; deploying `get-livekit-token`
   and running a real device call; real-device auth (OTP, Google,

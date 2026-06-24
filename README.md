@@ -1,50 +1,188 @@
-# Welcome to your Expo app 👋
+# Socio
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+Socio is a mobile-first Expo React Native app for forming small in-person friend groups called Circles.
 
-## Get started
+Users can either create a Circle as a host and swipe on people who fit the group, or join as a participant by swiping on Circles. When a Circle fills, the app is designed to unlock group chat, media sharing, and LiveKit-powered group calls.
 
-1. Install dependencies
+## Current Stage
 
-   ```bash
-   npm install
-   ```
+The project is in core app completion and product hardening.
 
-2. Start the app
+Completed or mostly in place:
 
-   ```bash
-   npx expo start
-   ```
+- Expo Router app structure
+- Supabase Auth integration
+- Supabase client with SecureStore session persistence
+- User, Circle, swipe, message, notification, and moderation service files
+- Onboarding flow screens
+- Main tab shell
+- Profile screen
+- Host swipe logic
+- Chat UI components
+- Supabase Storage upload helpers
+- Supabase Edge Function source for LiveKit token generation
 
-In the output, you'll find options to open the app in a
+Still in progress:
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+- Full Circle creation flow
+- Joiner Circle swipe flow
+- Realtime chat screen integration
+- Notifications tab
+- Admin/moderator dashboards
+- LiveKit client integration
+- Supabase migration files and deployment documentation
+- Security cleanup around environment files
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+See `PLAN.md` and `TODO.md` for the current implementation roadmap.
 
-## Get a fresh project
+## Tech Stack
 
-When you're ready, run:
+- Expo 53
+- React Native 0.79
+- React 19
+- Expo Router
+- TypeScript
+- Supabase Auth
+- Supabase PostgreSQL
+- Supabase Storage
+- Supabase Realtime
+- Supabase Edge Functions
+- LiveKit Cloud, planned for group calls
+- Lottie for splash animation
+- Lucide React Native for icons
 
-```bash
-npm run reset-project
+## Project Structure
+
+```text
+socio/
+├── app/                         Expo Router screens
+│   ├── (auth)/                  Auth and onboarding flow
+│   ├── (tabs)/                  Main app tabs
+│   ├── circle/                  Circle creation, matching, chat, calls
+│   ├── admin/                   Admin routes
+│   └── moderator/               Moderator routes
+├── src/
+│   ├── components/              UI, onboarding, Circle, and chat components
+│   ├── constants/               Theme and onboarding constants
+│   ├── context/                 Auth and onboarding providers
+│   ├── hooks/                   App hooks
+│   ├── services/                Supabase-backed app services
+│   ├── types/                   Shared TypeScript types
+│   └── utils/                   Utility helpers
+├── supabase/
+│   └── functions/               Supabase Edge Functions
+├── assets/                      Images and animations
+├── ARCHITECTURE.md              Target architecture
+├── PLAN.md                      Implementation plan
+└── TODO.md                      Current task checklist
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+## Requirements
 
-## Learn more
+- Node.js
+- npm
+- Expo CLI through `npx expo`
+- iOS Simulator, Android Emulator, or a physical device
+- Supabase project
+- LiveKit project, for call work
 
-To learn more about developing your project with Expo, look at the following resources:
+## Environment Variables
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+Create a local `.env` file in the project root:
 
-## Join the community
+```dotenv
+EXPO_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+EXPO_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
 
-Join our community of developers creating universal apps.
+# Google Sign-In
+EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID=your-google-web-client-id
+EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID=your-ios-google-client-id
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+EXPO_PUBLIC_LIVEKIT_URL=wss://your-project.livekit.cloud
+
+LIVEKIT_API_KEY=your-livekit-api-key
+LIVEKIT_API_SECRET=your-livekit-api-secret
+```
+
+Only variables prefixed with `EXPO_PUBLIC_` are safe to expose to the app bundle. LiveKit API secrets must stay backend-only and should be configured as Supabase Edge Function secrets for production use.
+
+Google sign-in uses the native `@react-native-google-signin/google-signin` package on iOS and Android, so you need a development build rather than Expo Go. The web client ID is required because the native SDK mints the ID token against it, and Supabase verifies that audience.
+
+Important: `.env` should not be committed. If it has already been committed, rotate any exposed secrets before using them in production.
+
+## Install
+
+```bash
+npm install
+```
+
+## Run
+
+Start the Expo dev server:
+
+```bash
+npm run start
+```
+
+Run on Android:
+
+```bash
+npm run android
+```
+
+Run on iOS:
+
+```bash
+npm run ios
+```
+
+Run on web:
+
+```bash
+npm run web
+```
+
+## Lint
+
+```bash
+npm run lint
+```
+
+Current status: lint exits with zero errors. Some warnings remain for unused imports, hook dependencies, and array type style cleanup.
+
+## Backend Setup Notes
+
+The target schema and policies are documented in `ARCHITECTURE.md`.
+
+Before treating a Supabase environment as production-ready, verify:
+
+- `users`, `circles`, `circle_pending`, `messages`, `notifications`, `reports`, and `moderation_logs` tables exist
+- RLS is enabled on protected tables
+- policies match the expected app access model
+- `avatars` and `chat-media` buckets exist
+- storage policies match the media access model
+- LiveKit secrets are set on the Supabase Edge Function
+- `get-livekit-token` is deployed and restricted to valid Circle members
+
+## Useful Commands
+
+```bash
+npm run lint
+npm run start
+npm run android
+npm run ios
+npm run web
+```
+
+## Documentation
+
+- `ARCHITECTURE.md`: target system architecture
+- `PLAN.md`: phased implementation plan
+- `TODO.md`: current checklist of done and remaining work
+
+## Known Gaps
+
+- The README and plan now reflect the Supabase-only direction, but committed Supabase SQL migrations are still missing.
+- Several screens are placeholders.
+- LiveKit client methods currently need real implementation.
+- `.env` security needs cleanup before production use.

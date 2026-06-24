@@ -1,35 +1,72 @@
-import { Tabs } from 'expo-router';
-import React from 'react';
+import { Colors } from '@/src/constants/theme';
+import { SwipeTabVisibilityProvider, useSwipeTabVisibility } from '@/src/context/SwipeTabVisibilityContext';
+import { Tabs, useFocusEffect } from 'expo-router';
+import { Bell, Layers, User, Users } from 'lucide-react-native';
+import { useCallback } from 'react';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { HapticTab } from '@/components/haptic-tab';
-import { IconSymbol } from '@/components/ui/icon-symbol';
-import { Colors } from '@/constants/theme';
-import { useColorScheme } from '@/hooks/use-color-scheme';
+function TabLayoutInner() {
+  const insets = useSafeAreaInsets();
+  const { swipeTabVisible, refreshSwipeTabVisibility } = useSwipeTabVisibility();
 
-export default function TabLayout() {
-  const colorScheme = useColorScheme();
+  useFocusEffect(
+    useCallback(() => {
+      refreshSwipeTabVisibility();
+    }, [refreshSwipeTabVisibility]),
+  );
 
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
+        tabBarActiveTintColor: Colors.primary,
+        tabBarInactiveTintColor: '#AAAAAA',
         headerShown: false,
-        tabBarButton: HapticTab,
-      }}>
+        tabBarStyle: {
+          backgroundColor: Colors.white,
+          borderTopWidth: 0,
+          elevation: 0,
+          height: 60 + insets.bottom,
+          paddingBottom: insets.bottom,
+        },
+      }}
+    >
       <Tabs.Screen
-        name="index"
+        name="home"
         options={{
-          title: 'Home',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="house.fill" color={color} />,
+          title: 'Circle',
+          tabBarIcon: ({ color, size }) => <Users size={size} color={color} strokeWidth={2.2} />,
         }}
       />
       <Tabs.Screen
-        name="explore"
+        name="swipe"
         options={{
-          title: 'Explore',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="paperplane.fill" color={color} />,
+          title: 'Swipe',
+          href: swipeTabVisible ? undefined : null,
+          tabBarIcon: ({ color, size }) => <Layers size={size} color={color} strokeWidth={2.2} />,
+        }}
+      />
+      <Tabs.Screen
+        name="notifications"
+        options={{
+          title: 'Alerts',
+          tabBarIcon: ({ color, size }) => <Bell size={size} color={color} strokeWidth={2.2} />,
+        }}
+      />
+      <Tabs.Screen
+        name="profile"
+        options={{
+          title: 'Profile',
+          tabBarIcon: ({ color, size }) => <User size={size} color={color} strokeWidth={2.2} />,
         }}
       />
     </Tabs>
+  );
+}
+
+export default function TabLayout() {
+  return (
+    <SwipeTabVisibilityProvider>
+      <TabLayoutInner />
+    </SwipeTabVisibilityProvider>
   );
 }

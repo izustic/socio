@@ -19,8 +19,10 @@
         "NSUserNotificationsUsageDescription": "We'll let you know when your Circle grows, someone accepts, or it's time to meet.",
         "NSPhotoLibraryAddUsageDescription": "Socio needs permission to save chat photos and videos to your library.",
         "NSMicrophoneUsageDescription": "Socio needs microphone access for voice messages and Circle calls.",
-        "NSCameraUsageDescription": "Socio needs camera access for Circle video calls."
-      }
+        "NSCameraUsageDescription": "Socio needs camera access for Circle video calls.",
+        "ITSAppUsesNonExemptEncryption": false
+      },
+      "bitcode": false
     },
     "android": {
       "adaptiveIcon": {
@@ -30,7 +32,20 @@
       },
       "predictiveBackGestureEnabled": false,
       "package": "com.izustic.socio",
-      "permissions": ["CAMERA", "RECORD_AUDIO"]
+      "permissions": [
+        "CAMERA",
+        "RECORD_AUDIO",
+        "android.permission.ACCESS_NETWORK_STATE",
+        "android.permission.CAMERA",
+        "android.permission.INTERNET",
+        "android.permission.MODIFY_AUDIO_SETTINGS",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.SYSTEM_ALERT_WINDOW",
+        "android.permission.WAKE_LOCK",
+        "android.permission.BLUETOOTH",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE"
+      ]
     },
     "web": {
       "bundler": "metro",
@@ -44,8 +59,11 @@
         "expo-splash-screen",
         {
           "backgroundColor": "#ffffff",
+          "image": "./assets/images/splash.png",
+          "imageWidth": 200,
           "dark": {
-            "backgroundColor": "#ffffff"
+            "backgroundColor": "#ffffff",
+            "image": "./assets/images/splash.png"
           }
         }
       ],
@@ -80,6 +98,12 @@
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "4554269d-589c-4768-9bad-b72820407145"
+      }
     }
   }
 }

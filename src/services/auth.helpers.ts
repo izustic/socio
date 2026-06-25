@@ -33,6 +33,27 @@ const AUTH_ERROR_MAP: Record<string, AuthErrorInfo> = {
     userMessage: "Network connection failed",
     suggestion: "Check your internet connection",
   },
+  email_not_confirmed: {
+    userMessage: "Please confirm your email first",
+    suggestion: "Check your inbox for the confirmation link",
+  },
+  over_request_rate_limit: {
+    userMessage: "Too many attempts",
+    suggestion: "Please wait a few minutes and try again",
+  },
+  user_banned: {
+    userMessage: "This account has been disabled",
+    suggestion: "Contact support for assistance",
+  },
+  signup_disabled: {
+    userMessage: "Sign up is currently unavailable",
+    suggestion: "Try again later or contact support",
+  },
+  bad_json: {
+    userMessage: "Could not reach the authentication server",
+    suggestion:
+      "Check that EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_ANON_KEY are set for this build",
+  },
   weak_password: {
     userMessage: "Password is too weak",
     suggestion: "Use at least 8 characters with numbers and symbols",

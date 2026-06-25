@@ -1,5 +1,6 @@
 import Button from "@/src/components/ui/Button";
 import Input from "@/src/components/ui/Input";
+import { env, getMissingRequiredEnvVars } from "@/src/config/env";
 import { Colors, Radius, Spacing, Typography } from "@/src/constants/theme";
 import { useOnboarding } from "@/src/context/OnboardingContext";
 import { getFirstIncompleteOnboardingStep } from "@/src/constants/onboarding";
@@ -45,9 +46,24 @@ export default function SignUp() {
   const [emailError, setEmailError] = useState("");
   const [passwordError, setPasswordError] = useState("");
 
-  const googleWebClientId = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID;
-  const googleIosClientId = process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID;
+  const googleWebClientId = env.googleWebClientId;
+  const googleIosClientId = env.googleIosClientId;
+  const googleAndroidClientId = env.googleAndroidClientId;
   const canUseGoogleSignIn = Boolean(googleWebClientId) && Platform.OS !== "web";
+
+  const ensureAuthConfigured = () => {
+    const missing = getMissingRequiredEnvVars();
+    if (missing.length === 0) {
+      return true;
+    }
+
+    Alert.alert(
+      "App not configured",
+      `This build is missing: ${missing.join(", ")}.\n\n` +
+        "Local dev reads these from .env. EAS builds need the same values set as project environment variables (`eas env:create` or Expo dashboard).",
+    );
+    return false;
+  };
 
   useEffect(() => {
     if (!canUseGoogleSignIn || !googleWebClientId) {
@@ -57,9 +73,17 @@ export default function SignUp() {
     GoogleSignin.configure({
       webClientId: googleWebClientId,
       iosClientId: googleIosClientId || undefined,
+      ...(googleAndroidClientId
+        ? { androidClientId: googleAndroidClientId }
+        : {}),
       scopes: ["profile", "email"],
     });
-  }, [canUseGoogleSignIn, googleWebClientId, googleIosClientId]);
+  }, [
+    canUseGoogleSignIn,
+    googleWebClientId,
+    googleIosClientId,
+    googleAndroidClientId,
+  ]);
 
   // Validation functions
   const validateEmail = (email: string) => {
@@ -178,6 +202,10 @@ export default function SignUp() {
         throw new Error("No ID token received from Google");
       }
 
+      if (!ensureAuthConfigured()) {
+        return;
+      }
+
       const user = await signInWithGoogleIdToken(idToken);
       await continueIntoOnboarding(
         user.id,
@@ -204,6 +232,10 @@ export default function SignUp() {
   };
 
   const handleEmailAuth = async () => {
+    if (!ensureAuthConfigured()) {
+      return;
+    }
+
     clearErrors();
 
     // Validate inputs first

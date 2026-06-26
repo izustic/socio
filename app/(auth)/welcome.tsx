@@ -48,7 +48,6 @@ export default function SignUp() {
 
   const googleWebClientId = env.googleWebClientId;
   const googleIosClientId = env.googleIosClientId;
-  const googleAndroidClientId = env.googleAndroidClientId;
   const canUseGoogleSignIn = Boolean(googleWebClientId) && Platform.OS !== "web";
 
   const ensureAuthConfigured = () => {
@@ -73,17 +72,9 @@ export default function SignUp() {
     GoogleSignin.configure({
       webClientId: googleWebClientId,
       iosClientId: googleIosClientId || undefined,
-      ...(googleAndroidClientId
-        ? { androidClientId: googleAndroidClientId }
-        : {}),
       scopes: ["profile", "email"],
     });
-  }, [
-    canUseGoogleSignIn,
-    googleWebClientId,
-    googleIosClientId,
-    googleAndroidClientId,
-  ]);
+  }, [canUseGoogleSignIn, googleWebClientId, googleIosClientId]);
 
   // Validation functions
   const validateEmail = (email: string) => {
@@ -220,6 +211,26 @@ export default function SignUp() {
         isErrorWithCode(error) &&
         error.code === statusCodes.SIGN_IN_CANCELLED
       ) {
+        return;
+      }
+
+      const errorMessage =
+        error instanceof Error ? error.message : String(error ?? "");
+      const isDeveloperError =
+        errorMessage.includes("DEVELOPER_ERROR") ||
+        (isErrorWithCode(error) && error.code === "10");
+
+      if (isDeveloperError) {
+        Alert.alert(
+          "Google Sign-In not configured for this build",
+          "EAS builds are signed with a different certificate than local dev. " +
+            "Add the EAS keystore SHA-1 to Google Cloud Console:\n\n" +
+            "1. Run: eas credentials -p android\n" +
+            "2. Open Credentials → Android OAuth client\n" +
+            "3. Create a client for package com.izustic.socio with that SHA-1\n" +
+            "4. Keep EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID as the Web client ID\n\n" +
+            "Changes apply without rebuilding — wait a few minutes, then try again.",
+        );
         return;
       }
 

@@ -5,13 +5,13 @@ import Toast from "@/src/components/ui/Toast";
 import { Colors, Radius, Spacing, Typography } from "@/src/constants/theme";
 import { useAuth } from "@/src/context/AuthContext";
 import { useSwipeTabVisibility } from "@/src/context/SwipeTabVisibilityContext";
+import { supabase } from "@/src/services/supabase";
 import {
   CircleCandidate,
   getCircleCandidates,
   JoinCircleFilters,
   submitCircleSwipe,
 } from "@/src/services/swipe";
-import { supabase } from "@/src/services/supabase";
 import { getUserProfile } from "@/src/services/user";
 import { LinearGradient } from "expo-linear-gradient";
 import { router, useFocusEffect } from "expo-router";
@@ -39,7 +39,9 @@ import {
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
-const replaceAfterInteractions = (href: Parameters<typeof router.replace>[0]) => {
+const replaceAfterInteractions = (
+  href: Parameters<typeof router.replace>[0],
+) => {
   InteractionManager.runAfterInteractions(() => {
     router.replace(href);
   });
@@ -53,7 +55,8 @@ export default function SwipeCirclesScreen({
   filters,
 }: SwipeCirclesScreenProps) {
   const { user, profile } = useAuth();
-  const { refreshSwipeTabVisibility, endJoinBrowsing } = useSwipeTabVisibility();
+  const { refreshSwipeTabVisibility, endJoinBrowsing } =
+    useSwipeTabVisibility();
   const [circles, setCircles] = useState<CircleCandidate[]>([]);
   const [loading, setLoading] = useState(true);
   const [swiping, setSwiping] = useState(false);
@@ -66,6 +69,16 @@ export default function SwipeCirclesScreen({
   const [memberProfiles, setMemberProfiles] = useState<any[]>([]);
   const [hostProfile, setHostProfile] = useState<any>(null);
   const hasLoadedOnceRef = useRef(false);
+  // Keep refs in sync with state so async loaders can read the latest values
+  // without re-creating the loadCircles callback on every change.
+  const circlesRef = useRef<CircleCandidate[]>([]);
+  const currentIndexRef = useRef(0);
+  useEffect(() => {
+    circlesRef.current = circles;
+  }, [circles]);
+  useEffect(() => {
+    currentIndexRef.current = currentIndex;
+  }, [currentIndex]);
   const [alertState, setAlertState] = useState<{
     visible: boolean;
     title: string;
@@ -190,32 +203,43 @@ export default function SwipeCirclesScreen({
 
   const loadCircles = useCallback(
     async (options?: { silent?: boolean }) => {
-    if (!user) return;
-    const silent = options?.silent ?? false;
-    if (!silent) {
-      setLoading(true);
-    }
-    try {
-      const candidates = await getCircleCandidates(user.id, profile, filters);
-      setCircles(candidates);
-      setCurrentIndex((previousIndex) =>
-        candidates.length === 0
-          ? 0
-          : Math.min(previousIndex, candidates.length - 1),
-      );
-      hasLoadedOnceRef.current = true;
-    } catch (error: any) {
-      showAlert(
-        "Unable to load circles",
-        error?.message || "Please try again.",
-      );
-    } finally {
+      if (!user) return;
+      const silent = options?.silent ?? false;
       if (!silent) {
-        setLoading(false);
+        setLoading(true);
       }
-    }
-  },
-  [filters, profile, showAlert, user],
+      try {
+        const previousCircleId =
+          circlesRef.current[currentIndexRef.current]?.id;
+        const candidates = await getCircleCandidates(user.id, profile, filters);
+        setCircles(candidates);
+        setCurrentIndex((_previousIndex) => {
+          if (candidates.length === 0) return 0;
+          // Try to keep the user on the same circle if it still exists.
+          if (previousCircleId) {
+            const stillThereIndex = candidates.findIndex(
+              (candidate) => candidate.id === previousCircleId,
+            );
+            if (stillThereIndex !== -1) {
+              return stillThereIndex;
+            }
+          }
+          // Otherwise clamp to the last available card.
+          return candidates.length - 1;
+        });
+        hasLoadedOnceRef.current = true;
+      } catch (error: any) {
+        showAlert(
+          "Unable to load circles",
+          error?.message || "Please try again.",
+        );
+      } finally {
+        if (!silent) {
+          setLoading(false);
+        }
+      }
+    },
+    [filters, profile, showAlert, user],
   );
 
   useFocusEffect(
@@ -433,8 +457,8 @@ export default function SwipeCirclesScreen({
             {currentCircle.members.length} / {currentCircle.size} spots
           </Text>
         </View>
- {/* Top-right: SKIP label */}
- {showOverlayButtons && (
+        {/* Top-right: SKIP label */}
+        {showOverlayButtons && (
           <Animated.View
             style={[styles.skipLabel, { opacity: overlayOpacity }]}
           >
@@ -449,7 +473,7 @@ export default function SwipeCirclesScreen({
             <Text style={styles.joinLabelText}>JOIN ✓</Text>
           </Animated.View>
         )}
-       
+
         {/* Bottom overlay: circle info */}
         <LinearGradient
           colors={["transparent", "rgba(0,0,0,0.75)"]}

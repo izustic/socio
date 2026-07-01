@@ -80,6 +80,7 @@ export const signInWithEmail = async (
   } catch (error: any) {
     if (error.code) throw error;
     console.error("Sign in error:", error);
+    console.error("Sign in error JSON:", JSON.stringify(error, Object.getOwnPropertyNames(error)));
     throw error;
   }
 };

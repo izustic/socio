@@ -53,7 +53,7 @@ export default function SwipeCirclesScreen({
   filters,
 }: SwipeCirclesScreenProps) {
   const { user, profile } = useAuth();
-  const { refreshSwipeTabVisibility } = useSwipeTabVisibility();
+  const { refreshSwipeTabVisibility, endJoinBrowsing } = useSwipeTabVisibility();
   const [circles, setCircles] = useState<CircleCandidate[]>([]);
   const [loading, setLoading] = useState(true);
   const [swiping, setSwiping] = useState(false);
@@ -276,6 +276,7 @@ export default function SwipeCirclesScreen({
       const result = await submitCircleSwipe(swipedCircle.id, user.id, liked);
 
       if (liked && result.mutualMatch && result.addedToCircle) {
+        endJoinBrowsing();
         await refreshSwipeTabVisibility({ silent: true });
         showAlert(
           `You've been added to ${swipedCircle.name}`,
@@ -358,7 +359,10 @@ export default function SwipeCirclesScreen({
             <Button
               title="Create a Circle"
               variant="outline"
-              onPress={() => router.push("/circle/create")}
+              onPress={() => {
+                endJoinBrowsing();
+                router.push("/circle/create");
+              }}
             />
           </View>
         </View>

@@ -9,6 +9,7 @@ import {
   TRAIT_EMOJI,
 } from "@/src/constants/onboarding";
 import { Colors, Radius, Spacing, Typography } from "@/src/constants/theme";
+import { useSwipeTabVisibility } from "@/src/context/SwipeTabVisibilityContext";
 import { Interest, ProfileTrait } from "@/src/types";
 import { router } from "expo-router";
 import {
@@ -48,6 +49,7 @@ const clamp = (value: number, min: number, max: number) =>
   Math.max(min, Math.min(max, value));
 
 export default function JoinCirclePreferencesScreen() {
+  const { startJoinBrowsing } = useSwipeTabVisibility();
   const [distance, setDistance] = useState(12);
   const [distTrackWidth, setDistTrackWidth] = useState(0);
 
@@ -114,6 +116,7 @@ export default function JoinCirclePreferencesScreen() {
   };
 
   const handleShowCircles = () => {
+    startJoinBrowsing();
     router.replace({
       pathname: "/(tabs)/swipe",
       params: {

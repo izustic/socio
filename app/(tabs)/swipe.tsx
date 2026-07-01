@@ -84,7 +84,7 @@ export default function SwipeTabScreen() {
     }
 
     if (!swipeTabVisible) {
-      return;
+      router.replace("/(tabs)/home");
     }
   }, [swipeTabVisible, tabVisibilityLoading, loading]);
 

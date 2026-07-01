@@ -4,7 +4,9 @@ import { Circle } from "../types";
 import {
   buildCreateCirclePayload,
   CreateCircleInput,
+  resolveAppTabVisibility,
   rowToCircle,
+  type AppTabVisibility,
   type CircleRow,
 } from "./circle.helpers";
 import { supabase } from "./supabase";
@@ -53,20 +55,24 @@ export const getCircle = async (circleId: string): Promise<Circle | null> => {
 
 export type CircleParticipationRole = "host" | "joiner";
 
-/** Hide Swipe tab when user has joined a circle or their hosted circle is full. */
-export const shouldHideSwipeTab = async (userId: string): Promise<boolean> => {
+export type { AppTabVisibility } from "./circle.helpers";
+
+export const getAppTabVisibility = async (
+  userId: string,
+  options: { joinBrowsingActive?: boolean } = {},
+): Promise<AppTabVisibility> => {
   const circle = await getLatestCircleForParticipant(userId);
-  if (!circle) return false;
+  return resolveAppTabVisibility(
+    circle,
+    userId,
+    options.joinBrowsingActive ?? false,
+  );
+};
 
-  const isMember = circle.members.includes(userId);
-  const isHost = circle.creatorId === userId;
-  const isFull =
-    circle.status === "complete" || circle.members.length >= circle.size;
-
-  if (isMember && !isHost) return true;
-  if (isHost && isFull) return true;
-
-  return false;
+/** @deprecated Prefer getAppTabVisibility — kept for existing imports. */
+export const shouldHideSwipeTab = async (userId: string): Promise<boolean> => {
+  const visibility = await getAppTabVisibility(userId);
+  return !visibility.swipeTabVisible;
 };
 
 /** Circle the user hosts (forming) or has joined as a member. */

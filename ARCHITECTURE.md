@@ -39,6 +39,21 @@ Onboard → Profile setup → NoCircle → Join Circle → Set preferences
 - Swipe tab visibility is refreshed silently so routine swipes do not force
   the tab wrapper back through a loading screen
 
+### Bottom tab visibility
+
+Tab bar rules are centralized in `resolveAppTabVisibility()` (`src/services/circle.helpers.ts`) and applied by `SwipeTabVisibilityContext`.
+
+| App state | Circle tab | Swipe tab | Circle tab content | Swipe tab content |
+|---|---|---|---|---|
+| After onboarding / no circle | Visible | Hidden | `NoCircleScreen` | — |
+| Join flow (browsing circles) | Hidden | Visible | — | `SwipeCirclesScreen` |
+| Host filling a forming circle | Visible | Visible | `CircleProgressScreen` | `SwipeUsersScreen` |
+| Joiner matched into forming circle | Visible | Hidden | `CircleProgressScreen` | — |
+| Circle complete (host or member) | Visible | Hidden | `CircleCompleteScreen` | — |
+| After leave / close circle | Visible | Hidden | `NoCircleScreen` | — |
+
+`startJoinBrowsing()` / `endJoinBrowsing()` track the join-browse flow before a circle record exists. Tab visibility is refreshed on circle load, match, completion, leave, and close.
+
 ---
 
 ## 2. TECH STACK OVERVIEW

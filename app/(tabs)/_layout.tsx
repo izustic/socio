@@ -1,5 +1,5 @@
 import { Colors } from '@/src/constants/theme';
-import { SwipeTabVisibilityProvider, useSwipeTabVisibility } from '@/src/context/SwipeTabVisibilityContext';
+import { useSwipeTabVisibility } from '@/src/context/SwipeTabVisibilityContext';
 import { Tabs, useFocusEffect } from 'expo-router';
 import { Bell, Layers, User, Users } from 'lucide-react-native';
 import { useCallback } from 'react';
@@ -7,7 +7,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 function TabLayoutInner() {
   const insets = useSafeAreaInsets();
-  const { swipeTabVisible, refreshSwipeTabVisibility } = useSwipeTabVisibility();
+  const { swipeTabVisible, circleTabVisible, refreshSwipeTabVisibility } =
+    useSwipeTabVisibility();
 
   useFocusEffect(
     useCallback(() => {
@@ -34,6 +35,7 @@ function TabLayoutInner() {
         name="home"
         options={{
           title: 'Circle',
+          href: circleTabVisible ? undefined : null,
           tabBarIcon: ({ color, size }) => <Users size={size} color={color} strokeWidth={2.2} />,
         }}
       />
@@ -64,9 +66,5 @@ function TabLayoutInner() {
 }
 
 export default function TabLayout() {
-  return (
-    <SwipeTabVisibilityProvider>
-      <TabLayoutInner />
-    </SwipeTabVisibilityProvider>
-  );
+  return <TabLayoutInner />;
 }

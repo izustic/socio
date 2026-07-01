@@ -8,6 +8,7 @@ import {
 } from "@/src/constants/onboarding";
 import { Colors, Radius, Spacing, Typography } from "@/src/constants/theme";
 import { useAuth } from "@/src/context/AuthContext";
+import { useSwipeTabVisibility } from "@/src/context/SwipeTabVisibilityContext";
 import { createCircle } from "@/src/services/circle";
 import { Interest, ProfileTrait } from "@/src/types";
 import { router, useLocalSearchParams } from "expo-router";
@@ -71,6 +72,7 @@ export default function CreateCirclePreferencesScreen() {
     meetupDays?: string;
   }>();
   const { user, profile } = useAuth();
+  const { refreshSwipeTabVisibility } = useSwipeTabVisibility();
   const [ageRange, setAgeRange] = useState<[number, number]>([22, 32]);
   const [ageTrackWidth, setAgeTrackWidth] = useState(0);
   const [genderMix, setGenderMix] = useState<GenderMix>("Both");
@@ -227,6 +229,7 @@ export default function CreateCirclePreferencesScreen() {
         meetupTimeframe: `Within ${circleBasics.meetupDays} days`,
       });
 
+      await refreshSwipeTabVisibility({ silent: true });
       router.replace("/(tabs)/swipe");
     } catch (error: any) {
       setErrorText(error?.message || "We could not create your Circle.");

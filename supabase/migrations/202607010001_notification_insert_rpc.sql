@@ -31,6 +31,10 @@ begin
     raise exception 'user_id is required';
   end if;
 
+  -- The notifications.type column is the public.notification_type enum.
+  -- Casting here keeps the RPC signature as plain text (so the client
+  -- does not need to know the enum type) while still satisfying the
+  -- strongly-typed column.
   insert into public.notifications (
     user_id,
     type,
@@ -40,7 +44,7 @@ begin
   )
   values (
     p_user_id,
-    p_type,
+    p_type::public.notification_type,
     p_title,
     p_body,
     p_data

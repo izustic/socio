@@ -1,3 +1,4 @@
+import { SafeAreaView } from "react-native-safe-area-context";
 import {
   EDUCATION_OPTIONS,
   INTEREST_EMOJI,
@@ -7,10 +8,14 @@ import {
   ONBOARDING_INTERESTS,
   ONBOARDING_TRAITS,
   TRAIT_EMOJI,
-} from "@/src/constants/onboarding";
-import { Colors, Radius, Spacing, Typography } from "@/src/constants/theme";
+  } from "@/src/constants/onboarding";
+import { Colors,
+  Radius,
+  Spacing,
+  Typography } from "@/src/constants/theme";
 import { useSwipeTabVisibility } from "@/src/context/SwipeTabVisibilityContext";
-import { Interest, ProfileTrait } from "@/src/types";
+import { Interest,
+  ProfileTrait } from "@/src/types";
 import { router } from "expo-router";
 import {
   ChevronDown,
@@ -18,14 +23,13 @@ import {
   Mars,
   Venus,
   VenusAndMars,
-} from "lucide-react-native";
+  } from "lucide-react-native";
 import type { LucideIcon } from "lucide-react-native";
 import { useState } from "react";
 import {
   GestureResponderEvent,
   Modal,
   Pressable,
-  SafeAreaView,
   ScrollView,
   StatusBar,
   StyleSheet,

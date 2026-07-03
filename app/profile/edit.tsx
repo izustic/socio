@@ -1,10 +1,14 @@
+import { SafeAreaView } from "react-native-safe-area-context";
 import {
   INTEREST_EMOJI,
   ONBOARDING_INTERESTS,
   ONBOARDING_TRAITS,
   TRAIT_EMOJI,
-} from "@/src/constants/onboarding";
-import { Colors, Radius, Spacing, Typography } from "@/src/constants/theme";
+  } from "@/src/constants/onboarding";
+import { Colors,
+  Radius,
+  Spacing,
+  Typography } from "@/src/constants/theme";
 import { useAuth } from "@/src/context/AuthContext";
 import { useLocation } from "@/src/hooks/useLocation";
 import {
@@ -12,9 +16,12 @@ import {
   requestMediaLibraryPermission,
   uploadProfileMedia,
   UploadProgress,
-} from "@/src/services/profileMedia";
+  } from "@/src/services/profileMedia";
 import { updateUserProfile } from "@/src/services/user";
-import { Interest, ProfileMedia, ProfileTrait, User } from "@/src/types";
+import { Interest,
+  ProfileMedia,
+  ProfileTrait,
+  User } from "@/src/types";
 import { Image } from "expo-image";
 import { router } from "expo-router";
 import {
@@ -25,14 +32,14 @@ import {
   Play,
   Plus,
   Star,
-} from "lucide-react-native";
-import React, { useState } from "react";
+  } from "lucide-react-native";
+import React,
+  { useState } from "react";
 import {
   ActivityIndicator,
   Alert,
   KeyboardAvoidingView,
   Platform,
-  SafeAreaView,
   ScrollView,
   StatusBar,
   StyleSheet,

@@ -1,11 +1,16 @@
-import { Colors, Radius, Spacing, Typography } from "@/src/constants/theme";
+import { SafeAreaView } from "react-native-safe-area-context";
+import {
+  Colors,
+  Radius,
+  Spacing,
+  Typography } from "@/src/constants/theme";
 import { useAuth } from "@/src/context/AuthContext";
 import {
   getSettingsSnapshot,
   NotificationSettings,
   subscribeToSettings,
   updateNotificationSettings,
-} from "@/src/services/settings";
+  } from "@/src/services/settings";
 import { router } from "expo-router";
 import {
   Bell,
@@ -15,13 +20,14 @@ import {
   Moon,
   Sparkles,
   Users,
-} from "lucide-react-native";
+  } from "lucide-react-native";
 import type { LucideIcon } from "lucide-react-native";
-import React, { useEffect, useState } from "react";
+import React,
+  { useEffect,
+  useState } from "react";
 import {
   ActivityIndicator,
   Alert,
-  SafeAreaView,
   ScrollView,
   StatusBar,
   StyleSheet,

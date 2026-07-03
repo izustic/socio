@@ -1,3 +1,4 @@
+import { SafeAreaView } from "react-native-safe-area-context";
 import AlertModal from "@/src/components/ui/AlertModal";
 import {
   EDUCATION_OPTIONS,
@@ -5,27 +6,32 @@ import {
   ONBOARDING_INTERESTS,
   ONBOARDING_TRAITS,
   TRAIT_EMOJI,
-} from "@/src/constants/onboarding";
-import { Colors, Radius, Spacing, Typography } from "@/src/constants/theme";
+  } from "@/src/constants/onboarding";
+import { Colors,
+  Radius,
+  Spacing,
+  Typography } from "@/src/constants/theme";
 import { useAuth } from "@/src/context/AuthContext";
 import { useSwipeTabVisibility } from "@/src/context/SwipeTabVisibilityContext";
 import { createCircle } from "@/src/services/circle";
-import { Interest, ProfileTrait } from "@/src/types";
-import { router, useLocalSearchParams } from "expo-router";
+import { Interest,
+  ProfileTrait } from "@/src/types";
+import { router,
+  useLocalSearchParams } from "expo-router";
 import {
   ChevronDown,
   ChevronLeft,
   Mars,
   Venus,
   VenusAndMars,
-} from "lucide-react-native";
+  } from "lucide-react-native";
 import type { LucideIcon } from "lucide-react-native";
-import { useMemo, useState } from "react";
+import { useMemo,
+  useState } from "react";
 import {
   GestureResponderEvent,
   Modal,
   Pressable,
-  SafeAreaView,
   ScrollView,
   StatusBar,
   StyleSheet,

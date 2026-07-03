@@ -1,8 +1,13 @@
+import { SafeAreaView } from "react-native-safe-area-context";
 import AlertModal from "@/src/components/ui/AlertModal";
 import Button from "@/src/components/ui/Button";
 import Chip from "@/src/components/ui/Chip";
 import Toast from "@/src/components/ui/Toast";
-import { Colors, Radius, Spacing, Typography } from "@/src/constants/theme";
+import {
+  Colors,
+  Radius,
+  Spacing,
+  Typography } from "@/src/constants/theme";
 import { useAuth } from "@/src/context/AuthContext";
 import { useSwipeTabVisibility } from "@/src/context/SwipeTabVisibilityContext";
 import { supabase } from "@/src/services/supabase";
@@ -11,25 +16,29 @@ import {
   getCircleCandidates,
   JoinCircleFilters,
   submitCircleSwipe,
-} from "@/src/services/swipe";
+  } from "@/src/services/swipe";
 import { getUserProfile } from "@/src/services/user";
 import { LinearGradient } from "expo-linear-gradient";
-import { router, useFocusEffect } from "expo-router";
-import { Check, MapPin, Users, X } from "lucide-react-native";
-import React, {
+import { router,
+  useFocusEffect } from "expo-router";
+import { Check,
+  MapPin,
+  Users,
+  X } from "lucide-react-native";
+import React,
+  {
   useCallback,
   useEffect,
   useMemo,
   useRef,
   useState,
-} from "react";
+  } from "react";
 import {
   ActivityIndicator,
   Animated,
   Dimensions,
   Image,
   InteractionManager,
-  SafeAreaView,
   StatusBar,
   StyleSheet,
   Text,

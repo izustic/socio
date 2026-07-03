@@ -1,4 +1,9 @@
-import { Colors, Radius, Spacing, Typography } from "@/src/constants/theme";
+import { SafeAreaView } from "react-native-safe-area-context";
+import {
+  Colors,
+  Radius,
+  Spacing,
+  Typography } from "@/src/constants/theme";
 import { useAuth } from "@/src/context/AuthContext";
 import { deleteAccount } from "@/src/services/account";
 import { updatePrivacySettings } from "@/src/services/settings";
@@ -11,8 +16,12 @@ import {
   MessageCircle,
   Trash2,
   Users,
-} from "lucide-react-native";
-import React, { useEffect, useMemo, useRef, useState } from "react";
+  } from "lucide-react-native";
+import React,
+  { useEffect,
+  useMemo,
+  useRef,
+  useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -20,7 +29,6 @@ import {
   Easing,
   KeyboardAvoidingView,
   Platform,
-  SafeAreaView,
   ScrollView,
   StatusBar,
   StyleSheet,

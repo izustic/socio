@@ -1,5 +1,10 @@
+import { SafeAreaView } from "react-native-safe-area-context";
 import Avatar from "@/src/components/ui/Avatar";
-import { Colors, Radius, Spacing, Typography } from "@/src/constants/theme";
+import {
+  Colors,
+  Radius,
+  Spacing,
+  Typography } from "@/src/constants/theme";
 import { useAuth } from "@/src/context/AuthContext";
 import {
   BlockedAccount,
@@ -14,7 +19,7 @@ import {
   unblockAccount,
   updatePrivacySettings,
   verifyProfilePhoto,
-} from "@/src/services/settings";
+  } from "@/src/services/settings";
 import * as FileSystem from "expo-file-system";
 import { router } from "expo-router";
 import {
@@ -28,15 +33,17 @@ import {
   ShieldCheck,
   Trash2,
   UserX,
-} from "lucide-react-native";
+  } from "lucide-react-native";
 import type { LucideIcon } from "lucide-react-native";
-import React, { useCallback, useEffect, useState } from "react";
+import React,
+  { useCallback,
+  useEffect,
+  useState } from "react";
 import {
   ActivityIndicator,
   Alert,
   FlatList,
   Modal,
-  SafeAreaView,
   ScrollView,
   Share,
   StatusBar,

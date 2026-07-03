@@ -1,25 +1,32 @@
+import { SafeAreaView } from "react-native-safe-area-context";
 import Button from "@/src/components/ui/Button";
 import Input from "@/src/components/ui/Input";
-import { env, getMissingRequiredEnvVars } from "@/src/config/env";
-import { Colors, Radius, Spacing, Typography } from "@/src/constants/theme";
+import {
+  env,
+  getMissingRequiredEnvVars } from "@/src/config/env";
+import { Colors,
+  Radius,
+  Spacing,
+  Typography } from "@/src/constants/theme";
 import { useOnboarding } from "@/src/context/OnboardingContext";
 import { getFirstIncompleteOnboardingStep } from "@/src/constants/onboarding";
 import {
   signInWithEmail,
   signInWithGoogleIdToken,
   signUpWithEmail,
-} from "@/src/services/auth";
+  } from "@/src/services/auth";
 import { getUserProfile } from "@/src/services/user";
 import { showErrorAlert } from "@/src/utils/errorHandling";
 import { Image } from "expo-image";
 import { router } from "expo-router";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback,
+  useEffect,
+  useState } from "react";
 import {
   Alert,
   KeyboardAvoidingView,
   Modal,
   Platform,
-  SafeAreaView,
   ScrollView,
   StatusBar,
   StyleSheet,

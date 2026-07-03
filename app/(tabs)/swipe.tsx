@@ -1,15 +1,23 @@
-import { Colors, Spacing, Typography } from "@/src/constants/theme";
+import { SafeAreaView } from "react-native-safe-area-context";
+import {
+  Colors,
+  Spacing,
+  Typography } from "@/src/constants/theme";
 import { useAuth } from "@/src/context/AuthContext";
 import { useSwipeTabVisibility } from "@/src/context/SwipeTabVisibilityContext";
 import SwipeCirclesScreen from "@/src/screens/circle/SwipeCirclesScreen";
 import SwipeUsersScreen from "@/src/screens/circle/SwipeUsersScreen";
 import { getUserCircleParticipation } from "@/src/services/circle";
 import { JoinCircleFilters } from "@/src/services/swipe";
-import { router, useLocalSearchParams } from "expo-router";
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import { router,
+  useLocalSearchParams } from "expo-router";
+import React,
+  { useEffect,
+  useMemo,
+  useRef,
+  useState } from "react";
 import {
   ActivityIndicator,
-  SafeAreaView,
   StatusBar,
   StyleSheet,
   Text,

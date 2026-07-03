@@ -1,7 +1,19 @@
-import { Colors, Radius, Spacing, Typography } from '@/src/constants/theme';
+import { SafeAreaView } from "react-native-safe-area-context";
+import {
+  Colors,
+  Radius,
+  Spacing,
+  Typography } from '@/src/constants/theme';
 import { router } from 'expo-router';
-import { Plus, Search } from 'lucide-react-native';
-import { Image, SafeAreaView, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Plus,
+  Search } from 'lucide-react-native';
+import { Image,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 
 export default function NoCircleScreen() {
   return (

@@ -1,10 +1,15 @@
-import { Colors, Radius, Spacing, Typography } from '@/src/constants/theme';
+import { SafeAreaView } from "react-native-safe-area-context";
+import {
+  Colors,
+  Radius,
+  Spacing,
+  Typography } from '@/src/constants/theme';
 import { router } from 'expo-router';
-import { ChevronLeft, MapPin } from 'lucide-react-native';
+import { ChevronLeft,
+  MapPin } from 'lucide-react-native';
 import { useState } from 'react';
 import {
   GestureResponderEvent,
-  SafeAreaView,
   ScrollView,
   StatusBar,
   StyleSheet,

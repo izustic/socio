@@ -13,22 +13,28 @@ import { Colors,
   Typography } from "@/src/constants/theme";
 import { useAuth } from "@/src/context/AuthContext";
 import { useSwipeTabVisibility } from "@/src/context/SwipeTabVisibilityContext";
-import { createCircle } from "@/src/services/circle";
+import { createCircle, getCircle, updateCircle } from "@/src/services/circle";
+import { uploadCircleImage } from "@/src/services/supabase";
 import { Interest,
   ProfileTrait } from "@/src/types";
+import { Image } from "expo-image";
+import * as ImagePicker from "expo-image-picker";
 import { router,
   useLocalSearchParams } from "expo-router";
 import {
   ChevronDown,
   ChevronLeft,
+  ImagePlus,
   Mars,
   Venus,
   VenusAndMars,
   } from "lucide-react-native";
 import type { LucideIcon } from "lucide-react-native";
-import { useMemo,
+import { useEffect,
+  useMemo,
   useState } from "react";
 import {
+  ActivityIndicator,
   GestureResponderEvent,
   Modal,
   Pressable,
@@ -76,6 +82,8 @@ export default function CreateCirclePreferencesScreen() {
     radiusUnit?: string;
     meetupGoal?: string;
     meetupDays?: string;
+    imageUri?: string;
+    circleId?: string;
   }>();
   const { user, profile } = useAuth();
   const { refreshSwipeTabVisibility } = useSwipeTabVisibility();
@@ -98,9 +106,17 @@ export default function CreateCirclePreferencesScreen() {
       ],
   );
   const [saving, setSaving] = useState(false);
+  const [loadingCircle, setLoadingCircle] = useState(false);
   const [errorText, setErrorText] = useState<string | null>(null);
   const [educationLevel, setEducationLevel] = useState<string>("Any");
   const [educationOpen, setEducationOpen] = useState(false);
+  const [circleImageUri, setCircleImageUri] = useState<string | null>(
+    () => asString(params.imageUri) || null,
+  );
+  const [editFilterBase, setEditFilterBase] = useState<{
+    locationRadius: number;
+    vibe?: string;
+  } | null>(null);
   const [alertState, setAlertState] = useState<AlertState>({
     visible: false,
     title: "",
@@ -137,6 +153,7 @@ export default function CreateCirclePreferencesScreen() {
 
   const circleBasics = useMemo(
     () => ({
+      circleId: asString(params.circleId),
       name: asString(params.name),
       vibe: asString(params.vibe),
       size: Number(asString(params.size, "5")),
@@ -144,8 +161,11 @@ export default function CreateCirclePreferencesScreen() {
       radiusUnit: asString(params.radiusUnit, "km"),
       meetupGoal: asString(params.meetupGoal, "Coffee"),
       meetupDays: Number(asString(params.meetupDays, "3")),
+      imageUri: asString(params.imageUri),
     }),
     [
+      params.circleId,
+      params.imageUri,
       params.meetupDays,
       params.name,
       params.vibe,
@@ -155,6 +175,47 @@ export default function CreateCirclePreferencesScreen() {
       params.meetupGoal,
     ],
   );
+
+  const isEditMode = Boolean(circleBasics.circleId);
+
+  useEffect(() => {
+    if (!circleBasics.imageUri) return;
+    setCircleImageUri(circleBasics.imageUri);
+  }, [circleBasics.imageUri]);
+
+  useEffect(() => {
+    if (!circleBasics.circleId) return;
+
+    let active = true;
+    const loadCircle = async () => {
+      setLoadingCircle(true);
+      try {
+        const circle = await getCircle(circleBasics.circleId);
+        if (!active || !circle) return;
+
+        setAgeRange(circle.filters.ageRange);
+        setGenderMix(circle.filters.genderMix || "Both");
+        setSelectedInterests(circle.filters.interests || []);
+        setSelectedTraits(circle.filters.traits || []);
+        setEducationLevel(circle.filters.educationLevel || "Any");
+        setCircleImageUri(circle.imageUrl || null);
+        setEditFilterBase({
+          locationRadius: circle.filters.locationRadius,
+          vibe: circle.filters.vibe,
+        });
+      } catch (error: any) {
+        if (!active) return;
+        setErrorText(error?.message || "We could not load this Circle.");
+      } finally {
+        if (active) setLoadingCircle(false);
+      }
+    };
+
+    loadCircle();
+    return () => {
+      active = false;
+    };
+  }, [circleBasics.circleId]);
 
   const ageFillLeft = ((ageRange[0] - MIN_AGE) / (MAX_AGE - MIN_AGE)) * 100;
   const ageFillWidth =
@@ -190,7 +251,30 @@ export default function CreateCirclePreferencesScreen() {
     );
   };
 
-  const handleCreateCircle = async () => {
+  const handlePickImage = async () => {
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permission.granted) {
+      showAlert(
+        "Photo access needed",
+        "Please allow photo access to add a Circle image.",
+      );
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ["images"],
+      allowsEditing: true,
+      aspect: [4, 3],
+      quality: 0.85,
+      presentationStyle: ImagePicker.UIImagePickerPresentationStyle.FULL_SCREEN,
+    });
+
+    if (!result.canceled && result.assets[0]?.uri) {
+      setCircleImageUri(result.assets[0].uri);
+    }
+  };
+
+  const handleSaveCircle = async () => {
     if (!user) {
       setErrorText("Please sign in again before creating a Circle.");
       showAlert(
@@ -199,7 +283,7 @@ export default function CreateCirclePreferencesScreen() {
       );
       return;
     }
-    if (!circleBasics.name) {
+    if (!isEditMode && !circleBasics.name) {
       setErrorText("Please go back and name your Circle.");
       showAlert(
         "Circle details missing",
@@ -219,28 +303,50 @@ export default function CreateCirclePreferencesScreen() {
     setSaving(true);
     setErrorText(null);
     try {
-      await createCircle({
-        name: circleBasics.name,
-        creatorId: user.id,
-        size: circleBasics.size,
-        ageRange,
-        educationLevel,
-        locationRadius: circleBasics.radius,
-        interests: selectedInterests,
-        traits: selectedTraits,
-        genderMix,
-        vibe: circleBasics.vibe,
-        meetupGoal: circleBasics.meetupGoal,
-        meetupDays: circleBasics.meetupDays,
-        meetupTimeframe: `Within ${circleBasics.meetupDays} days`,
-      });
+      if (isEditMode) {
+        const imageUrl =
+          circleImageUri && !circleImageUri.startsWith("http")
+            ? await uploadCircleImage(user.id, circleBasics.circleId, circleImageUri)
+            : circleImageUri;
+
+        await updateCircle(circleBasics.circleId, {
+          filters: {
+            ageRange,
+            educationLevel,
+            locationRadius:
+              editFilterBase?.locationRadius ?? circleBasics.radius,
+            interests: selectedInterests,
+            traits: selectedTraits,
+            genderMix,
+            vibe: editFilterBase?.vibe ?? circleBasics.vibe,
+          },
+          imageUrl: imageUrl ?? null,
+        });
+      } else {
+        await createCircle({
+          name: circleBasics.name,
+          creatorId: user.id,
+          size: circleBasics.size,
+          ageRange,
+          educationLevel,
+          locationRadius: circleBasics.radius,
+          interests: selectedInterests,
+          traits: selectedTraits,
+          genderMix,
+          vibe: circleBasics.vibe,
+          meetupGoal: circleBasics.meetupGoal,
+          meetupDays: circleBasics.meetupDays,
+          meetupTimeframe: `Within ${circleBasics.meetupDays} days`,
+          circleImageUri: circleImageUri || undefined,
+        });
+      }
 
       await refreshSwipeTabVisibility({ silent: true });
-      router.replace("/(tabs)/swipe");
+      router.replace(isEditMode ? "/(tabs)/swipe" : "/(tabs)/swipe");
     } catch (error: any) {
-      setErrorText(error?.message || "We could not create your Circle.");
+      setErrorText(error?.message || "We could not save your Circle.");
       showAlert(
-        "Unable to create Circle",
+        isEditMode ? "Unable to save Circle" : "Unable to create Circle",
         error?.message || "Please try again.",
       );
     } finally {
@@ -259,26 +365,60 @@ export default function CreateCirclePreferencesScreen() {
         >
           <ChevronLeft size={22} color={Colors.textPrimary} strokeWidth={2.4} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>New Circle</Text>
+        <Text style={styles.headerTitle}>
+          {isEditMode ? "Edit Circle" : "New Circle"}
+        </Text>
         <View style={styles.headerSpacer} />
       </View>
 
-      <View style={styles.progressRow}>
-        <View style={styles.progressActive} />
-        <View style={styles.progressActive} />
-      </View>
+      {!isEditMode ? (
+        <View style={styles.progressRow}>
+          <View style={styles.progressActive} />
+          <View style={styles.progressActive} />
+        </View>
+      ) : null}
+
+      {loadingCircle ? (
+        <View style={styles.loadingWrap}>
+          <ActivityIndicator size="large" color={Colors.primaryDark} />
+        </View>
+      ) : (
+      <>
 
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.content}
       >
         <Text style={styles.stepLabel}>
-          STEP 2 OF 2 · WHO YOU&apos;RE LOOKING FOR
+          {isEditMode ? "EDIT CIRCLE" : "STEP 2 OF 2 · WHO YOU'RE LOOKING FOR"}
         </Text>
-        <Text style={styles.title}>Match preferences</Text>
+        <Text style={styles.title}>
+          {isEditMode ? "Tune your Circle" : "Match preferences"}
+        </Text>
         <Text style={styles.subtitle}>
-          We&apos;ll only show people who fit your Circle.
+          {isEditMode
+            ? "Update your photo and filters to find more people."
+            : "We'll only show people who fit your Circle."}
         </Text>
+
+        <View style={styles.section}>
+          <Text style={styles.label}>PHOTO</Text>
+          <TouchableOpacity
+            activeOpacity={0.86}
+            style={styles.imagePicker}
+            onPress={handlePickImage}
+          >
+            {circleImageUri ? (
+              <Image source={{ uri: circleImageUri }} style={styles.circleImage} />
+            ) : (
+              <View style={styles.imageEmpty}>
+                <ImagePlus size={28} color={Colors.textPrimary} strokeWidth={2.1} />
+                <Text style={styles.imageTitle}>Add a Circle photo</Text>
+                <Text style={styles.imageHint}>This appears on swipe cards.</Text>
+              </View>
+            )}
+          </TouchableOpacity>
+        </View>
 
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
@@ -388,7 +528,7 @@ export default function CreateCirclePreferencesScreen() {
             styles.primaryButton,
             (saving || selectedInterests.length < 3) && styles.disabledButton,
           ]}
-          onPress={handleCreateCircle}
+          onPress={handleSaveCircle}
         >
           <Text
             style={[
@@ -397,10 +537,18 @@ export default function CreateCirclePreferencesScreen() {
                 styles.disabledButtonText,
             ]}
           >
-            {saving ? "Creating..." : "Create Circle"}
+            {saving
+              ? isEditMode
+                ? "Saving..."
+                : "Creating..."
+              : isEditMode
+                ? "Save changes"
+                : "Create Circle"}
           </Text>
         </TouchableOpacity>
       </View>
+      </>
+      )}
 
       <Modal
         visible={educationOpen}
@@ -538,6 +686,11 @@ const styles = StyleSheet.create({
     borderRadius: Radius.full,
     backgroundColor: Colors.primary,
   },
+  loadingWrap: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   content: {
     paddingHorizontal: Spacing.screenPadding,
     paddingTop: 10,
@@ -561,6 +714,31 @@ const styles = StyleSheet.create({
   },
   section: {
     gap: 12,
+  },
+  imagePicker: {
+    height: 176,
+    borderRadius: 16,
+    backgroundColor: "#F6F6F6",
+    overflow: "hidden",
+  },
+  circleImage: {
+    width: "100%",
+    height: "100%",
+  },
+  imageEmpty: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 7,
+  },
+  imageTitle: {
+    ...Typography.body,
+    color: Colors.textPrimary,
+    fontWeight: "800",
+  },
+  imageHint: {
+    ...Typography.bodySmall,
+    color: Colors.textSecondary,
   },
   sectionHeader: {
     flexDirection: "row",

@@ -4,8 +4,11 @@ import {
   Radius,
   Spacing,
   Typography } from '@/src/constants/theme';
+import { Image } from "expo-image";
+import * as ImagePicker from "expo-image-picker";
 import { router } from 'expo-router';
 import { ChevronLeft,
+  ImagePlus,
   MapPin } from 'lucide-react-native';
 import { useState } from 'react';
 import {
@@ -33,6 +36,7 @@ export default function CreateCircleBasicsScreen() {
   const [radiusUnit, setRadiusUnit] = useState<'km' | 'mi'>('km');
   const [meetupGoal, setMeetupGoal] = useState('Coffee');
   const [meetupDays, setMeetupDays] = useState(3);
+  const [imageUri, setImageUri] = useState<string | null>(null);
   const [trackWidth, setTrackWidth] = useState(0);
   const [dayTrackWidth, setDayTrackWidth] = useState(0);
 
@@ -46,6 +50,23 @@ export default function CreateCircleBasicsScreen() {
     if (!dayTrackWidth) return;
     const ratio = clamp(event.nativeEvent.locationX / dayTrackWidth, 0, 1);
     setMeetupDays(Math.round(3 + ratio * 7));
+  };
+
+  const handlePickImage = async () => {
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permission.granted) return;
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ["images"],
+      allowsEditing: true,
+      aspect: [4, 3],
+      quality: 0.85,
+      presentationStyle: ImagePicker.UIImagePickerPresentationStyle.FULL_SCREEN,
+    });
+
+    if (!result.canceled && result.assets[0]?.uri) {
+      setImageUri(result.assets[0].uri);
+    }
   };
 
   const handleNext = () => {
@@ -64,6 +85,7 @@ export default function CreateCircleBasicsScreen() {
           radiusUnit,
           meetupGoal,
         meetupDays: String(meetupDays),
+        imageUri: imageUri ?? "",
       },
     });
   };
@@ -91,6 +113,25 @@ export default function CreateCircleBasicsScreen() {
         <Text style={styles.stepLabel}>STEP 1 OF 2 · BASICS</Text>
         <Text style={styles.title}>Set up your Circle</Text>
         <Text style={styles.subtitle}>Name it, size it, pick where and what.</Text>
+
+        <View style={styles.section}>
+          <Text style={styles.label}>PHOTO</Text>
+          <TouchableOpacity
+            activeOpacity={0.86}
+            style={styles.imagePicker}
+            onPress={handlePickImage}
+          >
+            {imageUri ? (
+              <Image source={{ uri: imageUri }} style={styles.circleImage} />
+            ) : (
+              <View style={styles.imageEmpty}>
+                <ImagePlus size={28} color={Colors.textPrimary} strokeWidth={2.1} />
+                <Text style={styles.imageTitle}>Add a Circle photo</Text>
+                <Text style={styles.imageHint}>This appears on swipe cards.</Text>
+              </View>
+            )}
+          </TouchableOpacity>
+        </View>
 
         <View style={styles.section}>
           <Text style={styles.label}>NAME</Text>
@@ -303,6 +344,30 @@ const styles = StyleSheet.create({
   },
   section: {
     gap: 12,
+  },
+  imagePicker: {
+    height: 176,
+    borderRadius: 16,
+    backgroundColor: "#F6F6F6",
+    overflow: "hidden",
+  },
+  circleImage: {
+    width: "100%",
+    height: "100%",
+  },
+  imageEmpty: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 7,
+  },
+  imageTitle: {
+    ...Typography.body,
+    fontWeight: "800",
+  },
+  imageHint: {
+    ...Typography.bodySmall,
+    color: Colors.textSecondary,
   },
   sectionHeader: {
     flexDirection: 'row',

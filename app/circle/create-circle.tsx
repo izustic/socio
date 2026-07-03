@@ -7,7 +7,10 @@ import { useAuth } from "@/src/context/AuthContext";
 import { useSwipeTabVisibility } from "@/src/context/SwipeTabVisibilityContext";
 import { createCircle } from "@/src/services/circle";
 import { Interest } from "@/src/types";
+import { Image } from "expo-image";
+import * as ImagePicker from "expo-image-picker";
 import { router } from "expo-router";
+import { ImagePlus } from "lucide-react-native";
 import React, { useState } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 import {
@@ -59,6 +62,7 @@ export default function CreateCircleScreen() {
   const [selectedGoal, setSelectedGoal] = useState("Coffee ☕");
   const [meetupDays, setMeetupDays] = useState(3);
   const [dayTrackWidth, setDayTrackWidth] = useState(0);
+  const [circleImageUri, setCircleImageUri] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [alertState, setAlertState] = useState<AlertState>({
     visible: false,
@@ -108,6 +112,29 @@ export default function CreateCircleScreen() {
     setMeetupDays(Math.round(3 + ratio * 7));
   };
 
+  const handlePickImage = async () => {
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permission.granted) {
+      showAlert(
+        "Photo access needed",
+        "Please allow photo access to add a Circle image.",
+      );
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ["images"],
+      allowsEditing: true,
+      aspect: [4, 3],
+      quality: 0.85,
+      presentationStyle: ImagePicker.UIImagePickerPresentationStyle.FULL_SCREEN,
+    });
+
+    if (!result.canceled && result.assets[0]?.uri) {
+      setCircleImageUri(result.assets[0].uri);
+    }
+  };
+
   const handleCreateCircle = async () => {
     if (!user) {
       showAlert("Not signed in", "Please sign in again to create a circle.");
@@ -136,6 +163,7 @@ export default function CreateCircleScreen() {
         meetupGoal: selectedGoal,
         meetupDays,
         meetupTimeframe: `Within ${meetupDays} days`,
+        circleImageUri: circleImageUri || undefined,
       };
       console.log("create circle payload:", payload);
 
@@ -161,6 +189,32 @@ export default function CreateCircleScreen() {
       </View>
 
       <ScrollView contentContainerStyle={styles.content}>
+        <View style={styles.section}>
+          <Text style={styles.label}>PHOTO</Text>
+          <TouchableOpacity
+            activeOpacity={0.86}
+            style={styles.imagePicker}
+            onPress={handlePickImage}
+          >
+            {circleImageUri ? (
+              <Image
+                source={{ uri: circleImageUri }}
+                style={styles.circleImage}
+              />
+            ) : (
+              <View style={styles.imageEmpty}>
+                <ImagePlus
+                  size={28}
+                  color={Colors.textPrimary}
+                  strokeWidth={2.1}
+                />
+                <Text style={styles.imageTitle}>Add a Circle photo</Text>
+                <Text style={styles.imageHint}>This appears on swipe cards.</Text>
+              </View>
+            )}
+          </TouchableOpacity>
+        </View>
+
         <View style={styles.section}>
           <Text style={styles.label}>CIRCLE NAME</Text>
           <Input
@@ -317,6 +371,31 @@ const styles = StyleSheet.create({
   },
   section: {
     gap: Spacing.sm,
+  },
+  imagePicker: {
+    height: 176,
+    borderRadius: 16,
+    backgroundColor: "#F6F6F6",
+    overflow: "hidden",
+  },
+  circleImage: {
+    width: "100%",
+    height: "100%",
+  },
+  imageEmpty: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 7,
+  },
+  imageTitle: {
+    ...Typography.body,
+    color: Colors.textPrimary,
+    fontWeight: "800",
+  },
+  imageHint: {
+    ...Typography.bodySmall,
+    color: Colors.textSecondary,
   },
   sectionHeader: {
     flexDirection: "row",

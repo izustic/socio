@@ -1,6 +1,6 @@
 import type { RealtimeChannel } from "@supabase/supabase-js";
 import * as Crypto from "expo-crypto";
-import { Circle } from "../types";
+import { Circle, Interest } from "../types";
 import {
   buildCreateCirclePayload,
   CreateCircleInput,
@@ -9,24 +9,58 @@ import {
   type AppTabVisibility,
   type CircleRow,
 } from "./circle.helpers";
-import { supabase } from "./supabase";
+import { supabase, uploadCircleImage } from "./supabase";
+
+const isMissingCircleImageColumnError = (error: unknown) =>
+  Boolean(
+    error &&
+      typeof error === "object" &&
+      "code" in error &&
+      error.code === "PGRST204" &&
+      "message" in error &&
+      typeof error.message === "string" &&
+      error.message.includes("'image_url' column"),
+  );
 
 export const createCircle = async (
   input: CreateCircleInput,
 ): Promise<string> => {
   try {
     const circleId = Crypto.randomUUID();
-    const payload = buildCreateCirclePayload(circleId, input);
+    const imageUrl = input.circleImageUri
+      ? await uploadCircleImage(input.creatorId, circleId, input.circleImageUri)
+      : input.imageUrl;
+    const payload = buildCreateCirclePayload(circleId, {
+      ...input,
+      imageUrl,
+    });
+    const fallbackPayload: Record<string, unknown> = { ...payload };
+    delete fallbackPayload.image_url;
 
     console.log("createCircle payload:", payload);
 
-    const { data, error } = await supabase
+    let { data, error } = await supabase
       .from("circles")
       .insert(payload)
       .select("id")
       .single();
 
+    if (isMissingCircleImageColumnError(error)) {
+      console.warn(
+        "circles.image_url is not available in Supabase yet; creating Circle without an image.",
+      );
+      const fallbackResult = await supabase
+        .from("circles")
+        .insert(fallbackPayload)
+        .select("id")
+        .single();
+      data = fallbackResult.data;
+      error = fallbackResult.error;
+    }
+
     if (error) throw error;
+
+    if (!data) throw new Error("Circle was created without returning an id.");
 
     console.log("Circle created:", data.id);
     return data.id;
@@ -177,12 +211,26 @@ export const updateCircle = async (
         updates.meetupDeadline instanceof Date
           ? updates.meetupDeadline.toISOString()
           : updates.meetupDeadline;
+    if (updates.imageUrl !== undefined) dbUpdates.image_url = updates.imageUrl;
     if (updates.status !== undefined) dbUpdates.status = updates.status;
 
-    const { error } = await supabase
+    let { error } = await supabase
       .from("circles")
       .update(dbUpdates)
       .eq("id", circleId);
+
+    if (isMissingCircleImageColumnError(error)) {
+      console.warn(
+        "circles.image_url is not available in Supabase yet; saving Circle changes without the image.",
+      );
+      const fallbackUpdates = { ...dbUpdates };
+      delete fallbackUpdates.image_url;
+      const fallbackResult = await supabase
+        .from("circles")
+        .update(fallbackUpdates)
+        .eq("id", circleId);
+      error = fallbackResult.error;
+    }
 
     if (error) throw error;
   } catch (error) {

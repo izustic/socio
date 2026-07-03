@@ -85,6 +85,7 @@ export interface Circle {
   meetupTimeframe?: string;
   meetupDays?: number;
   meetupDeadline?: Date | null;
+  imageUrl?: string | null;
   status: CircleStatus;
   createdAt: Date;
 }

@@ -1,6 +1,7 @@
 import Avatar from "@/src/components/ui/Avatar";
 import { Colors, Radius, Spacing, Typography } from "@/src/constants/theme";
 import { useAuth } from "@/src/context/AuthContext";
+import { useSwipeTabVisibility } from "@/src/context/SwipeTabVisibilityContext";
 import {
   closeCircle,
   getCircle,
@@ -54,6 +55,7 @@ const getCircleTags = (circle: Circle) => {
 
 export default function CircleInfoScreen() {
   const { user } = useAuth();
+  const { endJoinBrowsing, refreshSwipeTabVisibility } = useSwipeTabVisibility();
   const params = useLocalSearchParams<{ circleId?: string }>();
   const [circle, setCircle] = useState<Circle | null>(null);
   const [members, setMembers] = useState<SwipeCandidate[]>([]);
@@ -150,6 +152,8 @@ export default function CircleInfoScreen() {
             setLeaving(true);
             try {
               await removeMember(circle.id, user.id);
+              endJoinBrowsing();
+              await refreshSwipeTabVisibility({ silent: true });
               router.replace("/(tabs)/home");
             } catch (error) {
               console.error("Error leaving circle:", error);
@@ -178,6 +182,8 @@ export default function CircleInfoScreen() {
             setClosing(true);
             try {
               await closeCircle(circle.id);
+              endJoinBrowsing();
+              await refreshSwipeTabVisibility({ silent: true });
               router.replace("/(tabs)/home");
             } catch (error) {
               console.error("Error closing circle:", error);

@@ -1,4 +1,8 @@
-import { Colors, Spacing, Typography } from "@/src/constants/theme";
+import { SafeAreaView } from "react-native-safe-area-context";
+import {
+  Colors,
+  Spacing,
+  Typography } from "@/src/constants/theme";
 import { useAuth } from "@/src/context/AuthContext";
 import {
   AppNotification,
@@ -6,21 +10,25 @@ import {
   markAllAsRead,
   markAsRead,
   subscribeToNotifications,
-} from "@/src/services/notifications";
-import { router, useFocusEffect } from "expo-router";
+  } from "@/src/services/notifications";
+import { router,
+  useFocusEffect } from "expo-router";
 import {
   CheckCircle2,
   Clock3,
   Heart,
   MessageCircle,
   Users,
-} from "lucide-react-native";
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+  } from "lucide-react-native";
+import React,
+  { useCallback,
+  useEffect,
+  useMemo,
+  useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
   RefreshControl,
-  SafeAreaView,
   StatusBar,
   StyleSheet,
   Text,

@@ -4,12 +4,13 @@ import Chip from "@/src/components/ui/Chip";
 import Input from "@/src/components/ui/Input";
 import { Colors, Radius, Spacing, Typography } from "@/src/constants/theme";
 import { useAuth } from "@/src/context/AuthContext";
+import { useSwipeTabVisibility } from "@/src/context/SwipeTabVisibilityContext";
 import { createCircle } from "@/src/services/circle";
 import { Interest } from "@/src/types";
 import { router } from "expo-router";
 import React, { useState } from "react";
+import { SafeAreaView } from "react-native-safe-area-context";
 import {
-  SafeAreaView,
   ScrollView,
   StatusBar,
   StyleSheet,
@@ -49,6 +50,7 @@ type AlertState = {
 
 export default function CreateCircleScreen() {
   const { user } = useAuth();
+  const { refreshSwipeTabVisibility } = useSwipeTabVisibility();
   const [circleName, setCircleName] = useState("");
   const [vibe, setVibe] = useState("");
   const [size, setSize] = useState(5);
@@ -139,6 +141,7 @@ export default function CreateCircleScreen() {
 
       await createCircle(payload);
 
+      await refreshSwipeTabVisibility({ silent: true });
       router.replace("/(tabs)/swipe");
     } catch (error: any) {
       showAlert(

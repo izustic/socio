@@ -1,6 +1,11 @@
+import { SafeAreaView } from "react-native-safe-area-context";
 import Avatar from "@/src/components/ui/Avatar";
 import Input from "@/src/components/ui/Input";
-import { Colors, Radius, Spacing, Typography } from "@/src/constants/theme";
+import {
+  Colors,
+  Radius,
+  Spacing,
+  Typography } from "@/src/constants/theme";
 import { useAuth } from "@/src/context/AuthContext";
 import {
   getModerationOverview,
@@ -11,8 +16,9 @@ import {
   updateUserStatus,
   type ModerationOverview,
   type ModerationUserSummary,
-} from "@/src/services/moderation";
-import { router, useFocusEffect } from "expo-router";
+  } from "@/src/services/moderation";
+import { router,
+  useFocusEffect } from "expo-router";
 import {
   Ban,
   ChevronLeft,
@@ -23,13 +29,15 @@ import {
   UserCog,
   UserPlus,
   UserX,
-} from "lucide-react-native";
-import React, { useCallback, useMemo, useState } from "react";
+  } from "lucide-react-native";
+import React,
+  { useCallback,
+  useMemo,
+  useState } from "react";
 import {
   ActivityIndicator,
   Alert,
   Modal,
-  SafeAreaView,
   ScrollView,
   RefreshControl,
   StatusBar,

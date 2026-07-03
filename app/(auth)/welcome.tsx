@@ -1,24 +1,32 @@
+import { SafeAreaView } from "react-native-safe-area-context";
 import Button from "@/src/components/ui/Button";
 import Input from "@/src/components/ui/Input";
-import { Colors, Radius, Spacing, Typography } from "@/src/constants/theme";
+import {
+  env,
+  getMissingRequiredEnvVars } from "@/src/config/env";
+import { Colors,
+  Radius,
+  Spacing,
+  Typography } from "@/src/constants/theme";
 import { useOnboarding } from "@/src/context/OnboardingContext";
 import { getFirstIncompleteOnboardingStep } from "@/src/constants/onboarding";
 import {
   signInWithEmail,
   signInWithGoogleIdToken,
   signUpWithEmail,
-} from "@/src/services/auth";
+  } from "@/src/services/auth";
 import { getUserProfile } from "@/src/services/user";
 import { showErrorAlert } from "@/src/utils/errorHandling";
 import { Image } from "expo-image";
 import { router } from "expo-router";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback,
+  useEffect,
+  useState } from "react";
 import {
   Alert,
   KeyboardAvoidingView,
   Modal,
   Platform,
-  SafeAreaView,
   ScrollView,
   StatusBar,
   StyleSheet,
@@ -45,9 +53,23 @@ export default function SignUp() {
   const [emailError, setEmailError] = useState("");
   const [passwordError, setPasswordError] = useState("");
 
-  const googleWebClientId = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID;
-  const googleIosClientId = process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID;
+  const googleWebClientId = env.googleWebClientId;
+  const googleIosClientId = env.googleIosClientId;
   const canUseGoogleSignIn = Boolean(googleWebClientId) && Platform.OS !== "web";
+
+  const ensureAuthConfigured = () => {
+    const missing = getMissingRequiredEnvVars();
+    if (missing.length === 0) {
+      return true;
+    }
+
+    Alert.alert(
+      "App not configured",
+      `This build is missing: ${missing.join(", ")}.\n\n` +
+        "Local dev reads these from .env. EAS builds need the same values set as project environment variables (`eas env:create` or Expo dashboard).",
+    );
+    return false;
+  };
 
   useEffect(() => {
     if (!canUseGoogleSignIn || !googleWebClientId) {
@@ -178,6 +200,10 @@ export default function SignUp() {
         throw new Error("No ID token received from Google");
       }
 
+      if (!ensureAuthConfigured()) {
+        return;
+      }
+
       const user = await signInWithGoogleIdToken(idToken);
       await continueIntoOnboarding(
         user.id,
@@ -195,6 +221,26 @@ export default function SignUp() {
         return;
       }
 
+      const errorMessage =
+        error instanceof Error ? error.message : String(error ?? "");
+      const isDeveloperError =
+        errorMessage.includes("DEVELOPER_ERROR") ||
+        (isErrorWithCode(error) && error.code === "10");
+
+      if (isDeveloperError) {
+        Alert.alert(
+          "Google Sign-In not configured for this build",
+          "EAS builds are signed with a different certificate than local dev. " +
+            "Add the EAS keystore SHA-1 to Google Cloud Console:\n\n" +
+            "1. Run: eas credentials -p android\n" +
+            "2. Open Credentials → Android OAuth client\n" +
+            "3. Create a client for package com.izustic.socio with that SHA-1\n" +
+            "4. Keep EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID as the Web client ID\n\n" +
+            "Changes apply without rebuilding — wait a few minutes, then try again.",
+        );
+        return;
+      }
+
       console.error("Google sign in error:", error);
       const errorInfo = showErrorAlert(error, "Google Sign In");
       Alert.alert(errorInfo.title, errorInfo.message);
@@ -204,6 +250,10 @@ export default function SignUp() {
   };
 
   const handleEmailAuth = async () => {
+    if (!ensureAuthConfigured()) {
+      return;
+    }
+
     clearErrors();
 
     // Validate inputs first

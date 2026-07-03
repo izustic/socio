@@ -1,11 +1,15 @@
+import { SafeAreaView } from "react-native-safe-area-context";
 import Button from '@/src/components/ui/Button';
-import { Colors, Radius, Spacing, Typography } from '@/src/constants/theme';
+import {
+  Colors,
+  Radius,
+  Spacing,
+  Typography } from '@/src/constants/theme';
 import { ChevronLeft } from 'lucide-react-native';
 import React from 'react';
 import {
   KeyboardAvoidingView,
   Platform,
-  SafeAreaView,
   ScrollView,
   StatusBar,
   StyleSheet,

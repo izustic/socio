@@ -34,7 +34,10 @@ export const signUpWithEmail = async (email: string, password: string) => {
     if (error) {
       console.error("Sign up error:", error.code, error.message);
       const authError = getAuthErrorMessage(error);
-      throw new Error(authError.userMessage);
+      throw Object.assign(new Error(authError.userMessage), {
+        code: error.code ?? "unknown",
+        suggestion: authError.suggestion,
+      });
     }
 
     console.log("Sign up successful:", data.user?.id);
@@ -66,7 +69,10 @@ export const signInWithEmail = async (
     if (error) {
       console.error("Sign in error:", error.code, error.message);
       const authError = getAuthErrorMessage(error);
-      throw new Error(authError.userMessage);
+      throw Object.assign(new Error(authError.userMessage), {
+        code: error.code ?? "unknown",
+        suggestion: authError.suggestion,
+      });
     }
 
     console.log("Sign in successful:", data.user?.id);
@@ -74,6 +80,7 @@ export const signInWithEmail = async (
   } catch (error: any) {
     if (error.code) throw error;
     console.error("Sign in error:", error);
+    console.error("Sign in error JSON:", JSON.stringify(error, Object.getOwnPropertyNames(error)));
     throw error;
   }
 };
@@ -93,7 +100,10 @@ export const signInWithGoogleIdToken = async (
     if (error) {
       console.error("Google sign in error:", error.code, error.message);
       const authError = getAuthErrorMessage(error);
-      throw new Error(authError.userMessage);
+      throw Object.assign(new Error(authError.userMessage), {
+        code: error.code ?? "unknown",
+        suggestion: authError.suggestion,
+      });
     }
 
     console.log("Google sign in successful:", data.user?.id);

@@ -101,3 +101,45 @@ export const buildCreateCirclePayload = (
     status: "forming",
   };
 };
+
+export type AppTabVisibility = {
+  circleTabVisible: boolean;
+  swipeTabVisible: boolean;
+};
+
+/** Pure tab-bar rules used by SwipeTabVisibilityContext. */
+export const resolveAppTabVisibility = (
+  circle: Circle | null,
+  userId: string,
+  joinBrowsingActive = false,
+): AppTabVisibility => {
+  if (!circle) {
+    return {
+      circleTabVisible: !joinBrowsingActive,
+      swipeTabVisible: joinBrowsingActive,
+    };
+  }
+
+  if (circle.status === "complete") {
+    return {
+      circleTabVisible: true,
+      swipeTabVisible: false,
+    };
+  }
+
+  const isHost = circle.creatorId === userId;
+  if (isHost) {
+    const canSwipeMembers =
+      circle.status === "forming" && circle.members.length < circle.size;
+    return {
+      circleTabVisible: true,
+      swipeTabVisible: canSwipeMembers,
+    };
+  }
+
+  // Matched joiner in a forming circle
+  return {
+    circleTabVisible: true,
+    swipeTabVisible: false,
+  };
+};

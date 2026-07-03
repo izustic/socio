@@ -110,6 +110,36 @@ Google sign-in uses the native `@react-native-google-signin/google-signin` packa
 
 Important: `.env` should not be committed. If it has already been committed, rotate any exposed secrets before using them in production.
 
+### EAS builds (Android / iOS)
+
+EAS cloud builds do **not** upload your local `.env` file. Configure the same `EXPO_PUBLIC_*` values as Expo project environment variables before building.
+
+**Critical:** `EXPO_PUBLIC_*` variables must use **Plain text** or **Sensitive** visibility — **not Secret**. Secret variables stay on EAS servers and are **not** inlined into your JavaScript bundle, so `process.env.EXPO_PUBLIC_*` will be empty in the installed APK/IPA even though the variables appear in the Expo dashboard. Expo shows a warning about this when you use Secret visibility on `EXPO_PUBLIC_` names.
+
+```bash
+eas env:create --name EXPO_PUBLIC_SUPABASE_URL --value "https://your-project.supabase.co" --environment preview --environment production --visibility plaintext
+eas env:create --name EXPO_PUBLIC_SUPABASE_ANON_KEY --value "your-anon-key" --environment preview --environment production --visibility plaintext
+eas env:create --name EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID --value "your-web-client-id" --environment preview --environment production --visibility plaintext
+eas env:create --name EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID --value "your-android-client-id" --environment preview --environment production --visibility plaintext
+eas env:create --name EXPO_PUBLIC_LIVEKIT_URL --value "wss://your-project.livekit.cloud" --environment preview --environment production --visibility plaintext
+```
+
+If you already created them as Secret, delete and recreate each one with Plain text or Sensitive visibility (or edit visibility in the Expo dashboard if available).
+
+Then rebuild:
+
+```bash
+eas build --platform android --profile preview
+```
+
+**Google Sign-In on Android EAS builds:** the APK/AAB is signed with EAS credentials, not your local debug keystore. Add the EAS keystore SHA-1 fingerprint to the Android OAuth client in Google Cloud Console (`com.izustic.socio`). Get it with:
+
+```bash
+eas credentials -p android
+```
+
+Without the correct SHA-1, Google sign-in fails on device builds even when it works locally.
+
 ## Install
 
 ```bash

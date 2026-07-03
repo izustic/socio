@@ -6,6 +6,7 @@ import { PollCreator, PollMessage } from "@/src/components/chat/PollComponents";
 import type { PollData } from "@/src/components/chat/PollComponents";
 import { Colors, Radius, Spacing, Typography } from "@/src/constants/theme";
 import { useAuth } from "@/src/context/AuthContext";
+import { useSwipeTabVisibility } from "@/src/context/SwipeTabVisibilityContext";
 import {
   getCircle,
   getLatestCircleForParticipant,
@@ -186,6 +187,7 @@ const getMessageSearchText = (message: Message) => {
 
 export default function CircleChatRoute() {
   const { user, profile } = useAuth();
+  const { endJoinBrowsing, refreshSwipeTabVisibility } = useSwipeTabVisibility();
   const params = useLocalSearchParams<{ circleId?: string }>();
   const listRef = useRef<FlatList<Message>>(null);
   const recordingRef = useRef<Audio.Recording | null>(null);
@@ -738,6 +740,8 @@ export default function CircleChatRoute() {
           onPress: async () => {
             try {
               await removeMember(circle.id, user.id);
+              endJoinBrowsing();
+              await refreshSwipeTabVisibility({ silent: true });
               router.replace("/(tabs)/home");
             } catch (error) {
               console.error("Error leaving circle:", error);
@@ -764,6 +768,8 @@ export default function CircleChatRoute() {
           onPress: async () => {
             try {
               await closeCircle(circle.id);
+              endJoinBrowsing();
+              await refreshSwipeTabVisibility({ silent: true });
               router.replace("/(tabs)/home");
             } catch (error) {
               console.error("Error closing circle:", error);

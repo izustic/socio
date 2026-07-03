@@ -1,5 +1,5 @@
 import { useAuth } from "@/src/context/AuthContext";
-import { shouldHideSwipeTab } from "@/src/services/circle";
+import { getAppTabVisibility } from "@/src/services/circle";
 import React, {
   createContext,
   useCallback,
@@ -10,10 +10,14 @@ import React, {
 
 interface SwipeTabVisibilityContextType {
   swipeTabVisible: boolean;
+  circleTabVisible: boolean;
+  joinBrowsingActive: boolean;
   loading: boolean;
   refreshSwipeTabVisibility: (options?: {
     silent?: boolean;
   }) => Promise<void>;
+  startJoinBrowsing: () => void;
+  endJoinBrowsing: () => void;
 }
 
 const SwipeTabVisibilityContext =
@@ -25,40 +29,56 @@ export const SwipeTabVisibilityProvider = ({
   children: React.ReactNode;
 }) => {
   const { user, loading: authLoading } = useAuth();
-  const [swipeTabVisible, setSwipeTabVisible] = useState(true);
+  const [swipeTabVisible, setSwipeTabVisible] = useState(false);
+  const [circleTabVisible, setCircleTabVisible] = useState(true);
   const [loading, setLoading] = useState(true);
+  const [joinBrowsingActive, setJoinBrowsingActive] = useState(false);
 
   const refreshSwipeTabVisibility = useCallback(
     async (options?: { silent?: boolean }) => {
       const silent = options?.silent ?? false;
 
-    if (authLoading) return;
+      if (authLoading) return;
 
-    if (!user) {
-      setSwipeTabVisible(true);
-      if (!silent) {
-        setLoading(false);
+      if (!user) {
+        setJoinBrowsingActive(false);
+        setSwipeTabVisible(false);
+        setCircleTabVisible(true);
+        if (!silent) {
+          setLoading(false);
+        }
+        return;
       }
-      return;
-    }
 
-    if (!silent) {
-      setLoading(true);
-    }
-    try {
-      const hide = await shouldHideSwipeTab(user.id);
-      setSwipeTabVisible(!hide);
-    } catch (error) {
-      console.error("Error checking swipe tab visibility:", error);
-      setSwipeTabVisible(true);
-    } finally {
       if (!silent) {
-        setLoading(false);
+        setLoading(true);
       }
-    }
+      try {
+        const visibility = await getAppTabVisibility(user.id, {
+          joinBrowsingActive,
+        });
+        setSwipeTabVisible(visibility.swipeTabVisible);
+        setCircleTabVisible(visibility.circleTabVisible);
+      } catch (error) {
+        console.error("Error checking swipe tab visibility:", error);
+        setSwipeTabVisible(joinBrowsingActive);
+        setCircleTabVisible(!joinBrowsingActive);
+      } finally {
+        if (!silent) {
+          setLoading(false);
+        }
+      }
     },
-    [authLoading, user],
+    [authLoading, joinBrowsingActive, user],
   );
+
+  const startJoinBrowsing = useCallback(() => {
+    setJoinBrowsingActive(true);
+  }, []);
+
+  const endJoinBrowsing = useCallback(() => {
+    setJoinBrowsingActive(false);
+  }, []);
 
   useEffect(() => {
     refreshSwipeTabVisibility();
@@ -66,7 +86,15 @@ export const SwipeTabVisibilityProvider = ({
 
   return (
     <SwipeTabVisibilityContext.Provider
-      value={{ swipeTabVisible, loading, refreshSwipeTabVisibility }}
+      value={{
+        swipeTabVisible,
+        circleTabVisible,
+        joinBrowsingActive,
+        loading,
+        refreshSwipeTabVisibility,
+        startJoinBrowsing,
+        endJoinBrowsing,
+      }}
     >
       {children}
     </SwipeTabVisibilityContext.Provider>
@@ -74,9 +102,13 @@ export const SwipeTabVisibilityProvider = ({
 };
 
 const defaultSwipeTabVisibility: SwipeTabVisibilityContextType = {
-  swipeTabVisible: true,
+  swipeTabVisible: false,
+  circleTabVisible: true,
+  joinBrowsingActive: false,
   loading: false,
   refreshSwipeTabVisibility: async () => {},
+  startJoinBrowsing: () => {},
+  endJoinBrowsing: () => {},
 };
 
 export const useSwipeTabVisibility = () => {

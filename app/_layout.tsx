@@ -3,6 +3,7 @@ import '@/src/polyfills';
 import LottieSplashScreen from '@/src/components/LottieSplashScreen';
 import { OnboardingProvider } from '@/src/context/OnboardingContext';
 import { AuthProvider } from '@/src/context/AuthContext';
+import { SwipeTabVisibilityProvider } from '@/src/context/SwipeTabVisibilityContext';
 import * as SplashScreen from 'expo-splash-screen';
 import { Stack } from 'expo-router';
 import { useEffect, useState } from 'react';
@@ -27,7 +28,8 @@ export default function RootLayout() {
   return (
     <AuthProvider>
       <OnboardingProvider>
-        <Stack screenOptions={{ headerShown: false }}>
+        <SwipeTabVisibilityProvider>
+          <Stack screenOptions={{ headerShown: false }}>
           <Stack.Screen name="circle/no-circle" />
           <Stack.Screen name="circle/create" />
           <Stack.Screen name="circle/create-preferences" />
@@ -44,6 +46,7 @@ export default function RootLayout() {
           <Stack.Screen name="settings/privacy-safety" />
           <Stack.Screen name="settings/delete-account" />
         </Stack>
+        </SwipeTabVisibilityProvider>
       </OnboardingProvider>
     </AuthProvider>
   );

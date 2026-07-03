@@ -59,17 +59,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   useEffect(() => {
+    // Bumped on every auth event so async work (getUserProfile,
+    // getLatestCircleForParticipant, syncUserToSupabase) can detect that
+    // a newer event has fired and bail out before clobbering the cleared
+    // sign-out state with stale data from the previous user.
+    let authGeneration = 0;
+
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      const generation = ++authGeneration;
       const supabaseUser = session?.user ?? null;
       setUser(supabaseUser);
 
       if (supabaseUser) {
         // Get profile from Supabase
         const userProfile = await getUserProfile(supabaseUser.id);
+        if (generation !== authGeneration) return;
         setProfile(userProfile);
         const latestCircle = await getLatestCircleForParticipant(supabaseUser.id);
+        if (generation !== authGeneration) return;
         console.log('Logged in app user data:', { profile: userProfile, latestCircle });
 
         // Sync to Supabase and get role
@@ -80,8 +89,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             supabaseUser.user_metadata?.display_name ?? supabaseUser.email?.split('@')[0],
             supabaseUser.user_metadata?.avatar_url ?? null
           );
+          if (generation !== authGeneration) return;
           setRole(userRole);
         } catch (error) {
+          if (generation !== authGeneration) return;
           if (isSupabaseRlsError(error)) {
             console.warn(
               'Supabase users insert is blocked by RLS. Apply the ARCHITECTURE.md users INSERT policy to persist roles.'
@@ -96,7 +107,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setRole(null);
       }
 
-      setLoading(false);
+      if (generation === authGeneration) {
+        setLoading(false);
+      }
     });
 
     return () => {

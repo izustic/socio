@@ -2,9 +2,10 @@ import { createClient, SupabaseClient } from "@supabase/supabase-js";
 import * as FileSystem from "expo-file-system";
 import * as SecureStore from "expo-secure-store";
 import "react-native-url-polyfill/auto";
+import { env } from "@/src/config/env";
 
-const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL!;
-const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY!;
+const supabaseUrl = env.supabaseUrl;
+const supabaseAnonKey = env.supabaseAnonKey;
 
 // SecureStore adapter for Supabase Auth session persistence
 const SecureStoreAdapter = {

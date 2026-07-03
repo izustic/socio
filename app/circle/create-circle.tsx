@@ -9,8 +9,8 @@ import { createCircle } from "@/src/services/circle";
 import { Interest } from "@/src/types";
 import { router } from "expo-router";
 import React, { useState } from "react";
+import { SafeAreaView } from "react-native-safe-area-context";
 import {
-  SafeAreaView,
   ScrollView,
   StatusBar,
   StyleSheet,

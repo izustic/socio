@@ -1,4 +1,6 @@
 import { SafeAreaView } from "react-native-safe-area-context";
+import RangeSlider from "@/src/components/ui/RangeSlider";
+import SingleSlider from "@/src/components/ui/SingleSlider";
 import {
   EDUCATION_OPTIONS,
   INTEREST_EMOJI,
@@ -27,7 +29,6 @@ import {
 import type { LucideIcon } from "lucide-react-native";
 import { useState } from "react";
 import {
-  GestureResponderEvent,
   Modal,
   Pressable,
   ScrollView,
@@ -49,16 +50,11 @@ const GENDER_OPTIONS: { label: GenderMix; Icon: LucideIcon }[] = [
 const MIN_AGE = 18;
 const MAX_AGE = 50;
 
-const clamp = (value: number, min: number, max: number) =>
-  Math.max(min, Math.min(max, value));
-
 export default function JoinCirclePreferencesScreen() {
   const { startJoinBrowsing } = useSwipeTabVisibility();
   const [distance, setDistance] = useState(12);
-  const [distTrackWidth, setDistTrackWidth] = useState(0);
 
   const [ageRange, setAgeRange] = useState<[number, number]>([23, 30]);
-  const [ageTrackWidth, setAgeTrackWidth] = useState(0);
 
   const [genderMix, setGenderMix] = useState<GenderMix>("Both");
   const [educationLevel, setEducationLevel] = useState<string>("Any");
@@ -67,33 +63,6 @@ export default function JoinCirclePreferencesScreen() {
   const [selectedVibes, setSelectedVibes] = useState<JoinMeetupVibe[]>([]);
   const [selectedInterests, setSelectedInterests] = useState<Interest[]>([]);
   const [selectedTraits, setSelectedTraits] = useState<ProfileTrait[]>([]);
-
-  const distFillWidth = clamp(((distance - 1) / (50 - 1)) * 100, 0, 100);
-
-  const handleDistPress = (event: GestureResponderEvent) => {
-    if (!distTrackWidth) return;
-    const ratio = clamp(event.nativeEvent.locationX / distTrackWidth, 0, 1);
-    const value = Math.round(1 + ratio * (50 - 1));
-    setDistance(value);
-  };
-
-  const ageFillLeft = ((ageRange[0] - MIN_AGE) / (MAX_AGE - MIN_AGE)) * 100;
-  const ageFillWidth =
-    ((ageRange[1] - ageRange[0]) / (MAX_AGE - MIN_AGE)) * 100;
-
-  const handleAgePress = (event: GestureResponderEvent) => {
-    if (!ageTrackWidth) return;
-    const ratio = clamp(event.nativeEvent.locationX / ageTrackWidth, 0, 1);
-    const value = Math.round(MIN_AGE + ratio * (MAX_AGE - MIN_AGE));
-    const distanceToMin = Math.abs(value - ageRange[0]);
-    const distanceToMax = Math.abs(value - ageRange[1]);
-
-    if (distanceToMin <= distanceToMax) {
-      setAgeRange([clamp(value, MIN_AGE, ageRange[1] - 1), ageRange[1]]);
-    } else {
-      setAgeRange([ageRange[0], clamp(value, ageRange[0] + 1, MAX_AGE)]);
-    }
-  };
 
   const toggleVibe = (vibe: JoinMeetupVibe) => {
     setSelectedVibes((prev) =>
@@ -168,22 +137,13 @@ export default function JoinCirclePreferencesScreen() {
               {distance} {distance >= 50 ? "km+" : "km"}
             </Text>
           </View>
-          <TouchableOpacity
-            activeOpacity={0.95}
+          <SingleSlider
+            value={distance}
+            min={1}
+            max={50}
+            onValueChange={setDistance}
             style={styles.ageTrack}
-            onLayout={(event) =>
-              setDistTrackWidth(event.nativeEvent.layout.width)
-            }
-            onPress={handleDistPress}
-          >
-            <View
-              style={[
-                styles.ageFill,
-                { left: "0%", width: `${distFillWidth}%` },
-              ]}
-            />
-            <View style={[styles.ageThumb, { left: `${distFillWidth}%` }]} />
-          </TouchableOpacity>
+          />
           <View style={styles.ageLabels}>
             <Text style={styles.helperText}>1 km</Text>
             <Text style={styles.helperText}>50+ km</Text>
@@ -197,28 +157,14 @@ export default function JoinCirclePreferencesScreen() {
               {ageRange[0]}–{ageRange[1]}
             </Text>
           </View>
-          <TouchableOpacity
-            activeOpacity={0.95}
+          <RangeSlider
+            value={ageRange}
+            min={MIN_AGE}
+            max={MAX_AGE}
+            minDistance={1}
+            onValueChange={setAgeRange}
             style={styles.ageTrack}
-            onLayout={(event) =>
-              setAgeTrackWidth(event.nativeEvent.layout.width)
-            }
-            onPress={handleAgePress}
-          >
-            <View
-              style={[
-                styles.ageFill,
-                { left: `${ageFillLeft}%`, width: `${ageFillWidth}%` },
-              ]}
-            />
-            <View style={[styles.ageThumb, { left: `${ageFillLeft}%` }]} />
-            <View
-              style={[
-                styles.ageThumb,
-                { left: `${ageFillLeft + ageFillWidth}%` },
-              ]}
-            />
-          </TouchableOpacity>
+          />
           <View style={styles.ageLabels}>
             <Text style={styles.helperText}>18</Text>
             <Text style={styles.helperText}>50+</Text>

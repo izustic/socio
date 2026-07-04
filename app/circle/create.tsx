@@ -4,6 +4,7 @@ import {
   Radius,
   Spacing,
   Typography } from '@/src/constants/theme';
+import SingleSlider from "@/src/components/ui/SingleSlider";
 import { Image } from "expo-image";
 import * as ImagePicker from "expo-image-picker";
 import { router } from 'expo-router';
@@ -12,7 +13,6 @@ import { ChevronLeft,
   MapPin } from 'lucide-react-native';
 import { useState } from 'react';
 import {
-  GestureResponderEvent,
   ScrollView,
   StatusBar,
   StyleSheet,
@@ -25,8 +25,6 @@ import {
 const SIZE_OPTIONS = [3, 4, 5, 6, 7, 8];
 const MEETUP_GOALS = ['Coffee', 'Study', 'Gym', 'Walk', 'Dinner'];
 
-const clamp = (value: number, min: number, max: number) => Math.max(min, Math.min(max, value));
-
 export default function CreateCircleBasicsScreen() {
   const [name, setName] = useState('');
   const [nameError, setNameError] = useState<string | null>(null);
@@ -37,20 +35,6 @@ export default function CreateCircleBasicsScreen() {
   const [meetupGoal, setMeetupGoal] = useState('Coffee');
   const [meetupDays, setMeetupDays] = useState(3);
   const [imageUri, setImageUri] = useState<string | null>(null);
-  const [trackWidth, setTrackWidth] = useState(0);
-  const [dayTrackWidth, setDayTrackWidth] = useState(0);
-
-  const handleRadiusPress = (event: GestureResponderEvent) => {
-    if (!trackWidth) return;
-    const ratio = clamp(event.nativeEvent.locationX / trackWidth, 0, 1);
-    setRadius(Math.round(1 + ratio * 24));
-  };
-
-  const handleMeetupDaysPress = (event: GestureResponderEvent) => {
-    if (!dayTrackWidth) return;
-    const ratio = clamp(event.nativeEvent.locationX / dayTrackWidth, 0, 1);
-    setMeetupDays(Math.round(3 + ratio * 7));
-  };
 
   const handlePickImage = async () => {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -189,15 +173,13 @@ export default function CreateCircleBasicsScreen() {
             </View>
             <Text style={styles.valueLabel}>{radius} {radiusUnit}</Text>
           </View>
-          <TouchableOpacity
-            activeOpacity={0.95}
+          <SingleSlider
+            value={radius}
+            min={1}
+            max={25}
+            onValueChange={setRadius}
             style={styles.sliderTrack}
-            onLayout={(event) => setTrackWidth(event.nativeEvent.layout.width)}
-            onPress={handleRadiusPress}
-          >
-            <View style={[styles.sliderFill, { width: `${((radius - 1) / 24) * 100}%` }]} />
-            <View style={[styles.sliderThumb, { left: `${((radius - 1) / 24) * 100}%` }]} />
-          </TouchableOpacity>
+          />
           <View style={styles.radiusMeta}>
             <Text style={styles.helperText}>Only people in range will be shown</Text>
             <View style={styles.segment}>
@@ -244,15 +226,13 @@ export default function CreateCircleBasicsScreen() {
               Within {meetupDays} {meetupDays === 1 ? 'day' : 'days'}
             </Text>
           </View>
-          <TouchableOpacity
-            activeOpacity={0.95}
+          <SingleSlider
+            value={meetupDays}
+            min={3}
+            max={10}
+            onValueChange={setMeetupDays}
             style={styles.sliderTrack}
-            onLayout={(event) => setDayTrackWidth(event.nativeEvent.layout.width)}
-            onPress={handleMeetupDaysPress}
-          >
-            <View style={[styles.sliderFill, { width: `${((meetupDays - 3) / 7) * 100}%` }]} />
-            <View style={[styles.sliderThumb, { left: `${((meetupDays - 3) / 7) * 100}%` }]} />
-          </TouchableOpacity>
+          />
           <View style={styles.radiusMeta}>
             <Text style={styles.helperText}>3 days</Text>
             <Text style={styles.helperText}>10 days</Text>

@@ -1,5 +1,6 @@
 import { SafeAreaView } from "react-native-safe-area-context";
 import AlertModal from "@/src/components/ui/AlertModal";
+import RangeSlider from "@/src/components/ui/RangeSlider";
 import {
   EDUCATION_OPTIONS,
   INTEREST_EMOJI,
@@ -35,7 +36,6 @@ import { useEffect,
   useState } from "react";
 import {
   ActivityIndicator,
-  GestureResponderEvent,
   Modal,
   Pressable,
   ScrollView,
@@ -56,9 +56,6 @@ const GENDER_OPTIONS: { label: GenderMix; Icon: LucideIcon }[] = [
 
 const MIN_AGE = 18;
 const MAX_AGE = 50;
-
-const clamp = (value: number, min: number, max: number) =>
-  Math.max(min, Math.min(max, value));
 
 type AlertState = {
   visible: boolean;
@@ -88,7 +85,6 @@ export default function CreateCirclePreferencesScreen() {
   const { user, profile } = useAuth();
   const { refreshSwipeTabVisibility } = useSwipeTabVisibility();
   const [ageRange, setAgeRange] = useState<[number, number]>([22, 32]);
-  const [ageTrackWidth, setAgeTrackWidth] = useState(0);
   const [genderMix, setGenderMix] = useState<GenderMix>("Both");
   const [selectedInterests, setSelectedInterests] = useState<Interest[]>(
     () =>
@@ -216,24 +212,6 @@ export default function CreateCirclePreferencesScreen() {
       active = false;
     };
   }, [circleBasics.circleId]);
-
-  const ageFillLeft = ((ageRange[0] - MIN_AGE) / (MAX_AGE - MIN_AGE)) * 100;
-  const ageFillWidth =
-    ((ageRange[1] - ageRange[0]) / (MAX_AGE - MIN_AGE)) * 100;
-
-  const handleAgePress = (event: GestureResponderEvent) => {
-    if (!ageTrackWidth) return;
-    const ratio = clamp(event.nativeEvent.locationX / ageTrackWidth, 0, 1);
-    const value = Math.round(MIN_AGE + ratio * (MAX_AGE - MIN_AGE));
-    const distanceToMin = Math.abs(value - ageRange[0]);
-    const distanceToMax = Math.abs(value - ageRange[1]);
-
-    if (distanceToMin <= distanceToMax) {
-      setAgeRange([clamp(value, MIN_AGE, ageRange[1] - 1), ageRange[1]]);
-    } else {
-      setAgeRange([ageRange[0], clamp(value, ageRange[0] + 1, MAX_AGE)]);
-    }
-  };
 
   const toggleInterest = (interest: Interest) => {
     setSelectedInterests((prev) =>
@@ -427,28 +405,14 @@ export default function CreateCirclePreferencesScreen() {
               {ageRange[0]}–{ageRange[1]}
             </Text>
           </View>
-          <TouchableOpacity
-            activeOpacity={0.95}
+          <RangeSlider
+            value={ageRange}
+            min={MIN_AGE}
+            max={MAX_AGE}
+            minDistance={1}
+            onValueChange={setAgeRange}
             style={styles.ageTrack}
-            onLayout={(event) =>
-              setAgeTrackWidth(event.nativeEvent.layout.width)
-            }
-            onPress={handleAgePress}
-          >
-            <View
-              style={[
-                styles.ageFill,
-                { left: `${ageFillLeft}%`, width: `${ageFillWidth}%` },
-              ]}
-            />
-            <View style={[styles.ageThumb, { left: `${ageFillLeft}%` }]} />
-            <View
-              style={[
-                styles.ageThumb,
-                { left: `${ageFillLeft + ageFillWidth}%` },
-              ]}
-            />
-          </TouchableOpacity>
+          />
           <View style={styles.ageLabels}>
             <Text style={styles.helperText}>18</Text>
             <Text style={styles.helperText}>50+</Text>

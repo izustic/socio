@@ -1,6 +1,8 @@
 import { Colors } from '@/src/constants/theme';
+import LottieSplashScreen from '@/src/components/LottieSplashScreen';
+import { useAuth } from '@/src/context/AuthContext';
 import { useSwipeTabVisibility } from '@/src/context/SwipeTabVisibilityContext';
-import { Tabs, useFocusEffect } from 'expo-router';
+import { Redirect, Tabs, useFocusEffect } from 'expo-router';
 import { Bell, Layers, User, Users } from 'lucide-react-native';
 import { useCallback } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -66,5 +68,19 @@ function TabLayoutInner() {
 }
 
 export default function TabLayout() {
+  const { user, profile, loading } = useAuth();
+
+  if (loading) {
+    return <LottieSplashScreen minDurationMs={0} />;
+  }
+
+  if (!user) {
+    return <Redirect href="/(auth)/welcome" />;
+  }
+
+  if (!profile?.profileComplete) {
+    return <Redirect href="/(auth)/profile-photo-name" />;
+  }
+
   return <TabLayoutInner />;
 }

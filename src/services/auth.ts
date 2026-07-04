@@ -88,6 +88,7 @@ export const signInWithEmail = async (
 export const signInWithGoogleIdToken = async (
   idToken: string,
   accessToken?: string,
+  nonce?: string,
 ): Promise<User> => {
   try {
     console.log("Signing in with Google ID token");
@@ -95,6 +96,7 @@ export const signInWithGoogleIdToken = async (
       provider: "google",
       token: idToken,
       access_token: accessToken,
+      nonce,
     });
 
     if (error) {

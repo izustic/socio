@@ -24,6 +24,7 @@ export interface User {
   bio?: string;
   notificationsEnabled?: boolean;
   locationEnabled?: boolean;
+  freeExits?: number;
   profileComplete: boolean;
   createdAt: Date;
 }

@@ -8,10 +8,11 @@ import { Colors, Radius, Spacing, Typography } from "@/src/constants/theme";
 import { useAuth } from "@/src/context/AuthContext";
 import { useSwipeTabVisibility } from "@/src/context/SwipeTabVisibilityContext";
 import {
+  closeCircle,
   getCircle,
   getLatestCircleForParticipant,
-  closeCircle,
-  removeMember,
+  leaveCircle,
+  resetCircleFreeExitsIfExpired,
 } from "@/src/services/circle";
 import {
   getMessages,
@@ -26,7 +27,7 @@ import {
 } from "@/src/services/polls";
 import { uploadChatMedia } from "@/src/services/supabase";
 import { Circle, Message } from "@/src/types";
-import { hasMeetupDeadlineElapsed } from "@/src/utils/circleDeadline";
+import { getCircleExitState } from "@/src/utils/circleExit";
 import { Audio, ResizeMode, Video } from "expo-av";
 import * as Crypto from "expo-crypto";
 import * as FileSystem from "expo-file-system";
@@ -186,7 +187,7 @@ const getMessageSearchText = (message: Message) => {
 };
 
 export default function CircleChatRoute() {
-  const { user, profile } = useAuth();
+  const { user, profile, refreshProfile } = useAuth();
   const { endJoinBrowsing, refreshSwipeTabVisibility } = useSwipeTabVisibility();
   const params = useLocalSearchParams<{ circleId?: string }>();
   const listRef = useRef<FlatList<Message>>(null);
@@ -229,17 +230,12 @@ export default function CircleChatRoute() {
       )
       .reverse();
   }, [messages, searchQuery]);
-  const canLeaveCircle = Boolean(
-    circle &&
-      user &&
-      circle.creatorId !== user.id &&
-      hasMeetupDeadlineElapsed(circle, now),
-  );
-  const canCloseCircle = Boolean(
-    circle &&
-      user &&
-      circle.creatorId === user.id &&
-      hasMeetupDeadlineElapsed(circle, now),
+  const exitState = useMemo(
+    () =>
+      circle && user
+        ? getCircleExitState(circle, user.id, profile?.freeExits, now)
+        : null,
+    [circle, now, profile?.freeExits, user],
   );
 
   useEffect(() => {
@@ -264,6 +260,14 @@ export default function CircleChatRoute() {
       active = false;
     };
   }, [params.circleId, user]);
+
+  useEffect(() => {
+    if (!circle || !exitState?.deadlineElapsed) return;
+
+    void resetCircleFreeExitsIfExpired(circle.id).then((didReset) => {
+      if (didReset) void refreshProfile();
+    });
+  }, [circle, exitState?.deadlineElapsed, refreshProfile]);
 
   useEffect(() => {
     let active = true;
@@ -726,12 +730,12 @@ export default function CircleChatRoute() {
   };
 
   const confirmLeaveCircle = () => {
-    if (!circle || !user || !canLeaveCircle) return;
+    if (!circle || !user || !exitState || exitState.locked) return;
 
     setChatMenuVisible(false);
     Alert.alert(
       "Leave Circle?",
-      `You will leave ${circle.name} and lose access to its chat.`,
+      `${exitState.helperText}\n\nYou will leave ${circle.name} and lose access to its chat.`,
       [
         { text: "Cancel", style: "cancel" },
         {
@@ -739,7 +743,8 @@ export default function CircleChatRoute() {
           style: "destructive",
           onPress: async () => {
             try {
-              await removeMember(circle.id, user.id);
+              await leaveCircle(circle.id);
+              await refreshProfile();
               endJoinBrowsing();
               await refreshSwipeTabVisibility({ silent: true });
               router.replace("/(tabs)/home");
@@ -754,12 +759,12 @@ export default function CircleChatRoute() {
   };
 
   const confirmCloseCircle = () => {
-    if (!circle || !user || !canCloseCircle) return;
+    if (!circle || !user || !exitState || exitState.locked) return;
 
     setChatMenuVisible(false);
     Alert.alert(
       "Close Circle?",
-      `This will delete ${circle.name} and remove everyone from the Circle. This cannot be undone.`,
+      `${exitState.helperText}\n\nThis will delete ${circle.name} and remove everyone from the Circle. This cannot be undone.`,
       [
         { text: "Cancel", style: "cancel" },
         {
@@ -768,6 +773,7 @@ export default function CircleChatRoute() {
           onPress: async () => {
             try {
               await closeCircle(circle.id);
+              await refreshProfile();
               endJoinBrowsing();
               await refreshSwipeTabVisibility({ silent: true });
               router.replace("/(tabs)/home");
@@ -1142,51 +1148,48 @@ export default function CircleChatRoute() {
                   strokeWidth={2.1}
                 />
               </TouchableOpacity>
-              {canLeaveCircle && (
+              {exitState && (
                 <>
                   <View style={styles.menuDivider} />
                   <TouchableOpacity
                     activeOpacity={0.76}
-                    style={styles.menuItem}
-                    onPress={confirmLeaveCircle}
+                    style={[
+                      styles.menuItem,
+                      exitState.locked && styles.menuItemDisabled,
+                    ]}
+                    disabled={exitState.locked}
+                    onPress={
+                      exitState.isHost ? confirmCloseCircle : confirmLeaveCircle
+                    }
                   >
-                    <LogOut
-                      size={20}
-                      color={Colors.danger}
-                      strokeWidth={2.1}
-                    />
-                    <Text style={[styles.menuText, styles.menuTextDanger]}>
-                      Leave Circle
-                    </Text>
-                    <ChevronRight
-                      size={18}
-                      color={Colors.textSecondary}
-                      strokeWidth={2.1}
-                    />
-                  </TouchableOpacity>
-                </>
-              )}
-              {canCloseCircle && (
-                <>
-                  <View style={styles.menuDivider} />
-                  <TouchableOpacity
-                    activeOpacity={0.76}
-                    style={styles.menuItem}
-                    onPress={confirmCloseCircle}
-                  >
-                    <Trash2
-                      size={20}
-                      color={Colors.danger}
-                      strokeWidth={2.1}
-                    />
-                    <Text style={[styles.menuText, styles.menuTextDanger]}>
-                      Close Circle
-                    </Text>
-                    <ChevronRight
-                      size={18}
-                      color={Colors.textSecondary}
-                      strokeWidth={2.1}
-                    />
+                    {exitState.isHost ? (
+                      <Trash2
+                        size={20}
+                        color={Colors.danger}
+                        strokeWidth={2.1}
+                      />
+                    ) : (
+                      <LogOut
+                        size={20}
+                        color={Colors.danger}
+                        strokeWidth={2.1}
+                      />
+                    )}
+                    <View style={styles.menuCopy}>
+                      <Text style={[styles.menuText, styles.menuTextDanger]}>
+                        {exitState.label}
+                      </Text>
+                      <Text style={styles.menuHelper}>
+                        {exitState.helperText}
+                      </Text>
+                    </View>
+                    {!exitState.locked && (
+                      <ChevronRight
+                        size={18}
+                        color={Colors.textSecondary}
+                        strokeWidth={2.1}
+                      />
+                    )}
                   </TouchableOpacity>
                 </>
               )}
@@ -1471,7 +1474,7 @@ const styles = StyleSheet.create({
     paddingRight: Spacing.screenPadding,
   },
   chatMenu: {
-    width: 240,
+    width: 286,
     borderRadius: Radius.md,
     borderWidth: 1,
     borderColor: Colors.divider,
@@ -1484,15 +1487,27 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: Spacing.sm,
     paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+  },
+  menuItemDisabled: {
+    opacity: 0.58,
+  },
+  menuCopy: {
+    flex: 1,
+    gap: 2,
   },
   menuText: {
     ...Typography.body,
-    flex: 1,
     color: Colors.textPrimary,
   },
   menuTextDanger: {
     color: Colors.danger,
     fontWeight: "700",
+  },
+  menuHelper: {
+    ...Typography.bodySmall,
+    color: Colors.textSecondary,
+    lineHeight: 17,
   },
   menuDivider: {
     height: 1,

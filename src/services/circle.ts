@@ -305,6 +305,19 @@ export const removeMember = async (
   }
 };
 
+export const leaveCircle = async (circleId: string): Promise<void> => {
+  try {
+    const { error } = await supabase.rpc("leave_circle", {
+      p_circle_id: circleId,
+    });
+
+    if (error) throw error;
+  } catch (error) {
+    console.error("Error leaving circle:", error);
+    throw error;
+  }
+};
+
 export const closeCircle = async (circleId: string): Promise<void> => {
   try {
     const { error } = await supabase.rpc("close_circle", {
@@ -315,6 +328,25 @@ export const closeCircle = async (circleId: string): Promise<void> => {
   } catch (error) {
     console.error("Error closing circle:", error);
     throw error;
+  }
+};
+
+export const resetCircleFreeExitsIfExpired = async (
+  circleId: string,
+): Promise<boolean> => {
+  try {
+    const { data, error } = await supabase.rpc(
+      "reset_circle_free_exits_if_expired",
+      {
+        p_circle_id: circleId,
+      },
+    );
+
+    if (error) throw error;
+    return Boolean(data);
+  } catch (error) {
+    console.error("Error resetting Circle free exits:", error);
+    return false;
   }
 };
 

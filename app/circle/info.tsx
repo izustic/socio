@@ -6,7 +6,8 @@ import {
   closeCircle,
   getCircle,
   getLatestCircleForParticipant,
-  removeMember,
+  leaveCircle,
+  resetCircleFreeExitsIfExpired,
 } from "@/src/services/circle";
 import { getUsersByIds, SwipeCandidate } from "@/src/services/swipe";
 import { Circle } from "@/src/types";
@@ -15,6 +16,7 @@ import {
   getCountdownParts,
   hasMeetupDeadlineElapsed,
 } from "@/src/utils/circleDeadline";
+import { getCircleExitState } from "@/src/utils/circleExit";
 import { router, useLocalSearchParams } from "expo-router";
 import {
   Calendar,
@@ -54,7 +56,7 @@ const getCircleTags = (circle: Circle) => {
 };
 
 export default function CircleInfoScreen() {
-  const { user } = useAuth();
+  const { user, profile, refreshProfile } = useAuth();
   const { endJoinBrowsing, refreshSwipeTabVisibility } = useSwipeTabVisibility();
   const params = useLocalSearchParams<{ circleId?: string }>();
   const [circle, setCircle] = useState<Circle | null>(null);
@@ -128,21 +130,28 @@ export default function CircleInfoScreen() {
   const deadlineElapsed = Boolean(
     circle && hasMeetupDeadlineElapsed(circle, now),
   );
-  const canLeave = Boolean(
-    circle && user && circle.creatorId !== user.id && deadlineElapsed,
+  const exitState = useMemo(
+    () =>
+      circle && user
+        ? getCircleExitState(circle, user.id, profile?.freeExits, now)
+        : null,
+    [circle, now, profile?.freeExits, user],
   );
-  const canClose = Boolean(
-    circle && user && circle.creatorId === user.id && deadlineElapsed,
-  );
+
+  useEffect(() => {
+    if (!circle || !exitState?.deadlineElapsed) return;
+
+    void resetCircleFreeExitsIfExpired(circle.id).then((didReset) => {
+      if (didReset) void refreshProfile();
+    });
+  }, [circle, exitState?.deadlineElapsed, refreshProfile]);
 
   const confirmLeaveCircle = () => {
-    if (!circle || !user || leaving) return;
-
-    if (!canLeave) return;
+    if (!circle || !user || leaving || !exitState || exitState.locked) return;
 
     Alert.alert(
       "Leave Circle?",
-      `You will leave ${circle.name} and lose access to its chat.`,
+      `${exitState.helperText}\n\nYou will leave ${circle.name} and lose access to its chat.`,
       [
         { text: "Cancel", style: "cancel" },
         {
@@ -151,7 +160,8 @@ export default function CircleInfoScreen() {
           onPress: async () => {
             setLeaving(true);
             try {
-              await removeMember(circle.id, user.id);
+              await leaveCircle(circle.id);
+              await refreshProfile();
               endJoinBrowsing();
               await refreshSwipeTabVisibility({ silent: true });
               router.replace("/(tabs)/home");
@@ -168,11 +178,11 @@ export default function CircleInfoScreen() {
   };
 
   const confirmCloseCircle = () => {
-    if (!circle || !user || closing || !canClose) return;
+    if (!circle || !user || closing || !exitState || exitState.locked) return;
 
     Alert.alert(
       "Close Circle?",
-      `This will delete ${circle.name} and remove everyone from the Circle. This cannot be undone.`,
+      `${exitState.helperText}\n\nThis will delete ${circle.name} and remove everyone from the Circle. This cannot be undone.`,
       [
         { text: "Cancel", style: "cancel" },
         {
@@ -182,6 +192,7 @@ export default function CircleInfoScreen() {
             setClosing(true);
             try {
               await closeCircle(circle.id);
+              await refreshProfile();
               endJoinBrowsing();
               await refreshSwipeTabVisibility({ silent: true });
               router.replace("/(tabs)/home");
@@ -345,43 +356,34 @@ export default function CircleInfoScreen() {
           })}
         </View>
 
-        {canLeave && (
+        {exitState && (
           <TouchableOpacity
             activeOpacity={0.76}
-            style={[styles.leaveButton, leaving && styles.leaveButtonDisabled]}
-            onPress={confirmLeaveCircle}
-            disabled={leaving}
+            style={[
+              styles.leaveButton,
+              (leaving || closing || exitState.locked) &&
+                styles.leaveButtonDisabled,
+            ]}
+            onPress={exitState.isHost ? confirmCloseCircle : confirmLeaveCircle}
+            disabled={leaving || closing || exitState.locked}
           >
-            {leaving ? (
+            {leaving || closing ? (
               <ActivityIndicator size="small" color={Colors.danger} />
             ) : (
               <>
-                <LogOut size={18} color={Colors.danger} strokeWidth={2.1} />
-                <Text style={styles.leaveText}>Leave Circle</Text>
+                {exitState.isHost ? (
+                  <Trash2 size={18} color={Colors.danger} strokeWidth={2.1} />
+                ) : (
+                  <LogOut size={18} color={Colors.danger} strokeWidth={2.1} />
+                )}
+                <Text style={styles.leaveText}>{exitState.label}</Text>
               </>
             )}
           </TouchableOpacity>
         )}
-        {canClose && (
-          <TouchableOpacity
-            activeOpacity={0.76}
-            style={[styles.leaveButton, closing && styles.leaveButtonDisabled]}
-            onPress={confirmCloseCircle}
-            disabled={closing}
-          >
-            {closing ? (
-              <ActivityIndicator size="small" color={Colors.danger} />
-            ) : (
-              <>
-                <Trash2 size={18} color={Colors.danger} strokeWidth={2.1} />
-                <Text style={styles.leaveText}>Close Circle</Text>
-              </>
-            )}
-          </TouchableOpacity>
-        )}
-        {!deadlineElapsed && countdown && (
+        {exitState && (
           <Text style={styles.leaveUnavailableText}>
-            {circle.creatorId === user?.id ? "Close" : "Leave"} unlocks after the meetup window ends.
+            {exitState.helperText}
           </Text>
         )}
       </ScrollView>

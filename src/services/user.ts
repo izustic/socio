@@ -16,6 +16,7 @@ const mapUserToDbUpdates = (updates: Partial<User>): Record<string, unknown> => 
   if (updates.bio !== undefined) dbUpdates.bio = updates.bio;
   if (updates.notificationsEnabled !== undefined) dbUpdates.notifications_enabled = updates.notificationsEnabled;
   if (updates.locationEnabled !== undefined) dbUpdates.location_enabled = updates.locationEnabled;
+  if (updates.freeExits !== undefined) dbUpdates.free_exits = updates.freeExits;
   if (updates.profileComplete !== undefined) dbUpdates.profile_complete = updates.profileComplete;
 
   return dbUpdates;
@@ -78,6 +79,7 @@ export const getUserProfile = async (userId: string): Promise<User | null> => {
         bio: data.bio ?? '',
         notificationsEnabled: data.notifications_enabled ?? true,
         locationEnabled: data.location_enabled ?? true,
+        freeExits: data.free_exits ?? 2,
         profileComplete: data.profile_complete ?? false,
         createdAt: new Date(data.created_at),
       };

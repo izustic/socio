@@ -2,17 +2,27 @@ import Avatar from "@/src/components/ui/Avatar";
 import Button from "@/src/components/ui/Button";
 import { Colors, Radius, Spacing, Typography } from "@/src/constants/theme";
 import { useAuth } from "@/src/context/AuthContext";
-import { getCircle, getLatestCircleForParticipant } from "@/src/services/circle";
+import { useSwipeTabVisibility } from "@/src/context/SwipeTabVisibilityContext";
+import {
+  closeCircle,
+  getCircle,
+  getLatestCircleForParticipant,
+  leaveCircle,
+  resetCircleFreeExitsIfExpired,
+} from "@/src/services/circle";
 import { getUsersByIds, SwipeCandidate } from "@/src/services/swipe";
 import { Circle } from "@/src/types";
 import { getCircleMeetupDeadline, getCountdownParts } from "@/src/utils/circleDeadline";
+import { getCircleExitState } from "@/src/utils/circleExit";
 import { router, useLocalSearchParams } from "expo-router";
 import React, { useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
   StatusBar,
   StyleSheet,
   Text,
+  TouchableOpacity,
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -28,11 +38,13 @@ const arrangeMembers = (
 };
 
 export default function CircleCompleteScreen() {
-  const { user } = useAuth();
+  const { user, profile, refreshProfile } = useAuth();
+  const { endJoinBrowsing, refreshSwipeTabVisibility } = useSwipeTabVisibility();
   const params = useLocalSearchParams<{ circleId?: string }>();
   const [circle, setCircle] = useState<Circle | null>(null);
   const [members, setMembers] = useState<SwipeCandidate[]>([]);
   const [loading, setLoading] = useState(true);
+  const [exiting, setExiting] = useState(false);
   const [now, setNow] = useState(Date.now());
 
   useEffect(() => {
@@ -111,6 +123,58 @@ export default function CircleCompleteScreen() {
         : { days: "00", hours: "00", minutes: "00", seconds: "00" },
     [meetupDeadline, now],
   );
+  const exitState = useMemo(
+    () =>
+      circle && user
+        ? getCircleExitState(circle, user.id, profile?.freeExits, now)
+        : null,
+    [circle, now, profile?.freeExits, user],
+  );
+
+  useEffect(() => {
+    if (!circle || !exitState?.deadlineElapsed) return;
+
+    void resetCircleFreeExitsIfExpired(circle.id).then((didReset) => {
+      if (didReset) void refreshProfile();
+    });
+  }, [circle, exitState?.deadlineElapsed, refreshProfile]);
+
+  const confirmExitCircle = () => {
+    if (!circle || !user || !exitState || exitState.locked || exiting) return;
+
+    Alert.alert(
+      exitState.isHost ? "Close Circle?" : "Leave Circle?",
+      exitState.isHost
+        ? `${exitState.helperText}\n\nThis will delete ${circle.name} and remove everyone from the Circle. This cannot be undone.`
+        : `${exitState.helperText}\n\nYou will leave ${circle.name} and lose access to its chat.`,
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: exitState.isHost ? "Close Circle" : "Leave",
+          style: "destructive",
+          onPress: async () => {
+            setExiting(true);
+            try {
+              if (exitState.isHost) {
+                await closeCircle(circle.id);
+              } else {
+                await leaveCircle(circle.id);
+              }
+              await refreshProfile();
+              endJoinBrowsing();
+              await refreshSwipeTabVisibility({ silent: true });
+              router.replace("/(tabs)/home");
+            } catch (error) {
+              console.error("Error exiting circle:", error);
+              Alert.alert("Could not update Circle", "Please try again.");
+            } finally {
+              setExiting(false);
+            }
+          },
+        },
+      ],
+    );
+  };
 
   if (loading) {
     return (
@@ -192,6 +256,22 @@ export default function CircleCompleteScreen() {
           variant="ghost"
           onPress={() => router.push("/(tabs)/home?circleView=progress")}
         />
+        {exitState && (
+          <TouchableOpacity
+            activeOpacity={0.76}
+            style={[
+              styles.exitButton,
+              exitState.locked && styles.exitButtonDisabled,
+            ]}
+            disabled={exitState.locked || exiting}
+            onPress={confirmExitCircle}
+          >
+            <Text style={styles.exitButtonText}>
+              {exiting ? "Working..." : exitState.label}
+            </Text>
+            <Text style={styles.exitHelper}>{exitState.helperText}</Text>
+          </TouchableOpacity>
+        )}
       </View>
     </SafeAreaView>
   );
@@ -289,5 +369,25 @@ const styles = StyleSheet.create({
   footer: {
     gap: Spacing.sm,
     paddingTop: Spacing.md,
+  },
+  exitButton: {
+    width: "100%",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: Spacing.sm,
+    paddingHorizontal: Spacing.md,
+  },
+  exitButtonDisabled: {
+    opacity: 0.55,
+  },
+  exitButtonText: {
+    ...Typography.button,
+    color: Colors.textSecondary,
+  },
+  exitHelper: {
+    ...Typography.bodySmall,
+    color: Colors.textSecondary,
+    textAlign: "center",
+    marginTop: 2,
   },
 });

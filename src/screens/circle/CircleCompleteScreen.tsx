@@ -160,6 +160,8 @@ export default function CircleCompleteScreen() {
               } else {
                 await leaveCircle(circle.id);
               }
+              setCircle(null);
+              setMembers([]);
               await refreshProfile();
               endJoinBrowsing();
               await refreshSwipeTabVisibility({ silent: true });
@@ -187,8 +189,25 @@ export default function CircleCompleteScreen() {
     );
   }
 
-  // No !circle guard here — CircleTabScreen (home.tsx) ensures this screen
-  // is only ever rendered when a valid circle exists.
+  if (!circle) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <StatusBar barStyle="dark-content" />
+        <View style={styles.centered}>
+          <Text style={styles.title}>No active Circle</Text>
+          <Text style={styles.subtitle}>
+            Create or join a Circle to get started.
+          </Text>
+          <View style={styles.emptyAction}>
+            <Button
+              title="Back to Circle"
+              onPress={() => router.replace("/(tabs)/home")}
+            />
+          </View>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container}>
@@ -200,7 +219,7 @@ export default function CircleCompleteScreen() {
         </View>
 
         <View>
-          <Text style={styles.title}>{circle!.name}</Text>
+          <Text style={styles.title}>{circle.name}</Text>
           <Text style={styles.subtitle}>Your Circle is ready to meet</Text>
         </View>
 
@@ -223,7 +242,7 @@ export default function CircleCompleteScreen() {
 
         <View style={styles.countdownCard}>
           <Text style={styles.countdownLabel}>
-            {(circle!.meetupGoal || "Circle meetup").toUpperCase()} IN
+            {(circle.meetupGoal || "Circle meetup").toUpperCase()} IN
           </Text>
           <View style={styles.countdownColumns}>
             <View style={styles.countdownColumn}>
@@ -287,6 +306,11 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
+    paddingHorizontal: Spacing.screenPadding,
+  },
+  emptyAction: {
+    width: "100%",
+    marginTop: Spacing.lg,
   },
   content: {
     flex: 1,

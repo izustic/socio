@@ -4,7 +4,7 @@
 
 > Version 2.1 | Prepared by: Izu Obikanyi
 > Status: CORE LOOP SCAFFOLDED, NOT PRODUCTION-READY
-> Updated: June 2026 — Reconciled with `TODO.md` / `PLAN.md` / `README.md`.
+> Updated: July 2026 — Reconciled with `TODO.md` / `PLAN.md` / `README.md`.
 > Every layer in the Tech Stack table is now annotated with an actual status
 > (`DONE` / `PARTIAL` / `NOT STARTED`) and the Security Checklist has been
 > updated to reflect what is actually in the repo.
@@ -76,6 +76,28 @@ are not trusted on-device: purchase tokens / transaction IDs are sent to the
 Google, upserts `socio_plus_subscriptions`, and denormalizes the current
 entitlement onto `users`.
 
+### Admin and Moderator Mode
+
+`users.role` and `users.status` drive the admin/moderator shell. `app/index.tsx`
+routes active admins to `/admin/dashboard`, active moderators to
+`/moderator/dashboard`, suspended users to `/suspended`, and banned users to
+`/banned`.
+
+Normal users can report another Circle member from `app/circle/info.tsx`.
+Report creation calls `public.create_user_report`, which validates the
+authenticated reporter, prevents self-reporting, and verifies Circle context
+when `circle_id` is supplied. Moderator/admin actions call RPCs from
+`src/services/moderation.ts`:
+
+- `dismiss_report` dismisses a report and writes a `moderation_logs` audit row.
+- `moderate_user` activates, suspends, or bans a user and resolves a report
+  when one is supplied.
+- `set_user_role` is admin-only and promotes/demotes users.
+
+The migration `202607060003_moderation_rpc_enforcement.sql` also adds a
+`users` trigger that blocks ordinary profile updates from changing protected
+`role`, `status`, or `suspended_until` fields outside the moderation path.
+
 ---
 
 ## 2. TECH STACK OVERVIEW
@@ -91,7 +113,7 @@ Authentication      Supabase Auth                 DONE          Email/pwd, nativ
 Database (app data) Supabase PostgreSQL           PARTIAL       Migrations committed; deployed schema, RLS, and policies need project-level verification
 File Storage        Supabase Storage              PARTIAL       Upload helpers exist; `avatars` and `chat-media` buckets/policies not yet verified
 Real-time Chat      Supabase Realtime             PARTIAL       Service subscribes; chat screen integration, access control, and media end-to-end tests still pending
-User Roles/Reports  Supabase PostgreSQL           PARTIAL       Columns and service functions exist; admin/moderator screens are data-backed; RLS role enforcement and deployed verification still pending
+User Roles/Reports  Supabase PostgreSQL           PARTIAL       Data-backed admin/moderator screens exist; report creation and privileged moderation writes are RPC-backed; deployed verification still pending
 Group Calls (E2EE)  Livekit Cloud                 NOT STARTED   Packages installed and hook exists, but real room join + E2EE keys not yet implemented on client
 Call Tokens         Supabase Edge Function        PARTIAL       Source exists; not yet deployed; auth of caller + Circle-member restriction pending
 Location Services   Expo Location + Nominatim     PARTIAL       Service and util exist; device verification and onboarding flow still pending
@@ -1126,8 +1148,9 @@ have been moved to `TODO.md` with `[ ]` or `[~]` markers.
 - [x] LiveKit API Secret is intended to live in the Supabase Edge Function
       only (the app uses `EXPO_PUBLIC_*` for non-secret values)
 - [x] Media file size limits enforced before upload
-- [~] Role checks happen on both frontend and backend — UI checks exist and
-  local RLS coverage is in place, but deployed verification is still pending
+- [~] Role checks happen on both frontend and backend — UI checks exist,
+  role/status writes are guarded by Supabase RPCs and a protected-field trigger,
+  but deployed verification is still pending
 - [x] Banned users blocked at navigation level (banned/suspended screens exist)
 - [x] All moderation actions written to audit log — `moderation_logs` writes
       now happen from the moderation service and are also surfaced through

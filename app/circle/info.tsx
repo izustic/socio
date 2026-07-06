@@ -9,6 +9,7 @@ import {
   leaveCircle,
   resetCircleFreeExitsIfExpired,
 } from "@/src/services/circle";
+import { reportUser } from "@/src/services/moderation";
 import { getUsersByIds, SwipeCandidate } from "@/src/services/swipe";
 import { Circle } from "@/src/types";
 import {
@@ -22,18 +23,22 @@ import {
   Calendar,
   ChevronLeft,
   Crown,
+  Flag,
   LogOut,
   MapPin,
   Trash2,
+  X,
 } from "lucide-react-native";
 import React, { useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  Modal,
   ScrollView,
   StatusBar,
   StyleSheet,
   Text,
+  TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
@@ -55,6 +60,15 @@ const getCircleTags = (circle: Circle) => {
   return Array.from(new Set(tags)).slice(0, 3);
 };
 
+const REPORT_REASONS = [
+  "Harassment",
+  "Unsafe behavior",
+  "Fake profile",
+  "Spam",
+  "Inappropriate content",
+  "Other",
+];
+
 export default function CircleInfoScreen() {
   const { user, profile, refreshProfile } = useAuth();
   const { endJoinBrowsing, refreshSwipeTabVisibility } = useSwipeTabVisibility();
@@ -65,6 +79,12 @@ export default function CircleInfoScreen() {
   const [leaving, setLeaving] = useState(false);
   const [closing, setClosing] = useState(false);
   const [now, setNow] = useState(Date.now());
+  const [reportTarget, setReportTarget] = useState<SwipeCandidate | null>(null);
+  const [reportReason, setReportReason] = useState(REPORT_REASONS[0]);
+  const [reportDetails, setReportDetails] = useState("");
+  const [reporting, setReporting] = useState(false);
+  const [reportError, setReportError] = useState<string | null>(null);
+  const [reportSuccess, setReportSuccess] = useState<string | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -208,6 +228,49 @@ export default function CircleInfoScreen() {
     );
   };
 
+  const openReportModal = (member: SwipeCandidate) => {
+    if (!user || member.uid === user.id) return;
+
+    setReportTarget(member);
+    setReportReason(REPORT_REASONS[0]);
+    setReportDetails("");
+    setReportError(null);
+  };
+
+  const closeReportModal = () => {
+    if (reporting) return;
+
+    setReportTarget(null);
+    setReportDetails("");
+    setReportError(null);
+  };
+
+  const submitReport = async () => {
+    if (!user || !circle || !reportTarget || reporting) return;
+
+    setReporting(true);
+    setReportError(null);
+
+    try {
+      await reportUser({
+        reporterId: user.id,
+        reportedId: reportTarget.uid,
+        reason: reportReason,
+        details: reportDetails,
+        circleId: circle.id,
+      });
+      setReportSuccess(`Thanks. ${reportTarget.name || "This member"} was reported to the moderation team.`);
+      setReportTarget(null);
+      setReportDetails("");
+      setReportError(null);
+    } catch (error) {
+      console.error("Error reporting member:", error);
+      setReportError("We could not submit that report. Please try again.");
+    } finally {
+      setReporting(false);
+    }
+  };
+
   if (loading) {
     return (
       <SafeAreaView style={styles.container}>
@@ -330,6 +393,7 @@ export default function CircleInfoScreen() {
         <View style={styles.memberList}>
           {members.map((member) => {
             const isHost = member.uid === circle.creatorId;
+            const isCurrentUser = member.uid === user?.id;
             return (
               <View key={member.uid} style={styles.memberRow}>
                 <Avatar uri={member.photoURL} size={44} />
@@ -341,16 +405,32 @@ export default function CircleInfoScreen() {
                     {isHost ? "Host" : "Member"}
                   </Text>
                 </View>
-                {isHost && (
-                  <View style={styles.hostBadge}>
-                    <Crown
-                      size={13}
-                      color={Colors.textPrimary}
-                      strokeWidth={2.2}
-                    />
-                    <Text style={styles.hostBadgeText}>Host</Text>
-                  </View>
-                )}
+                <View style={styles.memberActions}>
+                  {isHost && (
+                    <View style={styles.hostBadge}>
+                      <Crown
+                        size={13}
+                        color={Colors.textPrimary}
+                        strokeWidth={2.2}
+                      />
+                      <Text style={styles.hostBadgeText}>Host</Text>
+                    </View>
+                  )}
+                  {!isCurrentUser && (
+                    <TouchableOpacity
+                      activeOpacity={0.76}
+                      style={styles.reportMemberButton}
+                      onPress={() => openReportModal(member)}
+                      accessibilityLabel={`Report ${member.name || "member"}`}
+                    >
+                      <Flag
+                        size={16}
+                        color={Colors.textSecondary}
+                        strokeWidth={2.1}
+                      />
+                    </TouchableOpacity>
+                  )}
+                </View>
               </View>
             );
           })}
@@ -387,6 +467,127 @@ export default function CircleInfoScreen() {
           </Text>
         )}
       </ScrollView>
+
+      <Modal
+        visible={Boolean(reportTarget)}
+        transparent
+        animationType="slide"
+        onRequestClose={closeReportModal}
+      >
+        <View style={styles.reportOverlay}>
+          <TouchableOpacity
+            activeOpacity={1}
+            style={styles.reportScrim}
+            onPress={closeReportModal}
+          />
+          <View style={styles.reportSheet}>
+            <View style={styles.reportHandle} />
+            <View style={styles.reportHeader}>
+              <View>
+                <Text style={styles.reportTitle}>Report member</Text>
+                <Text style={styles.reportSubtitle}>
+                  {reportTarget?.name || "This member"} in {circle.name}
+                </Text>
+              </View>
+              <TouchableOpacity
+                activeOpacity={0.76}
+                style={styles.reportCloseButton}
+                onPress={closeReportModal}
+                accessibilityLabel="Close report form"
+              >
+                <X size={20} color={Colors.textPrimary} strokeWidth={2.2} />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.reasonGrid}>
+              {REPORT_REASONS.map((reason) => {
+                const selected = reason === reportReason;
+                return (
+                  <TouchableOpacity
+                    key={reason}
+                    activeOpacity={0.78}
+                    style={[
+                      styles.reasonChip,
+                      selected && styles.reasonChipSelected,
+                    ]}
+                    onPress={() => setReportReason(reason)}
+                  >
+                    <Text
+                      style={[
+                        styles.reasonChipText,
+                        selected && styles.reasonChipTextSelected,
+                      ]}
+                    >
+                      {reason}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+
+            <TextInput
+              value={reportDetails}
+              onChangeText={setReportDetails}
+              placeholder="Add details for moderators"
+              placeholderTextColor={Colors.textDisabled}
+              multiline
+              maxLength={500}
+              style={styles.reportInput}
+              textAlignVertical="top"
+            />
+            {reportError ? (
+              <Text style={styles.reportError}>{reportError}</Text>
+            ) : (
+              <Text style={styles.reportFinePrint}>
+                Reports are private and reviewed by Socio moderators.
+              </Text>
+            )}
+
+            <TouchableOpacity
+              activeOpacity={0.82}
+              style={[
+                styles.submitReportButton,
+                reporting && styles.submitReportButtonDisabled,
+              ]}
+              onPress={submitReport}
+              disabled={reporting}
+            >
+              {reporting ? (
+                <ActivityIndicator size="small" color={Colors.textPrimary} />
+              ) : (
+                <>
+                  <Flag size={18} color={Colors.textPrimary} strokeWidth={2.2} />
+                  <Text style={styles.submitReportText}>Submit report</Text>
+                </>
+              )}
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal
+        visible={Boolean(reportSuccess)}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setReportSuccess(null)}
+      >
+        <View style={styles.successOverlay}>
+          <View style={styles.successDialog}>
+            <View style={styles.successIcon}>
+              <Flag size={22} color={Colors.textPrimary} strokeWidth={2.2} />
+            </View>
+            <Text style={styles.successTitle}>Report submitted</Text>
+            <Text style={styles.successText}>{reportSuccess}</Text>
+            <TouchableOpacity
+              activeOpacity={0.82}
+              style={styles.successButton}
+              onPress={() => setReportSuccess(null)}
+            >
+              <Text style={styles.successButtonText}>Done</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -544,6 +745,11 @@ const styles = StyleSheet.create({
     marginTop: 1,
     color: Colors.textSecondary,
   },
+  memberActions: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.xs,
+  },
   hostBadge: {
     flexDirection: "row",
     alignItems: "center",
@@ -558,6 +764,16 @@ const styles = StyleSheet.create({
     color: Colors.textPrimary,
     fontWeight: "800",
     textTransform: "uppercase",
+  },
+  reportMemberButton: {
+    width: 36,
+    height: 36,
+    borderRadius: Radius.pill,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: Colors.white,
+    borderWidth: 1,
+    borderColor: Colors.border,
   },
   leaveButton: {
     width: "100%",
@@ -593,5 +809,164 @@ const styles = StyleSheet.create({
     marginTop: Spacing.xs,
     color: Colors.textSecondary,
     textAlign: "center",
+  },
+  reportOverlay: {
+    flex: 1,
+    justifyContent: "flex-end",
+  },
+  reportScrim: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(0,0,0,0.18)",
+  },
+  reportSheet: {
+    borderTopLeftRadius: Radius.xl,
+    borderTopRightRadius: Radius.xl,
+    backgroundColor: Colors.background,
+    paddingHorizontal: Spacing.screenPadding,
+    paddingTop: Spacing.sm,
+    paddingBottom: Spacing.xl,
+  },
+  reportHandle: {
+    alignSelf: "center",
+    width: 40,
+    height: 4,
+    borderRadius: Radius.pill,
+    backgroundColor: Colors.border,
+    marginBottom: Spacing.lg,
+  },
+  reportHeader: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    justifyContent: "space-between",
+    gap: Spacing.md,
+    marginBottom: Spacing.md,
+  },
+  reportTitle: {
+    ...Typography.h2,
+    color: Colors.textPrimary,
+  },
+  reportSubtitle: {
+    ...Typography.body,
+    color: Colors.textSecondary,
+    marginTop: Spacing.xs,
+  },
+  reportCloseButton: {
+    width: 40,
+    height: 40,
+    borderRadius: Radius.pill,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: Colors.inputBg,
+  },
+  reasonGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: Spacing.sm,
+    marginBottom: Spacing.md,
+  },
+  reasonChip: {
+    borderRadius: Radius.pill,
+    backgroundColor: Colors.inputBg,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+  },
+  reasonChipSelected: {
+    backgroundColor: Colors.primary,
+    borderColor: Colors.primary,
+  },
+  reasonChipText: {
+    ...Typography.bodySmall,
+    color: Colors.textPrimary,
+    fontWeight: "700",
+  },
+  reasonChipTextSelected: {
+    color: Colors.textPrimary,
+  },
+  reportInput: {
+    minHeight: 104,
+    borderRadius: Radius.lg,
+    backgroundColor: Colors.inputBg,
+    paddingHorizontal: Spacing.md,
+    paddingTop: Spacing.md,
+    paddingBottom: Spacing.md,
+    ...Typography.body,
+    color: Colors.textPrimary,
+  },
+  reportFinePrint: {
+    ...Typography.bodySmall,
+    color: Colors.textSecondary,
+    marginTop: Spacing.sm,
+  },
+  reportError: {
+    ...Typography.bodySmall,
+    color: Colors.danger,
+    marginTop: Spacing.sm,
+  },
+  submitReportButton: {
+    minHeight: 56,
+    borderRadius: Radius.pill,
+    backgroundColor: Colors.primary,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: Spacing.sm,
+    marginTop: Spacing.lg,
+  },
+  submitReportButtonDisabled: {
+    opacity: 0.72,
+  },
+  submitReportText: {
+    ...Typography.button,
+    color: Colors.textPrimary,
+  },
+  successOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(255,255,255,0.72)",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: Spacing.screenPadding,
+  },
+  successDialog: {
+    width: "100%",
+    maxWidth: 420,
+    borderRadius: Radius.xl,
+    backgroundColor: Colors.inputBg,
+    padding: Spacing.xl,
+    alignItems: "center",
+  },
+  successIcon: {
+    width: 56,
+    height: 56,
+    borderRadius: Radius.lg,
+    backgroundColor: Colors.primary,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: Spacing.md,
+  },
+  successTitle: {
+    ...Typography.h2,
+    color: Colors.textPrimary,
+    textAlign: "center",
+  },
+  successText: {
+    ...Typography.body,
+    color: Colors.textSecondary,
+    textAlign: "center",
+    marginTop: Spacing.sm,
+  },
+  successButton: {
+    width: "100%",
+    minHeight: 52,
+    borderRadius: Radius.pill,
+    backgroundColor: Colors.primary,
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: Spacing.lg,
+  },
+  successButtonText: {
+    ...Typography.button,
+    color: Colors.textPrimary,
   },
 });

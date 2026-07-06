@@ -1,6 +1,6 @@
 # Socio TODO
 
-Updated: June 24, 2026 — rewritten after a full pass over the codebase and
+Updated: July 6, 2026 — rewritten after a full pass over the codebase and
 `ARCHITECTURE.md`. Reflects what's actually in the repo right now (not what's
 in old sections of the plan).
 
@@ -60,6 +60,9 @@ Legend:
 - Moderator and admin routes now render data-backed reports, report detail,
   and user management screens, with moderation actions written to
   `moderation_logs`
+- Normal users can report another Circle member from Circle info; report
+  creation, dismiss, suspend, ban, reactivate, and role updates now have
+  Supabase RPC entry points for server-side enforcement.
 - Circle creation now uses `app/circle/create.tsx` as the single entry
   point, with `vibe` carried through to preferences and the duplicate route
   removed.
@@ -339,6 +342,7 @@ unblocks the rest of the backlog.
 - [ ] **P2** Store Expo push tokens and add push delivery strategy
 
 - [x] Report service function exists
+- [x] Normal user report flow exists from Circle info
 - [x] Ban/suspend service functions exist
 - [x] Moderator dashboard, report detail, admin dashboard, and user
   management routes now render real data-backed UIs
@@ -348,7 +352,8 @@ unblocks the rest of the backlog.
 - [x] Add unban / promote / demote actions
 - [x] Write `moderation_logs` audit entry on every moderation action
 - [x] **P1** Enforce role checks in Supabase RLS, not just in UI
-  (`users`, `reports`, and `moderation_logs` have deployed policy coverage)
+  (`users`, `reports`, and `moderation_logs` have policy coverage, plus
+  moderation RPCs and protected user-field trigger coverage in migrations)
 
 ## 14. Tooling, Release, and Docs
 

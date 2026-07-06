@@ -18,6 +18,7 @@ import {
 import { router,
   useFocusEffect } from "expo-router";
 import {
+  ChevronLeft,
   ChevronRight,
   Shield,
   ShieldCheck,
@@ -129,7 +130,15 @@ export default function AdminDashboard() {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.headerRow}>
-          <View>
+          <TouchableOpacity
+            activeOpacity={0.82}
+            style={styles.backButton}
+            onPress={() => router.back()}
+            accessibilityLabel="Go back"
+          >
+            <ChevronLeft size={20} color={Colors.textPrimary} strokeWidth={2.2} />
+          </TouchableOpacity>
+          <View style={styles.headerText}>
             <Text style={styles.kicker}>Admin</Text>
             <Text style={styles.title}>System overview</Text>
             <Text style={styles.subtitle}>
@@ -381,6 +390,17 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     gap: Spacing.md,
     marginBottom: Spacing.lg,
+  },
+  backButton: {
+    width: 44,
+    height: 44,
+    borderRadius: Radius.pill,
+    backgroundColor: Colors.inputBg,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  headerText: {
+    flex: 1,
   },
   kicker: {
     ...Typography.label,

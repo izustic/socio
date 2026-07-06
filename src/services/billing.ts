@@ -48,6 +48,14 @@ export interface SocioPlusEntitlement {
   platform?: BillingPlatform | null;
 }
 
+export type SocioPlusAccessRole =
+  | {
+      role: "user" | "moderator" | "admin";
+      status: "active" | "suspended" | "banned";
+    }
+  | null
+  | undefined;
+
 type BillingListeners = {
   onPurchaseVerified?: (entitlement: SocioPlusEntitlement) => void;
   onPurchasePending?: () => void;
@@ -305,8 +313,29 @@ export const refreshSubscriptionStatus =
     return callVerifyFunction({ action: "refresh_status" });
   };
 
-export const hasSocioPlusAccess = (profile: User | null | undefined) =>
-  Boolean(profile?.isSocioPlus) &&
-  profile?.subscriptionStatus !== "expired" &&
-  profile?.subscriptionStatus !== "cancelled" &&
-  profile?.subscriptionStatus !== "refunded";
+export const hasStaffSocioPlusAccess = (role: SocioPlusAccessRole) =>
+  role?.status === "active" &&
+  (role.role === "moderator" || role.role === "admin");
+
+export const hasSocioPlusAccess = (
+  profile: User | null | undefined,
+  role?: SocioPlusAccessRole,
+) =>
+  hasStaffSocioPlusAccess(role) ||
+  (Boolean(profile?.isSocioPlus) &&
+    profile?.subscriptionStatus !== "expired" &&
+    profile?.subscriptionStatus !== "cancelled" &&
+    profile?.subscriptionStatus !== "refunded");
+
+export const withStaffSocioPlusAccess = (
+  profile: User | null,
+  role: SocioPlusAccessRole,
+): User | null => {
+  if (!profile || !hasStaffSocioPlusAccess(role)) return profile;
+
+  return {
+    ...profile,
+    isSocioPlus: true,
+    subscriptionStatus: "active",
+  };
+};

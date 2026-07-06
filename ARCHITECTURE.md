@@ -76,6 +76,11 @@ are not trusted on-device: purchase tokens / transaction IDs are sent to the
 Google, upserts `socio_plus_subscriptions`, and denormalizes the current
 entitlement onto `users`.
 
+Active `moderator` and `admin` accounts receive a staff Socio+ entitlement
+override in `src/services/billing.ts` / `AuthContext`. This unlocks Socio+
+feature gates for staff without creating fake store purchases or subscription
+records.
+
 ### Admin and Moderator Mode
 
 `users.role` and `users.status` drive the admin/moderator shell. `app/index.tsx`

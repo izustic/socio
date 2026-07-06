@@ -53,6 +53,9 @@ Legend:
 - Socio+ billing service exists with StoreKit / Google Play Billing product
   fetch, purchase, restore, secure Supabase verification, and launch-time
   entitlement refresh.
+- Active moderator/admin accounts receive a staff Socio+ entitlement override
+  in the app, so staff are not treated as free users while billing records stay
+  purchase-only.
 - Moderation-event notifications now originate from database triggers
   instead of the client, so report and moderation actions fan out server-side.
 - Profile screen with edit form (5 media slots, age, gender, interests,

@@ -9,7 +9,7 @@ export default function SplashScreen() {
   const [showSplash, setShowSplash] = useState(true);
   const { user, profile, loading } = useAuth();
   const { loading: onboardingLoading } = useOnboarding();
-  const { loading: roleLoading, isBanned, isSuspended, isModerator, isAdmin } = useRole();
+  const { loading: roleLoading, isBanned, isSuspended } = useRole();
 
   useEffect(() => {
     // Show splash for minimum duration, then redirect based on auth state
@@ -45,16 +45,7 @@ export default function SplashScreen() {
     return <Redirect href="/suspended" />;
   }
 
-  // User + profile + role 'moderator' → redirect to moderator dashboard
-  if (isModerator) {
-    return <Redirect href="/moderator/dashboard" />;
-  }
-
-  // User + profile + role 'admin' → redirect to admin dashboard
-  if (isAdmin) {
-    return <Redirect href="/admin/dashboard" />;
-  }
-
-  // User + profile + role 'user' → redirect to Circle tab
+  // Active users, moderators, and admins enter normal Socio mode by default.
+  // Staff tools are available from Profile without taking over the session.
   return <Redirect href="/(tabs)/home" />;
 }

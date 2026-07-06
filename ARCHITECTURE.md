@@ -79,9 +79,10 @@ entitlement onto `users`.
 ### Admin and Moderator Mode
 
 `users.role` and `users.status` drive the admin/moderator shell. `app/index.tsx`
-routes active admins to `/admin/dashboard`, active moderators to
-`/moderator/dashboard`, suspended users to `/suspended`, and banned users to
-`/banned`.
+routes banned users to `/banned`, suspended users to `/suspended`, and all
+active users, including moderators and admins, into normal Socio mode by
+default. Staff tools are opt-in from Profile: admins can open
+`/admin/dashboard`, and moderators/admins can open `/moderator/dashboard`.
 
 Normal users can report another Circle member from `app/circle/info.tsx`.
 Report creation calls `public.create_user_report`, which validates the

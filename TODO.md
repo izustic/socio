@@ -27,7 +27,8 @@ Legend:
 - Auth + onboarding flow (welcome → email/OTP → permissions → 4-step profile)
 - Google OAuth sign-in is wired through the native Google Sign-In SDK and Supabase ID-token exchange; Facebook is hidden from the auth surface for now
 - Auth/role redirect: `app/index.tsx` correctly routes banned / suspended /
-  moderator / admin / incomplete-profile users
+  incomplete-profile users; active moderators/admins now enter normal Socio
+  mode and open staff tools from Profile
 - Bottom tab shell with circle / swipe / likes / alerts / profile
 - Host and joiner swipe flows, with `SwipeUsersScreen` and
   `SwipeCirclesScreen` under `src/screens/circle/`
@@ -227,7 +228,10 @@ unblocks the rest of the backlog.
 - [x] Swipe tab chooses host user-swipe or joiner Circle-swipe views
 - [x] Likes tab with blurred free state and Socio+ unlocked pass/like actions
 - [x] Notifications tab with realtime Supabase-backed list UI
-- [x] Auth/role redirect consolidated in `app/index.tsx` (banned / suspended / moderator / admin / incomplete-profile all routed)
+- [x] Auth/role redirect consolidated in `app/index.tsx` (banned / suspended /
+      incomplete-profile routed; active staff users enter normal Socio mode)
+- [x] Moderator/admin tools are opt-in from Profile, with dashboard controls
+      to return to Socio mode
 - [x] Auth layout redirect for incomplete profiles in `app/(auth)/_layout.tsx`
 - [~] Profile tab exists
 - [ ] **P1** Add polished loading, empty, and error states across tabs

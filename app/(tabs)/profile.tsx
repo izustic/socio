@@ -9,11 +9,14 @@ import { router } from 'expo-router';
 import { signOut } from '@/src/services/auth';
 import { Bell,
   ChevronRight,
+  Flag,
   LogOut,
   Pencil,
   Shield,
+  ShieldCheck,
   Trash2,
-  User } from 'lucide-react-native';
+  User,
+  UserCog } from 'lucide-react-native';
 import { Image,
   Modal,
   ScrollView,
@@ -29,7 +32,7 @@ const fallbackInterests = ['Add interests'];
 const fallbackTraits = ['Add traits'];
 
 export default function ProfileScreen() {
-  const { user, profile } = useAuth();
+  const { user, profile, role } = useAuth();
   const [logoutVisible, setLogoutVisible] = useState(false);
 
   const displayName = profile?.name || (user?.user_metadata?.display_name as string) || 'Your profile';
@@ -43,6 +46,8 @@ export default function ProfileScreen() {
     undefined;
   const interests = profile?.interests?.length ? profile.interests : fallbackInterests;
   const traits = profile?.traits?.length ? profile.traits : fallbackTraits;
+  const canModerate = role?.role === "moderator" || role?.role === "admin";
+  const isAdmin = role?.role === "admin";
   const initials = displayName
     .split(' ')
     .filter(Boolean)
@@ -95,6 +100,34 @@ export default function ProfileScreen() {
 
         <ProfileSection title="Interests" values={interests} />
         <ProfileSection title="Traits" values={traits} />
+
+        {canModerate ? (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Staff tools</Text>
+            <View style={styles.staffCard}>
+              {isAdmin ? (
+                <SettingsRow
+                  icon={ShieldCheck}
+                  title="Admin dashboard"
+                  rightText="Admin"
+                  onPress={() => router.push("/admin/dashboard")}
+                />
+              ) : null}
+              <SettingsRow
+                icon={UserCog}
+                title="Moderation queue"
+                rightText={isAdmin ? "Reports" : "Moderator"}
+                onPress={() => router.push("/moderator/dashboard")}
+              />
+              <View style={styles.staffNoteRow}>
+                <Flag size={17} color={Colors.textSecondary} strokeWidth={2} />
+                <Text style={styles.staffNoteText}>
+                  You can use Socio normally. These tools are only opened when you need them.
+                </Text>
+              </View>
+            </View>
+          </View>
+        ) : null}
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Settings</Text>
@@ -314,6 +347,25 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     borderRadius: Radius.lg,
     backgroundColor: Colors.inputBg,
+  },
+  staffCard: {
+    overflow: 'hidden',
+    borderRadius: Radius.lg,
+    backgroundColor: Colors.inputBg,
+  },
+  staffNoteRow: {
+    minHeight: 64,
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: Spacing.sm,
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.md,
+    backgroundColor: Colors.primaryLight,
+  },
+  staffNoteText: {
+    ...Typography.bodySmall,
+    flex: 1,
+    color: Colors.textSecondary,
   },
   settingsRow: {
     minHeight: 72,

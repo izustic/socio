@@ -25,6 +25,7 @@ import {
   UserCog,
   RefreshCw,
   AlertTriangle,
+  Home,
   } from "lucide-react-native";
 import React,
   { useCallback,
@@ -135,13 +136,24 @@ export default function AdminDashboard() {
               Keep an eye on account health, moderation volume, and the active queue.
             </Text>
           </View>
-          <TouchableOpacity
-            activeOpacity={0.82}
-            style={styles.refreshButton}
-            onPress={onRefresh}
-          >
-            <RefreshCw size={18} color={Colors.textPrimary} strokeWidth={2} />
-          </TouchableOpacity>
+          <View style={styles.headerActions}>
+            <TouchableOpacity
+              activeOpacity={0.82}
+              style={styles.refreshButton}
+              onPress={() => router.replace("/(tabs)/home")}
+              accessibilityLabel="Back to Socio"
+            >
+              <Home size={18} color={Colors.textPrimary} strokeWidth={2} />
+            </TouchableOpacity>
+            <TouchableOpacity
+              activeOpacity={0.82}
+              style={styles.refreshButton}
+              onPress={onRefresh}
+              accessibilityLabel="Refresh admin dashboard"
+            >
+              <RefreshCw size={18} color={Colors.textPrimary} strokeWidth={2} />
+            </TouchableOpacity>
+          </View>
         </View>
 
         <View style={styles.summaryGrid}>
@@ -392,6 +404,11 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.inputBg,
     alignItems: "center",
     justifyContent: "center",
+  },
+  headerActions: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.sm,
   },
   summaryGrid: {
     flexDirection: "row",

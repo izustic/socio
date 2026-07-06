@@ -104,6 +104,21 @@ The migration `202607060003_moderation_rpc_enforcement.sql` also adds a
 `users` trigger that blocks ordinary profile updates from changing protected
 `role`, `status`, or `suspended_until` fields outside the moderation path.
 
+### Legal and Compliance
+
+Socio exposes legal documents in-app under `app/legal/`:
+
+- `/legal/privacy` — Privacy Policy
+- `/legal/terms` — Terms of Use
+- `/legal/data-compliance` — CCPA/CPRA, GDPR, data request, retention, and app
+  store compliance summary
+
+The shared content lives in `src/constants/legal.ts`, is rendered through
+`src/components/legal/LegalDocumentScreen.tsx`, and is mirrored as reviewable
+markdown under `docs/legal/`. The Welcome screen links Terms and Privacy before
+account creation/sign-in, and Profile has a Legal section for authenticated
+users. These drafts still require counsel review before public launch.
+
 ---
 
 ## 2. TECH STACK OVERVIEW

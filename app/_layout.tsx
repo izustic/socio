@@ -45,6 +45,9 @@ export default function RootLayout() {
           <Stack.Screen name="settings/notifications" />
           <Stack.Screen name="settings/privacy-safety" />
           <Stack.Screen name="settings/delete-account" />
+          <Stack.Screen name="legal/privacy" />
+          <Stack.Screen name="legal/terms" />
+          <Stack.Screen name="legal/data-compliance" />
         </Stack>
         </SwipeTabVisibilityProvider>
       </OnboardingProvider>

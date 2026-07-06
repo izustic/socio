@@ -367,9 +367,7 @@ export default function SignUp() {
           <Text style={styles.loginAccent}>Log in</Text>
         </TouchableOpacity>
 
-        <Text style={styles.terms}>
-          By continuing you agree to our Terms & Privacy.
-        </Text>
+        <LegalConsentText />
       </View>
 
       <Modal visible={showEmailModal} animationType="slide" transparent>
@@ -448,6 +446,8 @@ export default function SignUp() {
                 disabled={loading}
               />
 
+              <LegalConsentText compact />
+
               <Button
                 title={
                   isSignUp
@@ -462,6 +462,28 @@ export default function SignUp() {
         </KeyboardAvoidingView>
       </Modal>
     </SafeAreaView>
+  );
+}
+
+function LegalConsentText({ compact = false }: { compact?: boolean }) {
+  return (
+    <Text style={[styles.terms, compact && styles.termsCompact]}>
+      By continuing, you agree to Socio&apos;s{" "}
+      <Text
+        style={styles.termsLink}
+        onPress={() => router.push("/legal/terms")}
+      >
+        Terms of Use
+      </Text>
+      {" "}and acknowledge the{" "}
+      <Text
+        style={styles.termsLink}
+        onPress={() => router.push("/legal/privacy")}
+      >
+        Privacy Policy
+      </Text>
+      .
+    </Text>
   );
 }
 
@@ -564,6 +586,14 @@ const styles = StyleSheet.create({
     ...Typography.bodySmall,
     textAlign: "center",
     marginTop: Spacing.sm,
+    color: Colors.textSecondary,
+  },
+  termsCompact: {
+    marginTop: 0,
+  },
+  termsLink: {
+    color: Colors.primaryDark,
+    fontWeight: "800",
   },
   modalOverlay: {
     flex: 1,

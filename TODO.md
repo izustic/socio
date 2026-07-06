@@ -56,11 +56,15 @@ Legend:
 - Active moderator/admin accounts receive a staff Socio+ entitlement override
   in the app, so staff are not treated as free users while billing records stay
   purchase-only.
+- Legal and compliance surfaces exist in-app: Privacy Policy, Terms of Use,
+  Data & Compliance, onboarding legal acknowledgement links, and repo markdown
+  drafts for external hosting/review.
 - Moderation-event notifications now originate from database triggers
   instead of the client, so report and moderation actions fan out server-side.
 - Profile screen with edit form (5 media slots, age, gender, interests,
   traits, bio, location)
-- Settings routes: notifications, privacy-safety, delete-account
+- Settings routes: notifications, privacy-safety, delete-account, and legal
+  documents
 - Moderator and admin routes now render data-backed reports, report detail,
   and user management screens, with moderation actions written to
   `moderation_logs`
@@ -243,11 +247,16 @@ unblocks the rest of the backlog.
 - [ ] **P1** Configure Google Play subscription `socio_plus_monthly`, base plan/offer, license testers, and Android Publisher service account
 - [ ] **P1** Deploy `verify-socio-plus`, set Apple/Google Supabase secrets, and verify real sandbox purchases on iOS and Android
 - [ ] **P1** Wire App Store Server Notifications and Google Real-time Developer Notifications to refresh subscription status promptly
+- [ ] **P1** Host `/privacy`, `/terms`, `/data-compliance`, and `/delete-account`
+      on public non-PDF web URLs for App Store / Google Play submission
+- [ ] **P1** Have counsel review legal drafts before public launch
 
 ## 6. Profile
 
 - [x] Profile screen reads current auth/profile data
 - [x] Edit profile route exists
+- [x] Legal section links Privacy Policy, Terms of Use, Data & Compliance, and
+      account deletion
 - [x] Edit profile form is fully built (5 media slots, age, gender, interests, traits, bio, location, upload progress)
 - [~] Edit profile media reordering and main-photo selection need device verification
 - [~] Edit profile save flow + notification/location preference updates need device verification

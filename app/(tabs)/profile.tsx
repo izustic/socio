@@ -9,14 +9,18 @@ import { router } from 'expo-router';
 import { signOut } from '@/src/services/auth';
 import { Bell,
   ChevronRight,
+  Database,
+  FileText,
   Flag,
   LogOut,
   Pencil,
+  Scale,
   Shield,
   ShieldCheck,
   Trash2,
   User,
   UserCog } from 'lucide-react-native';
+import type { LucideIcon } from 'lucide-react-native';
 import { Image,
   Modal,
   ScrollView,
@@ -144,6 +148,27 @@ export default function ProfileScreen() {
               onPress={() => router.push("/settings/privacy-safety")}
             />
             <SettingsRow icon={LogOut} title="Log out" onPress={() => setLogoutVisible(true)} />
+          </View>
+        </View>
+
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Legal</Text>
+          <View style={styles.settingsCard}>
+            <SettingsRow
+              icon={FileText}
+              title="Privacy Policy"
+              onPress={() => router.push("/legal/privacy")}
+            />
+            <SettingsRow
+              icon={Scale}
+              title="Terms of Use"
+              onPress={() => router.push("/legal/terms")}
+            />
+            <SettingsRow
+              icon={Database}
+              title="Data & Compliance"
+              onPress={() => router.push("/legal/data-compliance")}
+            />
             <SettingsRow
               icon={Trash2}
               title="Delete account"
@@ -207,7 +232,7 @@ function ProfileSection({ title, values }: { title: string; values: string[] }) 
   );
 }
 
-type SettingsIcon = typeof Bell;
+type SettingsIcon = LucideIcon;
 
 function SettingsRow({
   icon: Icon,

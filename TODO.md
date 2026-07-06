@@ -28,7 +28,7 @@ Legend:
 - Google OAuth sign-in is wired through the native Google Sign-In SDK and Supabase ID-token exchange; Facebook is hidden from the auth surface for now
 - Auth/role redirect: `app/index.tsx` correctly routes banned / suspended /
   moderator / admin / incomplete-profile users
-- Bottom tab shell with circle / swipe / alerts / profile
+- Bottom tab shell with circle / swipe / likes / alerts / profile
 - Host and joiner swipe flows, with `SwipeUsersScreen` and
   `SwipeCirclesScreen` under `src/screens/circle/`
 - Chat screen (`CircleChatScreen`) — wired to realtime messages, polls,
@@ -46,6 +46,12 @@ Legend:
   flashes a loading state after each swipe.
 - `delete-account` Edge Function source exists
 - Notifications tab with realtime list, mark-one / mark-all read
+- Likes tab shows incoming pending swipes from people who liked your profile or
+  Circle. Free users see blurred cards; users with `users.is_socio_plus = true`
+  can pass or like back through the existing swipe RPCs.
+- Socio+ billing service exists with StoreKit / Google Play Billing product
+  fetch, purchase, restore, secure Supabase verification, and launch-time
+  entitlement refresh.
 - Moderation-event notifications now originate from database triggers
   instead of the client, so report and moderation actions fan out server-side.
 - Profile screen with edit form (5 media slots, age, gender, interests,
@@ -143,6 +149,10 @@ unblocks the rest of the backlog.
 - [x] Swipe/matching service
 - [x] Message service with realtime subscription
 - [x] Notification service with realtime subscription
+- [x] Likes service derived from `circles.pending_swipes`
+- [x] Socio+ billing service with store product fetch, purchase, restore, and entitlement refresh
+- [x] `verify-socio-plus` Edge Function source for Apple / Google validation
+- [x] `socio_plus_subscriptions` migration and user entitlement fields
 - [x] Poll service for chat polls
 - [x] Moderation service functions
 - [x] Storage upload helpers for avatars and chat media
@@ -206,17 +216,23 @@ unblocks the rest of the backlog.
 
 - [x] Root stack layout
 - [x] Auth provider and onboarding provider wrap the app
-- [x] Bottom tabs: Circle, Swipe, Alerts, Profile
+- [x] Bottom tabs: Circle, Swipe, Likes, Alerts, Profile
 - [x] App entry redirect based on auth/profile/role status
 - [x] Banned screen
 - [x] Suspended screen
 - [x] Circle home tab chooses no-circle, progress, complete, or chat views
 - [x] Swipe tab chooses host user-swipe or joiner Circle-swipe views
+- [x] Likes tab with blurred free state and Socio+ unlocked pass/like actions
 - [x] Notifications tab with realtime Supabase-backed list UI
 - [x] Auth/role redirect consolidated in `app/index.tsx` (banned / suspended / moderator / admin / incomplete-profile all routed)
 - [x] Auth layout redirect for incomplete profiles in `app/(auth)/_layout.tsx`
 - [~] Profile tab exists
 - [ ] **P1** Add polished loading, empty, and error states across tabs
+- [x] **P1** Connect Socio+ billing / purchase restore and server-verified entitlement updates for `users.is_socio_plus`
+- [ ] **P1** Configure App Store Connect product `socio_plus_monthly`, App Store Server API key, and sandbox testers
+- [ ] **P1** Configure Google Play subscription `socio_plus_monthly`, base plan/offer, license testers, and Android Publisher service account
+- [ ] **P1** Deploy `verify-socio-plus`, set Apple/Google Supabase secrets, and verify real sandbox purchases on iOS and Android
+- [ ] **P1** Wire App Store Server Notifications and Google Real-time Developer Notifications to refresh subscription status promptly
 
 ## 6. Profile
 

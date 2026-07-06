@@ -3,7 +3,7 @@ import LottieSplashScreen from '@/src/components/LottieSplashScreen';
 import { useAuth } from '@/src/context/AuthContext';
 import { useSwipeTabVisibility } from '@/src/context/SwipeTabVisibilityContext';
 import { Redirect, Tabs, useFocusEffect } from 'expo-router';
-import { Bell, Layers, User, Users } from 'lucide-react-native';
+import { Bell, Layers, Sparkles, User, Users } from 'lucide-react-native';
 import { useCallback } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -47,6 +47,13 @@ function TabLayoutInner() {
           title: 'Swipe',
           href: swipeTabVisible ? undefined : null,
           tabBarIcon: ({ color, size }) => <Layers size={size} color={color} strokeWidth={2.2} />,
+        }}
+      />
+      <Tabs.Screen
+        name="likes"
+        options={{
+          title: 'Likes',
+          tabBarIcon: ({ color, size }) => <Sparkles size={size} color={color} strokeWidth={2.2} />,
         }}
       />
       <Tabs.Screen

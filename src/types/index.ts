@@ -25,6 +25,11 @@ export interface User {
   notificationsEnabled?: boolean;
   locationEnabled?: boolean;
   freeExits?: number;
+  isSocioPlus?: boolean;
+  subscriptionStatus?: "active" | "inactive" | "pending" | "expired" | "cancelled" | "refunded" | "billing_retry";
+  subscriptionPlatform?: "ios" | "android" | null;
+  subscriptionProductId?: string | null;
+  subscriptionExpiresAt?: Date | null;
   profileComplete: boolean;
   createdAt: Date;
 }

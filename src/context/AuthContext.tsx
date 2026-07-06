@@ -2,6 +2,7 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { supabase, getDefaultUserRole, getUserRole, syncUserToSupabase } from '../services/supabase';
 import { getUserProfile } from '../services/user';
 import { getLatestCircleForParticipant } from '../services/circle';
+import { refreshSubscriptionStatus } from '../services/billing';
 import { User } from '../types';
 import type { User as SupabaseUser } from '@supabase/supabase-js';
 
@@ -44,6 +45,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setProfile(null);
       setRole(null);
       return;
+    }
+
+    try {
+      await refreshSubscriptionStatus();
+    } catch (error) {
+      console.warn('Could not refresh subscription status:', error);
     }
 
     const userProfile = await getUserProfile(user.id);
@@ -91,6 +98,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           );
           if (generation !== authGeneration) return;
           setRole(userRole);
+          try {
+            await refreshSubscriptionStatus();
+            if (generation !== authGeneration) return;
+            const refreshedProfile = await getUserProfile(supabaseUser.id);
+            if (generation !== authGeneration) return;
+            setProfile(refreshedProfile);
+          } catch (subscriptionError) {
+            if (generation !== authGeneration) return;
+            console.warn('Could not refresh subscription status:', subscriptionError);
+          }
         } catch (error) {
           if (generation !== authGeneration) return;
           if (isSupabaseRlsError(error)) {

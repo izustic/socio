@@ -43,16 +43,38 @@ Onboard → Profile setup → NoCircle → Join Circle → Set preferences
 
 Tab bar rules are centralized in `resolveAppTabVisibility()` (`src/services/circle.helpers.ts`) and applied by `SwipeTabVisibilityContext`.
 
-| App state | Circle tab | Swipe tab | Circle tab content | Swipe tab content |
-|---|---|---|---|---|
-| After onboarding / no circle | Visible | Hidden | `NoCircleScreen` | — |
-| Join flow (browsing circles) | Hidden | Visible | — | `SwipeCirclesScreen` |
-| Host filling a forming circle | Visible | Visible | `CircleProgressScreen` | `SwipeUsersScreen` |
-| Joiner matched into forming circle | Visible | Hidden | `CircleProgressScreen` | — |
-| Circle complete (host or member) | Visible | Hidden | `CircleCompleteScreen` | — |
-| After leave / close circle | Visible | Hidden | `NoCircleScreen` | — |
+| App state | Circle tab | Swipe tab | Likes tab | Circle tab content | Swipe tab content |
+|---|---|---|---|---|---|
+| After onboarding / no circle | Visible | Hidden | Visible | `NoCircleScreen` | — |
+| Join flow (browsing circles) | Hidden | Visible | Visible | — | `SwipeCirclesScreen` |
+| Host filling a forming circle | Visible | Visible | Visible | `CircleProgressScreen` | `SwipeUsersScreen` |
+| Joiner matched into forming circle | Visible | Hidden | Visible | `CircleProgressScreen` | — |
+| Circle complete (host or member) | Visible | Hidden | Visible | `CircleCompleteScreen` | — |
+| After leave / close circle | Visible | Hidden | Visible | `NoCircleScreen` | — |
 
 `startJoinBrowsing()` / `endJoinBrowsing()` track the join-browse flow before a circle record exists. Tab visibility is refreshed on circle load, match, completion, leave, and close.
+
+### Likes Tab
+
+`app/(tabs)/likes.tsx` shows incoming pending swipes from both sides of the
+matching model:
+
+- A joiner liked a host's forming Circle → the joiner's profile appears.
+- A host liked a joiner's profile → the host's Circle appears.
+
+The data is derived from `circles.pending_swipes` via `src/services/likes.ts`.
+Socio+ entitlement is read from `users.is_socio_plus` and
+`users.subscription_status`. Free users see the incoming count and blurred
+cards; Socio+ users can pass or like back, which calls the existing
+`submit_host_swipe` / `submit_circle_swipe` RPCs so mutual matches continue
+through the normal Circle membership flow.
+
+Socio+ billing is handled by `src/services/billing.ts` using Apple StoreKit on
+iOS and Google Play Billing on Android through `react-native-iap`. Purchases
+are not trusted on-device: purchase tokens / transaction IDs are sent to the
+`verify-socio-plus` Supabase Edge Function, which validates them with Apple or
+Google, upserts `socio_plus_subscriptions`, and denormalizes the current
+entitlement onto `users`.
 
 ---
 
@@ -74,6 +96,7 @@ Group Calls (E2EE)  Livekit Cloud                 NOT STARTED   Packages install
 Call Tokens         Supabase Edge Function        PARTIAL       Source exists; not yet deployed; auth of caller + Circle-member restriction pending
 Location Services   Expo Location + Nominatim     PARTIAL       Service and util exist; device verification and onboarding flow still pending
 Notifications       Supabase PostgreSQL           PARTIAL       Realtime list and service exist; moderation-event notifications are server-side via DB triggers, but broader creation is still client-triggered; push tokens not stored
+Billing             StoreKit / Play Billing       PARTIAL       `react-native-iap` client, Supabase verification function, subscription table, restore, and launch refresh exist; store-console products/secrets still need live configuration
 ```
 
 Repo note: the starter-era top-level `components/` and `hooks/` scaffold has
@@ -92,6 +115,7 @@ Supabase Storage   → all media files (avatars, chat media)
 Supabase Realtime   → real-time subscriptions (chat, notifications)
 Livekit            → real-time E2EE audio/video calls
 Supabase Edge Fn   → secure server-side token generation
+StoreKit/Play Billing → Socio+ subscriptions and restore purchase
 ```
 
 ---
@@ -116,7 +140,35 @@ EXPO_PUBLIC_LIVEKIT_URL=wss://your-project.livekit.cloud
 # NEVER prefix these with EXPO_PUBLIC_
 LIVEKIT_API_KEY=
 LIVEKIT_API_SECRET=
+
+# Socio+ billing secrets (backend only — Supabase Edge Function)
+# NEVER prefix these with EXPO_PUBLIC_
+SOCIO_PLUS_PRODUCT_IDS=socio_plus_monthly
+APPLE_BUNDLE_ID=com.izustic.socio
+APPLE_ENVIRONMENT=Production
+APPLE_ISSUER_ID=
+APPLE_KEY_ID=
+APPLE_PRIVATE_KEY=
+GOOGLE_PLAY_PACKAGE_NAME=com.izustic.socio
+GOOGLE_PLAY_CLIENT_EMAIL=
+GOOGLE_PLAY_PRIVATE_KEY=
 ```
+
+### Socio+ Store Setup
+
+- App Store Connect: create an auto-renewable subscription product with product
+  ID `socio_plus_monthly` under a Socio+ subscription group. Create an App
+  Store Server API key and store `APPLE_ISSUER_ID`, `APPLE_KEY_ID`, and
+  `APPLE_PRIVATE_KEY` as Supabase secrets.
+- Google Play Console: create a subscription product with product ID
+  `socio_plus_monthly` and at least one active base plan/offer. Create or link
+  a Google Cloud service account with Android Publisher API access, then store
+  `GOOGLE_PLAY_CLIENT_EMAIL` and `GOOGLE_PLAY_PRIVATE_KEY` as Supabase secrets.
+- Supabase: deploy `verify-socio-plus`, run the Socio+ migrations, and set all
+  billing secrets with `supabase secrets set ...`. App Store Server
+  Notifications / Real-time Developer Notifications should call or trigger the
+  same entitlement refresh path so refunds, cancellations, billing retry, and
+  expiry are reflected promptly.
 
 ---
 
@@ -142,9 +194,10 @@ socio/
 │   │   └── profile-complete.tsx      # Celebration → enters main app
 │   │
 │   ├── (tabs)/                       # Main app shell — persistent bottom nav
-│   │   ├── _layout.tsx               # BottomNav: Circle · Swipe · Notifications · Profile
+│   │   ├── _layout.tsx               # BottomNav: Circle · Swipe · Likes · Notifications · Profile
 │   │   ├── home.tsx                  # Circle tab: NoCircleScreen or CircleScreen based on state
 │   │   ├── swipe.tsx                 # SwipeScreen (host) or SwipeCirclesScreen (joiner)
+│   │   ├── likes.tsx                 # Socio+ incoming likes grid
 │   │   ├── notifications.tsx         # Match alerts, Circle activity
 │   │   └── profile.tsx              # ProfileScreen
 │   │
@@ -183,6 +236,8 @@ socio/
 │   │   ├── messages.ts               # Chat messages + realtime (PostgreSQL)
 │   │   ├── notifications.ts         # Notifications + realtime (PostgreSQL)
 │   │   ├── swipe.ts                  # Swipe logic + matching
+│   │   ├── likes.ts                  # Incoming likes projection from pending_swipes
+│   │   ├── billing.ts                # Socio+ StoreKit / Play Billing client
 │   │   ├── moderation.ts             # All moderation actions
 │   │   ├── livekit.ts                # Call management
 │   │   └── location.ts               # Location services
@@ -231,6 +286,7 @@ socio/
 ├── supabase/
 │   └── functions/
 │       └── get-livekit-token/        # Supabase Edge Function for LiveKit tokens
+│       └── verify-socio-plus/        # Store receipt/token validation
 │           └── index.ts
 │
 ├── assets/

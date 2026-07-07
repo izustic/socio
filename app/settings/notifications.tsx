@@ -11,7 +11,7 @@ import {
   subscribeToSettings,
   updateNotificationSettings,
   } from "@/src/services/settings";
-import { router } from "expo-router";
+import { goBackOrReplace } from "@/src/utils/navigation";
 import {
   Bell,
   ChevronLeft,
@@ -208,7 +208,7 @@ export default function NotificationSettingsScreen() {
         <TouchableOpacity
           activeOpacity={0.76}
           style={styles.backButton}
-          onPress={() => router.back()}
+          onPress={() => goBackOrReplace("/(tabs)/profile")}
         >
           <ChevronLeft size={22} color={Colors.textPrimary} strokeWidth={2.3} />
         </TouchableOpacity>

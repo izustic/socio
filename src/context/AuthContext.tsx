@@ -3,6 +3,11 @@ import { supabase, getDefaultUserRole, getUserRole, syncUserToSupabase } from '.
 import { getUserProfile } from '../services/user';
 import { getLatestCircleForParticipant } from '../services/circle';
 import { refreshSubscriptionStatus, withStaffSocioPlusAccess } from '../services/billing';
+import {
+  checkCurrentAuthUserExists,
+  clearLocalAuthSession,
+  getFreshAuthUser,
+} from '../services/auth';
 import { User } from '../types';
 import type { User as SupabaseUser } from '@supabase/supabase-js';
 
@@ -15,6 +20,7 @@ interface AuthContextType {
     suspended_until?: string | null;
   } | null;
   loading: boolean;
+  staleAuthSessionCleared: boolean;
   refreshProfile: () => Promise<void>;
 }
 
@@ -39,6 +45,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [profile, setProfile] = useState<User | null>(null);
   const [role, setRole] = useState<AuthContextType['role']>(null);
   const [loading, setLoading] = useState(true);
+  const [staleAuthSessionCleared, setStaleAuthSessionCleared] = useState(false);
   const effectiveProfile = useMemo(
     () => withStaffSocioPlusAccess(profile, role),
     [profile, role],
@@ -80,7 +87,35 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (_event, session) => {
       const generation = ++authGeneration;
-      const supabaseUser = session?.user ?? null;
+      let supabaseUser = session?.user ?? null;
+
+      if (supabaseUser) {
+        const authUserExists = await checkCurrentAuthUserExists();
+        if (generation !== authGeneration) return;
+
+        if (!authUserExists) {
+          await clearLocalAuthSession();
+          if (generation !== authGeneration) return;
+          setStaleAuthSessionCleared(true);
+          supabaseUser = null;
+        }
+      }
+
+      if (supabaseUser) {
+        const freshUser = await getFreshAuthUser();
+        if (generation !== authGeneration) return;
+
+        if (!freshUser || freshUser.id !== supabaseUser.id) {
+          await clearLocalAuthSession();
+          if (generation !== authGeneration) return;
+          setStaleAuthSessionCleared(true);
+          supabaseUser = null;
+        } else {
+          setStaleAuthSessionCleared(false);
+          supabaseUser = freshUser;
+        }
+      }
+
       setUser(supabaseUser);
 
       if (supabaseUser) {
@@ -139,7 +174,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, profile: effectiveProfile, role, loading, refreshProfile }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        profile: effectiveProfile,
+        role,
+        loading,
+        staleAuthSessionCleared,
+        refreshProfile,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );

@@ -5,6 +5,63 @@ import {
 } from "./auth.helpers";
 import { supabase } from "./supabase";
 
+export const EMAIL_ONBOARDING_VERIFIED_METADATA_KEY =
+  "email_verified_for_onboarding";
+
+export const isEmailPasswordUser = (user: User | null | undefined) => {
+  if (!user) return false;
+  const provider = user.app_metadata?.provider;
+  const providers = user.app_metadata?.providers;
+
+  return (
+    provider === "email" ||
+    (Array.isArray(providers) && providers.includes("email"))
+  );
+};
+
+export const hasCompletedEmailOnboardingVerification = (
+  user: User | null | undefined,
+) =>
+  Boolean(
+    user?.user_metadata?.[EMAIL_ONBOARDING_VERIFIED_METADATA_KEY],
+  );
+
+export const requiresEmailOnboardingVerification = (
+  user: User | null | undefined,
+) =>
+  isEmailPasswordUser(user) &&
+  !hasCompletedEmailOnboardingVerification(user);
+
+export const getFreshAuthUser = async (): Promise<User | null> => {
+  const { data, error } = await supabase.auth.getUser();
+
+  if (error) {
+    console.warn("Could not refresh auth user:", error.code, error.message);
+    return null;
+  }
+
+  return data.user ?? null;
+};
+
+export const checkCurrentAuthUserExists = async () => {
+  const { data, error } = await supabase.functions.invoke("auth-user-status");
+
+  if (error) {
+    console.warn("Could not check auth user status:", error.message);
+    return true;
+  }
+
+  return Boolean(data?.exists);
+};
+
+export const clearLocalAuthSession = async () => {
+  const { error } = await supabase.auth.signOut({ scope: "local" });
+
+  if (error) {
+    console.warn("Could not clear local auth session:", error.code, error.message);
+  }
+};
+
 export const signUpWithEmail = async (email: string, password: string) => {
   if (!email || !password) {
     throw createAuthInputError(
@@ -124,11 +181,9 @@ export const sendEmailVerificationCode = async (email: string) => {
 
   try {
     console.log("Sending email verification code to:", email);
-    const { data, error } = await supabase.auth.signInWithOtp({
+    const { data, error } = await supabase.auth.resend({
+      type: "signup",
       email,
-      options: {
-        shouldCreateUser: false,
-      },
     });
 
     if (error) {
@@ -165,7 +220,7 @@ export const verifyEmailVerificationCode = async (
     const { data, error } = await supabase.auth.verifyOtp({
       email,
       token,
-      type: "email",
+      type: "signup",
     });
 
     if (error) {
@@ -181,8 +236,29 @@ export const verifyEmailVerificationCode = async (
       throw new Error("We could not verify that code. Please try again.");
     }
 
+    const { data: updatedData, error: updateError } =
+      await supabase.auth.updateUser({
+        data: {
+          [EMAIL_ONBOARDING_VERIFIED_METADATA_KEY]: true,
+          email_verified_for_onboarding_at: new Date().toISOString(),
+        },
+      });
+
+    if (updateError) {
+      console.error(
+        "Email verification metadata update error:",
+        updateError.code,
+        updateError.message,
+      );
+      const authError = getAuthErrorMessage(updateError);
+      throw Object.assign(new Error(authError.userMessage), {
+        code: updateError.code ?? "unknown",
+        suggestion: authError.suggestion,
+      });
+    }
+
     console.log("Email verified successfully");
-    return data.user;
+    return updatedData.user ?? data.user;
   } catch (error: any) {
     if (error.code) throw error;
     console.error("Email verification error:", error);

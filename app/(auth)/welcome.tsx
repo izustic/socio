@@ -11,6 +11,7 @@ import { Colors,
 import { useOnboarding } from "@/src/context/OnboardingContext";
 import { getFirstIncompleteOnboardingStep } from "@/src/constants/onboarding";
 import {
+  requiresEmailOnboardingVerification,
   sendEmailVerificationCode,
   signInWithEmail,
   signInWithGoogleIdToken,
@@ -302,9 +303,8 @@ export default function SignUp() {
         throw new Error("Authentication failed");
       }
 
-      const emailConfirmedAt =
-        user.email_confirmed_at || user.confirmed_at || null;
-      const requiresEmailVerification = isSignUp || !emailConfirmedAt;
+      const requiresEmailVerification =
+        isSignUp || requiresEmailOnboardingVerification(user);
       let codeSentAt: number | null = null;
 
       if (requiresEmailVerification) {

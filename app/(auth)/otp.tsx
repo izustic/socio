@@ -1,7 +1,9 @@
 import OnboardingLayout from '@/src/components/onboarding/OnboardingLayout';
 import { Colors, Radius, Spacing, Typography } from '@/src/constants/theme';
+import { useAuth } from '@/src/context/AuthContext';
 import { useOnboarding } from '@/src/context/OnboardingContext';
 import {
+  requiresEmailOnboardingVerification,
   sendEmailVerificationCode,
   verifyEmailVerificationCode,
 } from '@/src/services/auth';
@@ -25,6 +27,7 @@ const getSecondsUntilResend = (sentAt: number | null) => {
 };
 
 export default function OtpScreen() {
+  const { user } = useAuth();
   const { draft, mergeDraft, setStep } = useOnboarding();
   const [otp, setOtp] = useState(Array(CODE_LENGTH).fill(''));
   const [verifying, setVerifying] = useState(false);
@@ -35,15 +38,54 @@ export default function OtpScreen() {
   const sentInitialCode = useRef(false);
   const inputs = useRef<(TextInput | null)[]>([]);
 
-  const email = draft.contactHint;
+  const authRequiresVerification = requiresEmailOnboardingVerification(user);
+  const verificationRequired =
+    authRequiresVerification || draft.emailVerificationRequired;
+  const email = draft.contactHint || user?.email || '';
   const token = useMemo(() => otp.join(''), [otp]);
   const complete = token.length === CODE_LENGTH;
 
   useEffect(() => {
-    if (!draft.emailVerificationRequired || draft.emailVerified) {
+    if (!verificationRequired || (draft.emailVerified && !authRequiresVerification)) {
       setStep('location-permission');
     }
-  }, [draft.emailVerificationRequired, draft.emailVerified, setStep]);
+  }, [
+    authRequiresVerification,
+    draft.emailVerified,
+    setStep,
+    verificationRequired,
+  ]);
+
+  useEffect(() => {
+    if (!authRequiresVerification || !user?.email) return;
+
+    const patch: {
+      contactHint?: string;
+      emailVerificationRequired?: boolean;
+      emailVerified?: boolean;
+    } = {};
+
+    if (draft.contactHint !== user.email) {
+      patch.contactHint = user.email;
+    }
+    if (!draft.emailVerificationRequired) {
+      patch.emailVerificationRequired = true;
+    }
+    if (draft.emailVerified) {
+      patch.emailVerified = false;
+    }
+
+    if (Object.keys(patch).length > 0) {
+      mergeDraft(patch);
+    }
+  }, [
+    authRequiresVerification,
+    draft.contactHint,
+    draft.emailVerificationRequired,
+    draft.emailVerified,
+    mergeDraft,
+    user?.email,
+  ]);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -56,7 +98,7 @@ export default function OtpScreen() {
   useEffect(() => {
     if (
       sentInitialCode.current ||
-      !draft.emailVerificationRequired ||
+      !verificationRequired ||
       draft.emailVerificationCodeSentAt ||
       !email
     ) {
@@ -74,9 +116,9 @@ export default function OtpScreen() {
       });
   }, [
     draft.emailVerificationCodeSentAt,
-    draft.emailVerificationRequired,
     email,
     mergeDraft,
+    verificationRequired,
   ]);
 
   const focusInput = (index: number) => {

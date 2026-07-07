@@ -356,7 +356,12 @@ export default function SwipeUsersScreen() {
           <View style={styles.caughtUpButtons}>
             <Button
               title="Adjust filters"
-              onPress={() => router.push("/circle/create-preferences")}
+              onPress={() =>
+                router.push({
+                  pathname: "/circle/create-preferences",
+                  params: { circleId: circle.id },
+                })
+              }
             />
             <Button
               title="Check back later"

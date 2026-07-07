@@ -14,16 +14,22 @@ export interface CreateCircleInput {
   meetupTimeframe?: string;
   meetupDays?: number;
   meetupDeadline?: Date | string;
+  imageUrl?: string | null;
+  circleImageUri?: string;
   genderMix?: "Male" | "Female" | "Both";
   traits?: ProfileTrait[];
 }
 
 export interface CircleFilters {
-  ageRange: [number, number];
-  educationLevel: string;
-  locationRadius: number;
-  interests: Interest[];
+  ageRange?: [number, number];
+  age_range?: [number, number];
+  educationLevel?: string;
+  education_level?: string;
+  locationRadius?: number;
+  location_radius?: number;
+  interests?: Interest[];
   vibe?: string;
+  genderMix?: "Male" | "Female" | "Both";
   gender_mix?: "Male" | "Female" | "Both";
   traits?: ProfileTrait[];
 }
@@ -40,6 +46,7 @@ export interface CircleRow {
   meetup_timeframe?: string;
   meetup_days?: number;
   meetup_deadline?: string | null;
+  image_url?: string | null;
   status: "forming" | "complete";
   created_at: string;
 }
@@ -49,6 +56,16 @@ export const normalizeMemberIds = (members: unknown): string[] => {
   return members.map((id) => String(id));
 };
 
+const normalizeCircleFilters = (filters: CircleFilters): Circle["filters"] => ({
+  ageRange: filters.ageRange ?? filters.age_range ?? [18, 50],
+  educationLevel: filters.educationLevel ?? filters.education_level ?? "Any",
+  locationRadius: filters.locationRadius ?? filters.location_radius ?? 10,
+  interests: filters.interests ?? [],
+  vibe: filters.vibe ?? "",
+  genderMix: filters.genderMix ?? filters.gender_mix ?? "Both",
+  traits: filters.traits ?? [],
+});
+
 export const rowToCircle = (row: CircleRow): Circle => ({
   id: row.id,
   name: row.name,
@@ -56,11 +73,12 @@ export const rowToCircle = (row: CircleRow): Circle => ({
   size: row.size,
   members: normalizeMemberIds(row.members),
   pendingSwipes: row.pending_swipes,
-  filters: row.filters,
+  filters: normalizeCircleFilters(row.filters),
   meetupGoal: row.meetup_goal,
   meetupTimeframe: row.meetup_timeframe,
   meetupDays: row.meetup_days,
   meetupDeadline: row.meetup_deadline ? new Date(row.meetup_deadline) : null,
+  imageUrl: row.image_url ?? null,
   status: row.status,
   createdAt: new Date(row.created_at),
 });
@@ -98,6 +116,7 @@ export const buildCreateCirclePayload = (
     meetup_timeframe: input.meetupTimeframe || `Within ${meetupDays} days`,
     meetup_days: meetupDays,
     meetup_deadline: meetupDeadline.toISOString(),
+    image_url: input.imageUrl ?? null,
     status: "forming",
   };
 };

@@ -12,6 +12,7 @@
     },
     "scheme": "socio",
     "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.izustic.socio",
@@ -69,6 +70,7 @@
       ],
       "expo-font",
       "expo-secure-store",
+      "react-native-iap",
       [
         "@react-native-google-signin/google-signin",
         {

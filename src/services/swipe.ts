@@ -68,6 +68,39 @@ interface NotificationCircleRow {
   members: string[];
 }
 
+interface ActiveCircleOccupancyRow {
+  creator_id: string;
+  members: string[] | null;
+}
+
+const getActiveCircleOccupantIds = async (): Promise<Set<string>> => {
+  const { data, error } = await supabase
+    .from("circles")
+    .select("creator_id, members")
+    .in("status", ["forming", "complete"]);
+
+  if (error) {
+    console.error("Error getting active circle occupants:", error);
+    return new Set();
+  }
+
+  const occupantIds = new Set<string>();
+
+  (data as ActiveCircleOccupancyRow[] | null)?.forEach((circle) => {
+    if (circle.creator_id) {
+      occupantIds.add(String(circle.creator_id));
+    }
+
+    (circle.members || []).forEach((memberId) => {
+      if (memberId) {
+        occupantIds.add(String(memberId));
+      }
+    });
+  });
+
+  return occupantIds;
+};
+
 const getUserDisplayName = async (userId: string): Promise<string> => {
   const { data, error } = await supabase
     .from("users")
@@ -406,7 +439,11 @@ export const getSwipeCandidates = async ({
   currentUserId,
   currentUserProfile,
 }: CandidateParams): Promise<SwipeCandidate[]> => {
-  const { data: usersData, error } = await supabase.from("users").select("*");
+  const [{ data: usersData, error }, activeCircleOccupantIds] =
+    await Promise.all([
+      supabase.from("users").select("*"),
+      getActiveCircleOccupantIds(),
+    ]);
 
   if (error) {
     console.error("Error getting swipe candidates:", error);
@@ -442,6 +479,7 @@ export const getSwipeCandidates = async ({
     .filter((candidate) => {
       if (candidate.uid === currentUserId) return false;
       if (memberSet.has(candidate.uid)) return false;
+      if (activeCircleOccupantIds.has(candidate.uid)) return false;
       if (swipedByCurrent.has(candidate.uid)) return false;
       if (skippedByCurrent.has(candidate.uid)) return false;
 

@@ -165,18 +165,63 @@ const fetchReportProfiles = async (
 const buildLogMetadata = (metadata?: Record<string, unknown>) =>
   metadata && Object.keys(metadata).length > 0 ? metadata : null;
 
+const isMissingRpcError = (error: unknown) => {
+  const code = (error as { code?: string } | null)?.code;
+  const message = String((error as { message?: string } | null)?.message ?? "");
+  return code === "PGRST202" || message.includes("Could not find the function");
+};
+
+export type ReportUserInput = {
+  reporterId?: string;
+  reportedId: string;
+  reason: string;
+  details?: string | null;
+  circleId?: string | null;
+  messageId?: string | null;
+};
+
 export const reportUser = async (
-  reporterId: string,
-  reportedId: string,
-  reason: string,
+  reporterOrInput: string | ReportUserInput,
+  reportedId?: string,
+  reason?: string,
 ) => {
+  const input: ReportUserInput =
+    typeof reporterOrInput === "string"
+      ? {
+          reporterId: reporterOrInput,
+          reportedId: reportedId ?? "",
+          reason: reason ?? "",
+        }
+      : reporterOrInput;
+
   try {
+    const { data: rpcData, error: rpcError } = await supabase.rpc(
+      "create_user_report",
+      {
+        p_reported_user_id: input.reportedId,
+        p_reason: input.reason,
+        p_details: input.details ?? null,
+        p_circle_id: input.circleId ?? null,
+        p_message_id: input.messageId ?? null,
+      },
+    );
+
+    if (!rpcError) return rpcData;
+    if (!isMissingRpcError(rpcError)) throw rpcError;
+
+    if (!input.reporterId) {
+      throw rpcError;
+    }
+
     const { data, error } = await supabase
       .from("reports")
       .insert({
-        reporter_id: reporterId,
-        reported_user_id: reportedId,
-        reason,
+        reporter_id: input.reporterId,
+        reported_user_id: input.reportedId,
+        circle_id: input.circleId ?? null,
+        message_id: input.messageId ?? null,
+        reason: input.reason,
+        details: input.details ?? null,
         status: "pending",
         created_at: new Date().toISOString(),
       })
@@ -437,6 +482,15 @@ export const dismissReport = async ({
   reason?: string | null;
   metadata?: Record<string, unknown>;
 }) => {
+  const { error: rpcError } = await supabase.rpc("dismiss_report", {
+    p_report_id: reportId,
+    p_reason: reason ?? null,
+    p_metadata: buildLogMetadata(metadata) ?? {},
+  });
+
+  if (!rpcError) return;
+  if (!isMissingRpcError(rpcError)) throw rpcError;
+
   const report = await getReportById(reportId);
   if (!report) {
     throw new Error("Report not found.");
@@ -472,6 +526,7 @@ export const updateUserStatus = async ({
   suspendedUntil = null,
   reason,
   moderatorId,
+  reportId,
   metadata,
 }: {
   userId: string;
@@ -479,8 +534,26 @@ export const updateUserStatus = async ({
   suspendedUntil?: string | null;
   reason?: string | null;
   moderatorId?: string;
+  reportId?: string;
   metadata?: Record<string, unknown>;
 }) => {
+  if (moderatorId) {
+    const { data: rpcData, error: rpcError } = await supabase.rpc(
+      "moderate_user",
+      {
+        p_user_id: userId,
+        p_status: status,
+        p_suspended_until: status === "suspended" ? suspendedUntil : null,
+        p_reason: reason ?? null,
+        p_report_id: reportId ?? null,
+        p_metadata: buildLogMetadata(metadata) ?? {},
+      },
+    );
+
+    if (!rpcError) return toUserSummary(rpcData);
+    if (!isMissingRpcError(rpcError)) throw rpcError;
+  }
+
   const updates: Record<string, unknown> = {
     status,
     suspended_until: status === "suspended" ? suspendedUntil : null,
@@ -508,6 +581,17 @@ export const updateUserStatus = async ({
       reason,
       metadata,
     });
+
+    if (reportId) {
+      await supabase
+        .from("reports")
+        .update({
+          status: "resolved",
+          reviewed_by: moderatorId,
+          reviewed_at: new Date().toISOString(),
+        })
+        .eq("id", reportId);
+    }
   }
 
   return toUserSummary(data);
@@ -539,9 +623,10 @@ export const suspendUser = async ({
       suspendedUntil,
       reportId: reportId ?? null,
     },
+    reportId,
   });
 
-  if (moderatorId && reportId) {
+  if (!moderatorId && reportId) {
     await supabase
       .from("reports")
       .update({
@@ -578,9 +663,10 @@ export const banUser = async ({
       ...(metadata ?? {}),
       reportId: reportId ?? null,
     },
+    reportId,
   });
 
-  if (moderatorId && reportId) {
+  if (!moderatorId && reportId) {
     await supabase
       .from("reports")
       .update({
@@ -607,6 +693,21 @@ export const updateUserRole = async ({
   moderatorId?: string;
   metadata?: Record<string, unknown>;
 }) => {
+  if (moderatorId) {
+    const { data: rpcData, error: rpcError } = await supabase.rpc(
+      "set_user_role",
+      {
+        p_user_id: userId,
+        p_role: role,
+        p_reason: reason ?? null,
+        p_metadata: buildLogMetadata(metadata) ?? {},
+      },
+    );
+
+    if (!rpcError) return toUserSummary(rpcData);
+    if (!isMissingRpcError(rpcError)) throw rpcError;
+  }
+
   const { data, error } = await supabase
     .from("users")
     .update({ role })

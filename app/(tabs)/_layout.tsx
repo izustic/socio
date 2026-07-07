@@ -1,7 +1,9 @@
 import { Colors } from '@/src/constants/theme';
+import LottieSplashScreen from '@/src/components/LottieSplashScreen';
+import { useAuth } from '@/src/context/AuthContext';
 import { useSwipeTabVisibility } from '@/src/context/SwipeTabVisibilityContext';
-import { Tabs, useFocusEffect } from 'expo-router';
-import { Bell, Layers, User, Users } from 'lucide-react-native';
+import { Redirect, Tabs, useFocusEffect } from 'expo-router';
+import { Bell, Layers, Sparkles, User, Users } from 'lucide-react-native';
 import { useCallback } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -48,6 +50,13 @@ function TabLayoutInner() {
         }}
       />
       <Tabs.Screen
+        name="likes"
+        options={{
+          title: 'Likes',
+          tabBarIcon: ({ color, size }) => <Sparkles size={size} color={color} strokeWidth={2.2} />,
+        }}
+      />
+      <Tabs.Screen
         name="notifications"
         options={{
           title: 'Alerts',
@@ -66,5 +75,19 @@ function TabLayoutInner() {
 }
 
 export default function TabLayout() {
+  const { user, profile, loading } = useAuth();
+
+  if (loading) {
+    return <LottieSplashScreen minDurationMs={0} />;
+  }
+
+  if (!user) {
+    return <Redirect href="/(auth)/welcome" />;
+  }
+
+  if (!profile?.profileComplete) {
+    return <Redirect href="/(auth)/profile-photo-name" />;
+  }
+
   return <TabLayoutInner />;
 }

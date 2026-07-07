@@ -182,6 +182,31 @@ export const uploadAvatar = async (
   return data.publicUrl;
 };
 
+export const uploadCircleImage = async (
+  userId: string,
+  circleId: string,
+  imageUri: string,
+): Promise<string> => {
+  const { buffer, size } = await fetchStorageBlob(imageUri);
+
+  if (size > MAX_STORAGE_SIZES.image) {
+    throw new Error("Please choose an image under 5 MB.");
+  }
+
+  const filePath = `${userId}/circles/${circleId}.jpg`;
+  const { error } = await supabase.storage
+    .from("avatars")
+    .upload(filePath, buffer, {
+      contentType: "image/jpeg",
+      upsert: true,
+    });
+
+  if (error) throw error;
+
+  const { data } = supabase.storage.from("avatars").getPublicUrl(filePath);
+  return data.publicUrl;
+};
+
 // Upload chat media to Supabase Storage
 export const uploadChatMedia = async (
   circleId: string,

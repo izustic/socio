@@ -24,6 +24,12 @@ export interface User {
   bio?: string;
   notificationsEnabled?: boolean;
   locationEnabled?: boolean;
+  freeExits?: number;
+  isSocioPlus?: boolean;
+  subscriptionStatus?: "active" | "inactive" | "pending" | "expired" | "cancelled" | "refunded" | "billing_retry";
+  subscriptionPlatform?: "ios" | "android" | null;
+  subscriptionProductId?: string | null;
+  subscriptionExpiresAt?: Date | null;
   profileComplete: boolean;
   createdAt: Date;
 }
@@ -85,6 +91,7 @@ export interface Circle {
   meetupTimeframe?: string;
   meetupDays?: number;
   meetupDeadline?: Date | null;
+  imageUrl?: string | null;
   status: CircleStatus;
   createdAt: Date;
 }

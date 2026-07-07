@@ -18,6 +18,7 @@ import {
 import { getUserProfile } from "@/src/services/user";
 import { showErrorAlert } from "@/src/utils/errorHandling";
 import { Image } from "expo-image";
+import * as Crypto from "expo-crypto";
 import { router } from "expo-router";
 import { useCallback,
   useEffect,
@@ -190,12 +191,22 @@ export default function SignUp() {
         showPlayServicesUpdateDialog: true,
       });
 
-      const response = await GoogleSignin.signIn();
+      const nonce = Platform.OS === "ios" ? Crypto.randomUUID() : undefined;
+      const googleNonce = nonce
+        ? await Crypto.digestStringAsync(
+            Crypto.CryptoDigestAlgorithm.SHA256,
+            nonce,
+          )
+        : undefined;
+      const response = await GoogleSignin.signIn(
+        googleNonce ? { nonce: googleNonce } : undefined,
+      );
       if (!isSuccessResponse(response)) {
         return;
       }
 
-      const idToken = response.data.idToken;
+      const tokens = await GoogleSignin.getTokens();
+      const idToken = tokens.idToken || response.data.idToken;
       if (!idToken) {
         throw new Error("No ID token received from Google");
       }
@@ -204,7 +215,11 @@ export default function SignUp() {
         return;
       }
 
-      const user = await signInWithGoogleIdToken(idToken);
+      const user = await signInWithGoogleIdToken(
+        idToken,
+        tokens.accessToken,
+        nonce,
+      );
       await continueIntoOnboarding(
         user.id,
         user.email || "your Google account",
@@ -352,9 +367,7 @@ export default function SignUp() {
           <Text style={styles.loginAccent}>Log in</Text>
         </TouchableOpacity>
 
-        <Text style={styles.terms}>
-          By continuing you agree to our Terms & Privacy.
-        </Text>
+        <LegalConsentText />
       </View>
 
       <Modal visible={showEmailModal} animationType="slide" transparent>
@@ -433,6 +446,8 @@ export default function SignUp() {
                 disabled={loading}
               />
 
+              <LegalConsentText compact />
+
               <Button
                 title={
                   isSignUp
@@ -447,6 +462,28 @@ export default function SignUp() {
         </KeyboardAvoidingView>
       </Modal>
     </SafeAreaView>
+  );
+}
+
+function LegalConsentText({ compact = false }: { compact?: boolean }) {
+  return (
+    <Text style={[styles.terms, compact && styles.termsCompact]}>
+      By continuing, you agree to Socio&apos;s{" "}
+      <Text
+        style={styles.termsLink}
+        onPress={() => router.push("/legal/terms")}
+      >
+        Terms of Use
+      </Text>
+      {" "}and acknowledge the{" "}
+      <Text
+        style={styles.termsLink}
+        onPress={() => router.push("/legal/privacy")}
+      >
+        Privacy Policy
+      </Text>
+      .
+    </Text>
   );
 }
 
@@ -549,6 +586,14 @@ const styles = StyleSheet.create({
     ...Typography.bodySmall,
     textAlign: "center",
     marginTop: Spacing.sm,
+    color: Colors.textSecondary,
+  },
+  termsCompact: {
+    marginTop: 0,
+  },
+  termsLink: {
+    color: Colors.primaryDark,
+    fontWeight: "800",
   },
   modalOverlay: {
     flex: 1,

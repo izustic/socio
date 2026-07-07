@@ -1,7 +1,8 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { supabase, getDefaultUserRole, getUserRole, syncUserToSupabase } from '../services/supabase';
 import { getUserProfile } from '../services/user';
 import { getLatestCircleForParticipant } from '../services/circle';
+import { refreshSubscriptionStatus, withStaffSocioPlusAccess } from '../services/billing';
 import { User } from '../types';
 import type { User as SupabaseUser } from '@supabase/supabase-js';
 
@@ -38,12 +39,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [profile, setProfile] = useState<User | null>(null);
   const [role, setRole] = useState<AuthContextType['role']>(null);
   const [loading, setLoading] = useState(true);
+  const effectiveProfile = useMemo(
+    () => withStaffSocioPlusAccess(profile, role),
+    [profile, role],
+  );
 
   const refreshProfile = async () => {
     if (!user) {
       setProfile(null);
       setRole(null);
       return;
+    }
+
+    try {
+      await refreshSubscriptionStatus();
+    } catch (error) {
+      console.warn('Could not refresh subscription status:', error);
     }
 
     const userProfile = await getUserProfile(user.id);
@@ -91,6 +102,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           );
           if (generation !== authGeneration) return;
           setRole(userRole);
+          try {
+            await refreshSubscriptionStatus();
+            if (generation !== authGeneration) return;
+            const refreshedProfile = await getUserProfile(supabaseUser.id);
+            if (generation !== authGeneration) return;
+            setProfile(refreshedProfile);
+          } catch (subscriptionError) {
+            if (generation !== authGeneration) return;
+            console.warn('Could not refresh subscription status:', subscriptionError);
+          }
         } catch (error) {
           if (generation !== authGeneration) return;
           if (isSupabaseRlsError(error)) {
@@ -118,7 +139,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, profile, role, loading, refreshProfile }}>
+    <AuthContext.Provider value={{ user, profile: effectiveProfile, role, loading, refreshProfile }}>
       {children}
     </AuthContext.Provider>
   );

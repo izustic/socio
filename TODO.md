@@ -1,6 +1,6 @@
 # Socio TODO
 
-Updated: June 24, 2026 — rewritten after a full pass over the codebase and
+Updated: July 6, 2026 — rewritten after a full pass over the codebase and
 `ARCHITECTURE.md`. Reflects what's actually in the repo right now (not what's
 in old sections of the plan).
 
@@ -27,8 +27,9 @@ Legend:
 - Auth + onboarding flow (welcome → email/OTP → permissions → 4-step profile)
 - Google OAuth sign-in is wired through the native Google Sign-In SDK and Supabase ID-token exchange; Facebook is hidden from the auth surface for now
 - Auth/role redirect: `app/index.tsx` correctly routes banned / suspended /
-  moderator / admin / incomplete-profile users
-- Bottom tab shell with circle / swipe / alerts / profile
+  incomplete-profile users; active moderators/admins now enter normal Socio
+  mode and open staff tools from Profile
+- Bottom tab shell with circle / swipe / likes / alerts / profile
 - Host and joiner swipe flows, with `SwipeUsersScreen` and
   `SwipeCirclesScreen` under `src/screens/circle/`
 - Chat screen (`CircleChatScreen`) — wired to realtime messages, polls,
@@ -46,14 +47,30 @@ Legend:
   flashes a loading state after each swipe.
 - `delete-account` Edge Function source exists
 - Notifications tab with realtime list, mark-one / mark-all read
+- Likes tab shows incoming pending swipes from people who liked your profile or
+  Circle. Free users see blurred cards; users with `users.is_socio_plus = true`
+  can pass or like back through the existing swipe RPCs.
+- Socio+ billing service exists with StoreKit / Google Play Billing product
+  fetch, purchase, restore, secure Supabase verification, and launch-time
+  entitlement refresh.
+- Active moderator/admin accounts receive a staff Socio+ entitlement override
+  in the app, so staff are not treated as free users while billing records stay
+  purchase-only.
+- Legal and compliance surfaces exist in-app: Privacy Policy, Terms of Use,
+  Data & Compliance, onboarding legal acknowledgement links, and repo markdown
+  drafts for external hosting/review.
 - Moderation-event notifications now originate from database triggers
   instead of the client, so report and moderation actions fan out server-side.
 - Profile screen with edit form (5 media slots, age, gender, interests,
   traits, bio, location)
-- Settings routes: notifications, privacy-safety, delete-account
+- Settings routes: notifications, privacy-safety, delete-account, and legal
+  documents
 - Moderator and admin routes now render data-backed reports, report detail,
   and user management screens, with moderation actions written to
   `moderation_logs`
+- Normal users can report another Circle member from Circle info; report
+  creation, dismiss, suspend, ban, reactivate, and role updates now have
+  Supabase RPC entry points for server-side enforcement.
 - Circle creation now uses `app/circle/create.tsx` as the single entry
   point, with `vibe` carried through to preferences and the duplicate route
   removed.
@@ -143,6 +160,10 @@ unblocks the rest of the backlog.
 - [x] Swipe/matching service
 - [x] Message service with realtime subscription
 - [x] Notification service with realtime subscription
+- [x] Likes service derived from `circles.pending_swipes`
+- [x] Socio+ billing service with store product fetch, purchase, restore, and entitlement refresh
+- [x] `verify-socio-plus` Edge Function source for Apple / Google validation
+- [x] `socio_plus_subscriptions` migration and user entitlement fields
 - [x] Poll service for chat polls
 - [x] Moderation service functions
 - [x] Storage upload helpers for avatars and chat media
@@ -206,22 +227,36 @@ unblocks the rest of the backlog.
 
 - [x] Root stack layout
 - [x] Auth provider and onboarding provider wrap the app
-- [x] Bottom tabs: Circle, Swipe, Alerts, Profile
+- [x] Bottom tabs: Circle, Swipe, Likes, Alerts, Profile
 - [x] App entry redirect based on auth/profile/role status
 - [x] Banned screen
 - [x] Suspended screen
 - [x] Circle home tab chooses no-circle, progress, complete, or chat views
 - [x] Swipe tab chooses host user-swipe or joiner Circle-swipe views
+- [x] Likes tab with blurred free state and Socio+ unlocked pass/like actions
 - [x] Notifications tab with realtime Supabase-backed list UI
-- [x] Auth/role redirect consolidated in `app/index.tsx` (banned / suspended / moderator / admin / incomplete-profile all routed)
+- [x] Auth/role redirect consolidated in `app/index.tsx` (banned / suspended /
+      incomplete-profile routed; active staff users enter normal Socio mode)
+- [x] Moderator/admin tools are opt-in from Profile, with dashboard controls
+      to return to Socio mode
 - [x] Auth layout redirect for incomplete profiles in `app/(auth)/_layout.tsx`
 - [~] Profile tab exists
 - [ ] **P1** Add polished loading, empty, and error states across tabs
+- [x] **P1** Connect Socio+ billing / purchase restore and server-verified entitlement updates for `users.is_socio_plus`
+- [ ] **P1** Configure App Store Connect product `socio_plus_monthly`, App Store Server API key, and sandbox testers
+- [ ] **P1** Configure Google Play subscription `socio_plus_monthly`, base plan/offer, license testers, and Android Publisher service account
+- [ ] **P1** Deploy `verify-socio-plus`, set Apple/Google Supabase secrets, and verify real sandbox purchases on iOS and Android
+- [ ] **P1** Wire App Store Server Notifications and Google Real-time Developer Notifications to refresh subscription status promptly
+- [ ] **P1** Host `/privacy`, `/terms`, `/data-compliance`, and `/delete-account`
+      on public non-PDF web URLs for App Store / Google Play submission
+- [ ] **P1** Have counsel review legal drafts before public launch
 
 ## 6. Profile
 
 - [x] Profile screen reads current auth/profile data
 - [x] Edit profile route exists
+- [x] Legal section links Privacy Policy, Terms of Use, Data & Compliance, and
+      account deletion
 - [x] Edit profile form is fully built (5 media slots, age, gender, interests, traits, bio, location, upload progress)
 - [~] Edit profile media reordering and main-photo selection need device verification
 - [~] Edit profile save flow + notification/location preference updates need device verification
@@ -323,6 +358,7 @@ unblocks the rest of the backlog.
 - [ ] **P2** Store Expo push tokens and add push delivery strategy
 
 - [x] Report service function exists
+- [x] Normal user report flow exists from Circle info
 - [x] Ban/suspend service functions exist
 - [x] Moderator dashboard, report detail, admin dashboard, and user
   management routes now render real data-backed UIs
@@ -332,7 +368,8 @@ unblocks the rest of the backlog.
 - [x] Add unban / promote / demote actions
 - [x] Write `moderation_logs` audit entry on every moderation action
 - [x] **P1** Enforce role checks in Supabase RLS, not just in UI
-  (`users`, `reports`, and `moderation_logs` have deployed policy coverage)
+  (`users`, `reports`, and `moderation_logs` have policy coverage, plus
+  moderation RPCs and protected user-field trigger coverage in migrations)
 
 ## 14. Tooling, Release, and Docs
 

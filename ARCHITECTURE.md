@@ -4,7 +4,7 @@
 
 > Version 2.1 | Prepared by: Izu Obikanyi
 > Status: CORE LOOP SCAFFOLDED, NOT PRODUCTION-READY
-> Updated: June 2026 — Reconciled with `TODO.md` / `PLAN.md` / `README.md`.
+> Updated: July 2026 — Reconciled with `TODO.md` / `PLAN.md` / `README.md`.
 > Every layer in the Tech Stack table is now annotated with an actual status
 > (`DONE` / `PARTIAL` / `NOT STARTED`) and the Security Checklist has been
 > updated to reflect what is actually in the repo.
@@ -43,16 +43,81 @@ Onboard → Profile setup → NoCircle → Join Circle → Set preferences
 
 Tab bar rules are centralized in `resolveAppTabVisibility()` (`src/services/circle.helpers.ts`) and applied by `SwipeTabVisibilityContext`.
 
-| App state | Circle tab | Swipe tab | Circle tab content | Swipe tab content |
-|---|---|---|---|---|
-| After onboarding / no circle | Visible | Hidden | `NoCircleScreen` | — |
-| Join flow (browsing circles) | Hidden | Visible | — | `SwipeCirclesScreen` |
-| Host filling a forming circle | Visible | Visible | `CircleProgressScreen` | `SwipeUsersScreen` |
-| Joiner matched into forming circle | Visible | Hidden | `CircleProgressScreen` | — |
-| Circle complete (host or member) | Visible | Hidden | `CircleCompleteScreen` | — |
-| After leave / close circle | Visible | Hidden | `NoCircleScreen` | — |
+| App state | Circle tab | Swipe tab | Likes tab | Circle tab content | Swipe tab content |
+|---|---|---|---|---|---|
+| After onboarding / no circle | Visible | Hidden | Visible | `NoCircleScreen` | — |
+| Join flow (browsing circles) | Hidden | Visible | Visible | — | `SwipeCirclesScreen` |
+| Host filling a forming circle | Visible | Visible | Visible | `CircleProgressScreen` | `SwipeUsersScreen` |
+| Joiner matched into forming circle | Visible | Hidden | Visible | `CircleProgressScreen` | — |
+| Circle complete (host or member) | Visible | Hidden | Visible | `CircleCompleteScreen` | — |
+| After leave / close circle | Visible | Hidden | Visible | `NoCircleScreen` | — |
 
 `startJoinBrowsing()` / `endJoinBrowsing()` track the join-browse flow before a circle record exists. Tab visibility is refreshed on circle load, match, completion, leave, and close.
+
+### Likes Tab
+
+`app/(tabs)/likes.tsx` shows incoming pending swipes from both sides of the
+matching model:
+
+- A joiner liked a host's forming Circle → the joiner's profile appears.
+- A host liked a joiner's profile → the host's Circle appears.
+
+The data is derived from `circles.pending_swipes` via `src/services/likes.ts`.
+Socio+ entitlement is read from `users.is_socio_plus` and
+`users.subscription_status`. Free users see the incoming count and blurred
+cards; Socio+ users can pass or like back, which calls the existing
+`submit_host_swipe` / `submit_circle_swipe` RPCs so mutual matches continue
+through the normal Circle membership flow.
+
+Socio+ billing is handled by `src/services/billing.ts` using Apple StoreKit on
+iOS and Google Play Billing on Android through `react-native-iap`. Purchases
+are not trusted on-device: purchase tokens / transaction IDs are sent to the
+`verify-socio-plus` Supabase Edge Function, which validates them with Apple or
+Google, upserts `socio_plus_subscriptions`, and denormalizes the current
+entitlement onto `users`.
+
+Active `moderator` and `admin` accounts receive a staff Socio+ entitlement
+override in `src/services/billing.ts` / `AuthContext`. This unlocks Socio+
+feature gates for staff without creating fake store purchases or subscription
+records.
+
+### Admin and Moderator Mode
+
+`users.role` and `users.status` drive the admin/moderator shell. `app/index.tsx`
+routes banned users to `/banned`, suspended users to `/suspended`, and all
+active users, including moderators and admins, into normal Socio mode by
+default. Staff tools are opt-in from Profile: admins can open
+`/admin/dashboard`, and moderators/admins can open `/moderator/dashboard`.
+
+Normal users can report another Circle member from `app/circle/info.tsx`.
+Report creation calls `public.create_user_report`, which validates the
+authenticated reporter, prevents self-reporting, and verifies Circle context
+when `circle_id` is supplied. Moderator/admin actions call RPCs from
+`src/services/moderation.ts`:
+
+- `dismiss_report` dismisses a report and writes a `moderation_logs` audit row.
+- `moderate_user` activates, suspends, or bans a user and resolves a report
+  when one is supplied.
+- `set_user_role` is admin-only and promotes/demotes users.
+
+The migration `202607060003_moderation_rpc_enforcement.sql` also adds a
+`users` trigger that blocks ordinary profile updates from changing protected
+`role`, `status`, or `suspended_until` fields outside the moderation path.
+
+### Legal and Compliance
+
+Socio exposes legal documents in-app under `app/legal/`:
+
+- `/legal/privacy` — Privacy Policy
+- `/legal/terms` — Terms of Use
+- `/legal/data-compliance` — CCPA/CPRA, GDPR, data request, retention, and app
+  store compliance summary
+
+The shared content lives in `src/constants/legal.ts`, is rendered through
+`src/components/legal/LegalDocumentScreen.tsx`, and is mirrored as reviewable
+markdown under `docs/legal/`. The Welcome screen links Terms and Privacy before
+account creation/sign-in, and Profile has a Legal section for authenticated
+users. These drafts still require counsel review before public launch.
 
 ---
 
@@ -69,11 +134,12 @@ Authentication      Supabase Auth                 DONE          Email/pwd, nativ
 Database (app data) Supabase PostgreSQL           PARTIAL       Migrations committed; deployed schema, RLS, and policies need project-level verification
 File Storage        Supabase Storage              PARTIAL       Upload helpers exist; `avatars` and `chat-media` buckets/policies not yet verified
 Real-time Chat      Supabase Realtime             PARTIAL       Service subscribes; chat screen integration, access control, and media end-to-end tests still pending
-User Roles/Reports  Supabase PostgreSQL           PARTIAL       Columns and service functions exist; admin/moderator screens are data-backed; RLS role enforcement and deployed verification still pending
+User Roles/Reports  Supabase PostgreSQL           PARTIAL       Data-backed admin/moderator screens exist; report creation and privileged moderation writes are RPC-backed; deployed verification still pending
 Group Calls (E2EE)  Livekit Cloud                 NOT STARTED   Packages installed and hook exists, but real room join + E2EE keys not yet implemented on client
 Call Tokens         Supabase Edge Function        PARTIAL       Source exists; not yet deployed; auth of caller + Circle-member restriction pending
 Location Services   Expo Location + Nominatim     PARTIAL       Service and util exist; device verification and onboarding flow still pending
 Notifications       Supabase PostgreSQL           PARTIAL       Realtime list and service exist; moderation-event notifications are server-side via DB triggers, but broader creation is still client-triggered; push tokens not stored
+Billing             StoreKit / Play Billing       PARTIAL       `react-native-iap` client, Supabase verification function, subscription table, restore, and launch refresh exist; store-console products/secrets still need live configuration
 ```
 
 Repo note: the starter-era top-level `components/` and `hooks/` scaffold has
@@ -92,6 +158,7 @@ Supabase Storage   → all media files (avatars, chat media)
 Supabase Realtime   → real-time subscriptions (chat, notifications)
 Livekit            → real-time E2EE audio/video calls
 Supabase Edge Fn   → secure server-side token generation
+StoreKit/Play Billing → Socio+ subscriptions and restore purchase
 ```
 
 ---
@@ -116,7 +183,35 @@ EXPO_PUBLIC_LIVEKIT_URL=wss://your-project.livekit.cloud
 # NEVER prefix these with EXPO_PUBLIC_
 LIVEKIT_API_KEY=
 LIVEKIT_API_SECRET=
+
+# Socio+ billing secrets (backend only — Supabase Edge Function)
+# NEVER prefix these with EXPO_PUBLIC_
+SOCIO_PLUS_PRODUCT_IDS=socio_plus_monthly
+APPLE_BUNDLE_ID=com.izustic.socio
+APPLE_ENVIRONMENT=Production
+APPLE_ISSUER_ID=
+APPLE_KEY_ID=
+APPLE_PRIVATE_KEY=
+GOOGLE_PLAY_PACKAGE_NAME=com.izustic.socio
+GOOGLE_PLAY_CLIENT_EMAIL=
+GOOGLE_PLAY_PRIVATE_KEY=
 ```
+
+### Socio+ Store Setup
+
+- App Store Connect: create an auto-renewable subscription product with product
+  ID `socio_plus_monthly` under a Socio+ subscription group. Create an App
+  Store Server API key and store `APPLE_ISSUER_ID`, `APPLE_KEY_ID`, and
+  `APPLE_PRIVATE_KEY` as Supabase secrets.
+- Google Play Console: create a subscription product with product ID
+  `socio_plus_monthly` and at least one active base plan/offer. Create or link
+  a Google Cloud service account with Android Publisher API access, then store
+  `GOOGLE_PLAY_CLIENT_EMAIL` and `GOOGLE_PLAY_PRIVATE_KEY` as Supabase secrets.
+- Supabase: deploy `verify-socio-plus`, run the Socio+ migrations, and set all
+  billing secrets with `supabase secrets set ...`. App Store Server
+  Notifications / Real-time Developer Notifications should call or trigger the
+  same entitlement refresh path so refunds, cancellations, billing retry, and
+  expiry are reflected promptly.
 
 ---
 
@@ -142,9 +237,10 @@ socio/
 │   │   └── profile-complete.tsx      # Celebration → enters main app
 │   │
 │   ├── (tabs)/                       # Main app shell — persistent bottom nav
-│   │   ├── _layout.tsx               # BottomNav: Circle · Swipe · Notifications · Profile
+│   │   ├── _layout.tsx               # BottomNav: Circle · Swipe · Likes · Notifications · Profile
 │   │   ├── home.tsx                  # Circle tab: NoCircleScreen or CircleScreen based on state
 │   │   ├── swipe.tsx                 # SwipeScreen (host) or SwipeCirclesScreen (joiner)
+│   │   ├── likes.tsx                 # Socio+ incoming likes grid
 │   │   ├── notifications.tsx         # Match alerts, Circle activity
 │   │   └── profile.tsx              # ProfileScreen
 │   │
@@ -183,6 +279,8 @@ socio/
 │   │   ├── messages.ts               # Chat messages + realtime (PostgreSQL)
 │   │   ├── notifications.ts         # Notifications + realtime (PostgreSQL)
 │   │   ├── swipe.ts                  # Swipe logic + matching
+│   │   ├── likes.ts                  # Incoming likes projection from pending_swipes
+│   │   ├── billing.ts                # Socio+ StoreKit / Play Billing client
 │   │   ├── moderation.ts             # All moderation actions
 │   │   ├── livekit.ts                # Call management
 │   │   └── location.ts               # Location services
@@ -231,6 +329,7 @@ socio/
 ├── supabase/
 │   └── functions/
 │       └── get-livekit-token/        # Supabase Edge Function for LiveKit tokens
+│       └── verify-socio-plus/        # Store receipt/token validation
 │           └── index.ts
 │
 ├── assets/
@@ -1070,8 +1169,9 @@ have been moved to `TODO.md` with `[ ]` or `[~]` markers.
 - [x] LiveKit API Secret is intended to live in the Supabase Edge Function
       only (the app uses `EXPO_PUBLIC_*` for non-secret values)
 - [x] Media file size limits enforced before upload
-- [~] Role checks happen on both frontend and backend — UI checks exist and
-  local RLS coverage is in place, but deployed verification is still pending
+- [~] Role checks happen on both frontend and backend — UI checks exist,
+  role/status writes are guarded by Supabase RPCs and a protected-field trigger,
+  but deployed verification is still pending
 - [x] Banned users blocked at navigation level (banned/suspended screens exist)
 - [x] All moderation actions written to audit log — `moderation_logs` writes
       now happen from the moderation service and are also surfaced through

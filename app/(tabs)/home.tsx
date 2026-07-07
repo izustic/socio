@@ -73,14 +73,6 @@ export default function CircleTabScreen() {
     return <CircleChatRoute />;
   }
 
-  if (requestedView === "complete") {
-    return <CircleCompleteScreen />;
-  }
-
-  if (requestedView === "progress") {
-    return <CircleProgressScreen />;
-  }
-
   if (loading) {
     return (
       <SafeAreaView style={styles.container}>
@@ -105,6 +97,14 @@ export default function CircleTabScreen() {
     }
 
     return <NoCircleScreen />;
+  }
+
+  if (requestedView === "complete") {
+    return <CircleCompleteScreen />;
+  }
+
+  if (requestedView === "progress") {
+    return <CircleProgressScreen />;
   }
 
   if (circle.status === "complete") {

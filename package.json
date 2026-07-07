@@ -8,6 +8,7 @@
     "android": "expo run:android",
     "ios": "expo run:ios",
     "web": "expo start --web",
+    "postinstall": "patch-package",
     "lint": "eslint app src constants scripts index.js --ext .js,.ts,.tsx",
     "test": "vitest run"
   },
@@ -52,6 +53,8 @@
     "react-dom": "19.0.0",
     "react-native": "0.79.6",
     "react-native-gesture-handler": "~2.24.0",
+    "react-native-iap": "^14.4.0",
+    "react-native-nitro-modules": "^0.29.8",
     "react-native-reanimated": "~3.17.4",
     "react-native-safe-area-context": "5.4.0",
     "react-native-screens": "~4.11.1",
@@ -66,6 +69,7 @@
     "eslint": "^9.25.0",
     "eslint-config-expo": "~9.2.0",
     "eslint-import-resolver-typescript": "^4.4.4",
+    "patch-package": "^8.0.1",
     "typescript": "~5.8.3",
     "vitest": "^4.1.9"
   }

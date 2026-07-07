@@ -19,7 +19,7 @@ export default function OnboardingIntroScreen() {
       centerContent
     >
       <View style={styles.hero}>
-        <Text style={styles.wordmark}>socio</Text>
+        <Text style={styles.wordmark}>sociol</Text>
       </View>
     </OnboardingLayout>
   );

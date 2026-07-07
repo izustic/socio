@@ -149,7 +149,7 @@ export default function ModeratorDashboard() {
               activeOpacity={0.82}
               style={styles.refreshButton}
               onPress={() => router.replace("/(tabs)/home")}
-              accessibilityLabel="Back to Socio"
+              accessibilityLabel="Back to Sociol"
             >
               <Home size={18} color={Colors.textPrimary} strokeWidth={2} />
             </TouchableOpacity>

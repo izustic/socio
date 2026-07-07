@@ -539,7 +539,7 @@ export default function CircleInfoScreen() {
               <Text style={styles.reportError}>{reportError}</Text>
             ) : (
               <Text style={styles.reportFinePrint}>
-                Reports are private and reviewed by Socio moderators.
+                Reports are private and reviewed by Sociol moderators.
               </Text>
             )}
 

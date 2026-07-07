@@ -173,7 +173,7 @@ export default function DeleteAccountScreen() {
             </View>
             <Text style={styles.farewellTitle}>Your account is gone</Text>
             <Text style={styles.farewellBody}>
-              Thanks for spending time with Socio. The door&apos;s open whenever
+              Thanks for spending time with Sociol. The door&apos;s open whenever
               you&apos;d like to come back.
             </Text>
             <TouchableOpacity

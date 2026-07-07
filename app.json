@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "socio",
+    "name": "Sociol",
     "slug": "socio",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -18,9 +18,9 @@
       "bundleIdentifier": "com.izustic.socio",
       "infoPlist": {
         "NSUserNotificationsUsageDescription": "We'll let you know when your Circle grows, someone accepts, or it's time to meet.",
-        "NSPhotoLibraryAddUsageDescription": "Socio needs permission to save chat photos and videos to your library.",
-        "NSMicrophoneUsageDescription": "Socio needs microphone access for voice messages and Circle calls.",
-        "NSCameraUsageDescription": "Socio needs camera access for Circle video calls.",
+        "NSPhotoLibraryAddUsageDescription": "Sociol needs permission to save chat photos and videos to your library.",
+        "NSMicrophoneUsageDescription": "Sociol needs microphone access for voice messages and Circle calls.",
+        "NSCameraUsageDescription": "Sociol needs camera access for Circle video calls.",
         "ITSAppUsesNonExemptEncryption": false
       },
       "bitcode": false
@@ -92,8 +92,8 @@
       [
         "expo-media-library",
         {
-          "photosPermission": "Socio needs access to save chat photos and videos.",
-          "savePhotosPermission": "Socio needs permission to save chat photos and videos to your library.",
+          "photosPermission": "Sociol needs access to save chat photos and videos.",
+          "savePhotosPermission": "Sociol needs permission to save chat photos and videos to your library.",
           "isAccessMediaLocationEnabled": false
         }
       ]

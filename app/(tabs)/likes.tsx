@@ -100,7 +100,7 @@ export default function LikesScreen() {
           <Text style={styles.screenTitle}>Likes</Text>
           <View style={styles.plusPill}>
             <Sparkles size={15} color={Colors.textPrimary} strokeWidth={2.3} />
-            <Text style={styles.plusText}>SOCIO+</Text>
+            <Text style={styles.plusText}>SOCIOL+</Text>
           </View>
         </View>
 
@@ -108,7 +108,7 @@ export default function LikesScreen() {
           <LockKeyhole size={28} color={Colors.textPrimary} strokeWidth={2.3} />
         </View>
         <Text style={styles.kicker}>COMING SOON</Text>
-        <Text style={styles.title}>Free vs Socio+</Text>
+        <Text style={styles.title}>Free vs Sociol+</Text>
         <Text style={styles.subtitle}>Everything in Free, plus a lot more.</Text>
 
         <View style={styles.table}>
@@ -117,7 +117,7 @@ export default function LikesScreen() {
             <Text style={[styles.tableHeaderText, styles.valueCell]}>FREE</Text>
             <View style={[styles.socioHeaderCell, styles.valueCell]}>
               <Sparkles size={15} color={Colors.textPrimary} strokeWidth={2.2} />
-              <Text style={styles.socioHeaderText}>SOCIO+</Text>
+              <Text style={styles.socioHeaderText}>SOCIOL+</Text>
             </View>
           </View>
 
@@ -137,7 +137,7 @@ export default function LikesScreen() {
           <View style={styles.noticeCopy}>
             <Text style={styles.noticeTitle}>Billing is being set up</Text>
             <Text style={styles.noticeText}>
-              Socio+ purchases will open after App Store and Google Play products
+              Sociol+ purchases will open after App Store and Google Play products
               are ready.
             </Text>
           </View>

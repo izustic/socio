@@ -215,11 +215,11 @@ export default function PrivacySafetyScreen() {
     setExporting(true);
     try {
       const data = await buildUserDataExport(user.id);
-      const path = `${FileSystem.documentDirectory}socio-data-${Date.now()}.json`;
+      const path = `${FileSystem.documentDirectory}sociol-data-${Date.now()}.json`;
       await FileSystem.writeAsStringAsync(path, JSON.stringify(data, null, 2));
       await Share.share({
-        title: "Socio data export",
-        message: `Your Socio data export is ready: ${path}`,
+        title: "Sociol data export",
+        message: `Your Sociol data export is ready: ${path}`,
         url: path,
       });
     } catch (error) {
@@ -292,7 +292,7 @@ export default function PrivacySafetyScreen() {
           <View style={styles.trustBanner}>
             <ShieldCheck size={22} color={Colors.textPrimary} strokeWidth={2.1} />
             <Text style={styles.trustText}>
-              Socio is built around small, trusted Circles. You control who sees
+              Sociol is built around small, trusted Circles. You control who sees
               what and you can pause anytime.
             </Text>
           </View>

@@ -27,7 +27,7 @@ export default function NotificationsPermissionScreen() {
         if (!permission.canAskAgain) {
           Alert.alert(
             'Notifications are blocked',
-            'Notification permission was already denied for Socio. Open your device settings to allow notifications, or continue without them for now.',
+            'Notification permission was already denied for Sociol. Open your device settings to allow notifications, or continue without them for now.',
             [
               {
                 text: 'Continue without them',

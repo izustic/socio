@@ -1,18 +1,18 @@
-# Socio Privacy Policy
+# Sociol Privacy Policy
 
 Last updated: July 6, 2026
 
-Contact: privacy@socio.app
+Contact: privacy@sociol.app
 
-This Privacy Policy explains how Socio collects, uses, shares, retains, and protects information when you use our mobile app, websites, and related services.
+This Privacy Policy explains how Sociol collects, uses, shares, retains, and protects information when you use our mobile app, websites, and related services.
 
-Socio helps people form small in-person friend groups called Circles. Because that experience depends on profiles, matching, chat, location context, moderation, and account safety, we need to process personal information to provide the service.
+Sociol helps people form small in-person friend groups called Circles. Because that experience depends on profiles, matching, chat, location context, moderation, and account safety, we need to process personal information to provide the service.
 
 This draft is not legal advice. Have counsel review it before public launch.
 
 ## Information We Collect
 
-We collect information you provide directly, information created when you use Socio, and limited information from service providers that help us operate the app.
+We collect information you provide directly, information created when you use Sociol, and limited information from service providers that help us operate the app.
 
 - Account information: name, email address, authentication provider, user ID, account status, and role.
 - Profile information: age, gender, education, interests, traits, bio, photos, videos, profile completion state, and verification state.
@@ -21,7 +21,7 @@ We collect information you provide directly, information created when you use So
 - Communications and content: chat messages, media shared in chats, polls, replies, reports, and moderation context.
 - Safety information: blocked users, report history, moderation decisions, audit logs, suspended or banned status, and account deletion requests.
 - Device, app, and diagnostic information: platform, app version, crash/error context, security logs, and basic usage events needed to run and secure the service.
-- Purchase information: store platform, product ID, subscription status, transaction or purchase token, expiration, and restore status for Socio+.
+- Purchase information: store platform, product ID, subscription status, transaction or purchase token, expiration, and restore status for Sociol+.
 
 ## How We Use Information
 
@@ -31,7 +31,7 @@ We use personal information to:
 - Build profiles and match people into Circles.
 - Show swipe decks, Likes, Circle progress, chat, notifications, and profile controls.
 - Support in-person meetups with approximate location and user-selected preferences.
-- Process Socio+ subscriptions through Apple App Store and Google Play Billing.
+- Process Sociol+ subscriptions through Apple App Store and Google Play Billing.
 - Detect abuse, review reports, enforce our Terms, and protect users.
 - Provide privacy, safety, data export, and account deletion tools.
 - Debug crashes, prevent fraud, maintain security, and comply with legal obligations.
@@ -40,31 +40,31 @@ We use personal information to:
 
 Where GDPR or similar law applies, we rely on different legal bases depending on the activity:
 
-- Contract: to create your account, provide matching, Circles, chat, notifications, settings, and Socio+ features.
+- Contract: to create your account, provide matching, Circles, chat, notifications, settings, and Sociol+ features.
 - Consent: for optional permissions or features, such as device permissions for location, media access, notifications, or other consent-based processing.
-- Legitimate interests: to keep Socio safe, prevent abuse and fraud, improve the app, debug issues, and operate secure services.
+- Legitimate interests: to keep Sociol safe, prevent abuse and fraud, improve the app, debug issues, and operate secure services.
 - Legal obligation: to comply with applicable law, respond to valid legal requests, and maintain records where required.
 - Vital interests or public interest: only where necessary to protect someone from serious harm or as legally required.
 
 ## How We Share Information
 
-We do not sell personal information. We share information only as needed to provide Socio, comply with law, protect users, or with your direction.
+We do not sell personal information. We share information only as needed to provide Sociol, comply with law, protect users, or with your direction.
 
 - With other users, such as profile details shown in swipe decks, Circles, Likes, chats, and Circle membership views.
 - With service providers, such as Supabase for authentication, database, storage, realtime, and Edge Functions; Apple and Google for billing and sign-in where applicable; LiveKit for calls when enabled; and infrastructure or diagnostic providers we use to operate the app.
 - With moderators and admins, when they review reports, enforce policies, investigate abuse, or support account safety.
-- With legal or safety authorities, when required by law or when necessary to protect users, Socio, or the public.
+- With legal or safety authorities, when required by law or when necessary to protect users, Sociol, or the public.
 - In a business transfer, such as a merger, acquisition, financing, or sale of assets, subject to appropriate protections.
 
 ## Sensitive Information
 
-Some Socio data may be considered sensitive under privacy laws, including precise location if you grant it, profile traits, gender, message content, photos, and moderation/safety information.
+Some Sociol data may be considered sensitive under privacy laws, including precise location if you grant it, profile traits, gender, message content, photos, and moderation/safety information.
 
 We use sensitive information only to provide requested features, keep the app safe, comply with law, or with your consent where required. We do not use sensitive information to infer protected characteristics for advertising.
 
 ## Retention and Deletion
 
-We keep information for as long as needed to provide Socio, maintain security, resolve disputes, enforce our Terms, comply with law, and support legitimate business needs.
+We keep information for as long as needed to provide Sociol, maintain security, resolve disputes, enforce our Terms, comply with law, and support legitimate business needs.
 
 You can request account deletion in the app. When an account is deleted, we delete or de-identify personal information associated with the account unless retention is necessary for legal, fraud prevention, security, dispute resolution, or safety reasons.
 
@@ -91,11 +91,11 @@ We do not sell personal information. We do not knowingly sell or share personal 
 
 If you are in the EEA, UK, or another region with similar laws, you may have rights to access, rectify, erase, restrict, object to processing, data portability, and lodge a complaint with your local supervisory authority.
 
-Socio may process and store information in countries other than where you live. When data is transferred internationally, we use appropriate safeguards where required.
+Sociol may process and store information in countries other than where you live. When data is transferred internationally, we use appropriate safeguards where required.
 
 ## Children and Age Limits
 
-Socio is not intended for children. You must meet the minimum age stated in our Terms of Use to create an account. We do not knowingly collect personal information from children below that age.
+Sociol is not intended for children. You must meet the minimum age stated in our Terms of Use to create an account. We do not knowingly collect personal information from children below that age.
 
 ## Security
 
@@ -105,6 +105,6 @@ No system is perfectly secure. If you believe your account or information has be
 
 ## Changes and Contact
 
-We may update this Privacy Policy as Socio changes. If changes are material, we will provide notice in the app or by another reasonable method.
+We may update this Privacy Policy as Sociol changes. If changes are material, we will provide notice in the app or by another reasonable method.
 
-Contact us at privacy@socio.app for privacy questions or requests.
+Contact us at privacy@sociol.app for privacy questions or requests.

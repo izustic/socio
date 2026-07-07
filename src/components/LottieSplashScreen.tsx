@@ -75,7 +75,7 @@ export default function LottieSplashScreen({
           style={styles.animationFallback}
         />
       )}
-      <Text style={styles.logoText}>socio</Text>
+      <Text style={styles.logoText}>sociol</Text>
       <Text style={styles.tagline}>The real social network</Text>
     </View>
   );

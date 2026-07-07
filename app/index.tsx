@@ -45,7 +45,7 @@ export default function SplashScreen() {
     return <Redirect href="/suspended" />;
   }
 
-  // Active users, moderators, and admins enter normal Socio mode by default.
+  // Active users, moderators, and admins enter normal Sociol mode by default.
   // Staff tools are available from Profile without taking over the session.
   return <Redirect href="/(tabs)/home" />;
 }

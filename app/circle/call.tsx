@@ -124,7 +124,7 @@ export default function CallScreen() {
       {/* Top bar */}
       <View style={styles.topBar}>
         <View style={styles.encryptedBadge}>
-          <Text style={styles.encryptedText}>Socio Call</Text>
+          <Text style={styles.encryptedText}>Sociol Call</Text>
         </View>
         <Text style={styles.memberCount}>
           {participants.length}{" "}

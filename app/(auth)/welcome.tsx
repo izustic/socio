@@ -468,7 +468,7 @@ export default function SignUp() {
 function LegalConsentText({ compact = false }: { compact?: boolean }) {
   return (
     <Text style={[styles.terms, compact && styles.termsCompact]}>
-      By continuing, you agree to Socio&apos;s{" "}
+      By continuing, you agree to Sociol&apos;s{" "}
       <Text
         style={styles.termsLink}
         onPress={() => router.push("/legal/terms")}

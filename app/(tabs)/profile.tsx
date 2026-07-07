@@ -126,7 +126,7 @@ export default function ProfileScreen() {
               <View style={styles.staffNoteRow}>
                 <Flag size={17} color={Colors.textSecondary} strokeWidth={2} />
                 <Text style={styles.staffNoteText}>
-                  You can use Socio normally. These tools are only opened when you need them.
+                  You can use Sociol normally. These tools are only opened when you need them.
                 </Text>
               </View>
             </View>
@@ -190,7 +190,7 @@ export default function ProfileScreen() {
             <View style={styles.logoutIconWrap}>
               <LogOut size={31} color={Colors.textPrimary} strokeWidth={2.1} />
             </View>
-            <Text style={styles.logoutTitle}>Log out of Socio?</Text>
+            <Text style={styles.logoutTitle}>Log out of Sociol?</Text>
             <Text style={styles.logoutMessage}>
               You&apos;ll need to sign back in to access your Circle and chats.
             </Text>

@@ -23,7 +23,7 @@ export default function LocationPermissionScreen() {
         if (!permission.canAskAgain) {
           Alert.alert(
             'Location is blocked',
-            'Location permission was already denied for Socio. Open your device settings to allow location access, or continue without it for now.',
+            'Location permission was already denied for Sociol. Open your device settings to allow location access, or continue without it for now.',
             [
               {
                 text: 'Continue without it',

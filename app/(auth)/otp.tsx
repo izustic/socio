@@ -35,7 +35,6 @@ export default function OtpScreen() {
   const [cooldown, setCooldown] = useState(
     getSecondsUntilResend(draft.emailVerificationCodeSentAt),
   );
-  const sentInitialCode = useRef(false);
   const inputs = useRef<(TextInput | null)[]>([]);
 
   const authRequiresVerification = requiresEmailOnboardingVerification(user);
@@ -94,32 +93,6 @@ export default function OtpScreen() {
 
     return () => clearInterval(timer);
   }, [draft.emailVerificationCodeSentAt]);
-
-  useEffect(() => {
-    if (
-      sentInitialCode.current ||
-      !verificationRequired ||
-      draft.emailVerificationCodeSentAt ||
-      !email
-    ) {
-      return;
-    }
-
-    sentInitialCode.current = true;
-    sendEmailVerificationCode(email)
-      .then(() => {
-        mergeDraft({ emailVerificationCodeSentAt: Date.now() });
-      })
-      .catch((error) => {
-        const errorAlert = showErrorAlert(error, 'Email verification');
-        Alert.alert(errorAlert.title, errorAlert.message);
-      });
-  }, [
-    draft.emailVerificationCodeSentAt,
-    email,
-    mergeDraft,
-    verificationRequired,
-  ]);
 
   const focusInput = (index: number) => {
     inputs.current[index]?.focus();

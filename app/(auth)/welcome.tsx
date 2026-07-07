@@ -305,11 +305,9 @@ export default function SignUp() {
 
       const requiresEmailVerification =
         isSignUp || requiresEmailOnboardingVerification(user);
-      let codeSentAt: number | null = null;
 
-      if (requiresEmailVerification) {
+      if (!isSignUp && requiresEmailVerification) {
         await sendEmailVerificationCode(email);
-        codeSentAt = Date.now();
       }
 
       setShowEmailModal(false);
@@ -317,7 +315,9 @@ export default function SignUp() {
       await continueIntoOnboarding(user.id, email, {
         emailVerificationRequired: requiresEmailVerification,
         emailVerified: !requiresEmailVerification,
-        emailVerificationCodeSentAt: codeSentAt,
+        emailVerificationCodeSentAt: requiresEmailVerification
+          ? Date.now()
+          : null,
         name: (user.user_metadata?.display_name as string) || "",
       });
     } catch (error: any) {

@@ -289,6 +289,7 @@ unblocks the rest of the backlog.
 - [x] Host swipe RPC text/UUID mismatch fixed in a local migration
 - [ ] **P1** Verify joiners who liked the Circle are prioritized in the host deck
 - [ ] **P1** Verify full Circle completion behavior end to end
+- [ ] **P1** Re-enable host swipe distance filtering once there are enough users
 - [ ] **P1** Add empty deck screen behavior
 - [ ] **P1** Add integration checks for matching and membership updates
 
@@ -304,6 +305,7 @@ unblocks the rest of the backlog.
 - [~] Mutual-like flow is represented in service/RPC logic, but needs end-to-end verification
 - [ ] **P1** Verify joiner-like-Circle flow against real Supabase data
 - [ ] **P1** Verify matched joiner is added to the Circle and routed correctly
+- [ ] **P1** Re-enable joiner Circle distance filtering once there are enough Circles
 - [ ] **P1** Add joiner notifications
 - [ ] **P1** Add empty/error states for no matching Circles
 

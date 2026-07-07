@@ -57,6 +57,10 @@ const AUTH_ERROR_MAP: Record<string, AuthErrorInfo> = {
     userMessage: "Too many attempts",
     suggestion: "Please wait a few minutes and try again",
   },
+  over_email_send_rate_limit: {
+    userMessage: "Too many verification emails",
+    suggestion: "Please wait a minute and try again",
+  },
   user_banned: {
     userMessage: "This account has been disabled",
     suggestion: "Contact support for assistance",

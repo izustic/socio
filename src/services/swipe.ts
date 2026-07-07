@@ -249,24 +249,6 @@ const notifySwipeOutcome = async ({
   }
 };
 
-const getDistanceKm = (
-  from: { lat: number; lng: number },
-  to: { lat: number; lng: number },
-): number => {
-  const toRad = (d: number) => (d * Math.PI) / 180;
-  const R = 6371;
-  const dLat = toRad(to.lat - from.lat);
-  const dLng = toRad(to.lng - from.lng);
-  const a =
-    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos(toRad(from.lat)) *
-      Math.cos(toRad(to.lat)) *
-      Math.sin(dLng / 2) *
-      Math.sin(dLng / 2);
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  return R * c;
-};
-
 export const getActiveCircleForUser = async (
   userId: string,
 ): Promise<(Circle & { id: string }) | null> => {
@@ -437,7 +419,6 @@ export const getUsersByIds = async (
 export const getSwipeCandidates = async ({
   circle,
   currentUserId,
-  currentUserProfile,
 }: CandidateParams): Promise<SwipeCandidate[]> => {
   const [{ data: usersData, error }, activeCircleOccupantIds] =
     await Promise.all([
@@ -524,13 +505,8 @@ export const getSwipeCandidates = async ({
         if (!hasSharedTrait) return false;
       }
 
-      if (currentUserProfile?.location && candidate.location) {
-        const distance = getDistanceKm(
-          currentUserProfile.location,
-          candidate.location,
-        );
-        if (distance > (circle.filters.locationRadius || 10)) return false;
-      }
+      // Distance filtering is temporarily disabled while the user pool is small.
+      // Keep saving locationRadius on Circles so this can be restored later.
 
       return true;
     })
@@ -641,8 +617,6 @@ export const getCircleCandidates = async (
     return [];
   }
 
-  const userLocation = userProfile?.location;
-
   return (circlesData as CircleRow[])
     .filter((row) => {
       if ((row.members || []).includes(userId)) return false;
@@ -725,19 +699,14 @@ export const getCircleCandidates = async (
         if (!hasSharedTrait) return false;
       }
 
-      // Check distance if user has location
-      if (userLocation && circle.creatorId) {
-        // We need to get creator's location - for now, skip distance check
-        // In production, you'd fetch creator's location from their profile
-        // const distance = getDistanceKm(userLocation, creatorLocation);
-        // if (distance > filters.locationRadius) return false;
-      }
+      // Distance filtering is temporarily disabled while the Circle pool is small.
+      // Keep accepting/saving locationRadius so this can be restored later.
 
       return true;
     })
     .map((circle) => ({
       ...circle,
-      distance: userLocation ? 0 : undefined, // Placeholder - would calculate actual distance
+      distance: undefined,
     }));
 };
 

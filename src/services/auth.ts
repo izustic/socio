@@ -195,7 +195,7 @@ export const sendEmailVerificationCode = async (email: string) => {
       });
     }
 
-    console.log("Email verification code sent");
+    console.log("Email verification resend request accepted");
     return data;
   } catch (error: any) {
     if (error.code) throw error;

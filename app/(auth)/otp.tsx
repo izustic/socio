@@ -18,7 +18,7 @@ import {
 } from 'react-native';
 
 const CODE_LENGTH = 6;
-const RESEND_COOLDOWN_SECONDS = 45;
+const RESEND_COOLDOWN_SECONDS = 60;
 
 const getSecondsUntilResend = (sentAt: number | null) => {
   if (!sentAt) return 0;

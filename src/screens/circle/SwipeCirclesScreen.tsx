@@ -492,7 +492,7 @@ export default function SwipeCirclesScreen({
           <View style={styles.overlayMeta}>
             <MapPin size={13} color="rgba(255,255,255,0.85)" />
             <Text style={styles.overlayMetaText}>
-              {currentCircle.distance?.toFixed(1)} km away
+              Distance filter paused
             </Text>
             <Text style={styles.overlayMetaText}>
               · Ages {currentCircle.filters.ageRange[0]}-

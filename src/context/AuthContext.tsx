@@ -9,7 +9,7 @@ import {
   getFreshAuthUser,
 } from '../services/auth';
 import { User } from '../types';
-import type { User as SupabaseUser } from '@supabase/supabase-js';
+import type { Session, User as SupabaseUser } from '@supabase/supabase-js';
 
 interface AuthContextType {
   user: SupabaseUser | null;
@@ -83,92 +83,110 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // sign-out state with stale data from the previous user.
     let authGeneration = 0;
 
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      const generation = ++authGeneration;
+    const handleAuthSession = async (
+      generation: number,
+      session: Session | null,
+    ) => {
       let supabaseUser = session?.user ?? null;
 
-      if (supabaseUser) {
-        const authUserExists = await checkCurrentAuthUserExists();
-        if (generation !== authGeneration) return;
-
-        if (!authUserExists) {
-          await clearLocalAuthSession();
+      try {
+        if (supabaseUser) {
+          const authUserExists = await checkCurrentAuthUserExists();
           if (generation !== authGeneration) return;
-          setStaleAuthSessionCleared(true);
-          supabaseUser = null;
-        }
-      }
 
-      if (supabaseUser) {
-        const freshUser = await getFreshAuthUser();
-        if (generation !== authGeneration) return;
-
-        if (!freshUser || freshUser.id !== supabaseUser.id) {
-          await clearLocalAuthSession();
-          if (generation !== authGeneration) return;
-          setStaleAuthSessionCleared(true);
-          supabaseUser = null;
-        } else {
-          setStaleAuthSessionCleared(false);
-          supabaseUser = freshUser;
-        }
-      }
-
-      setUser(supabaseUser);
-
-      if (supabaseUser) {
-        // Get profile from Supabase
-        const userProfile = await getUserProfile(supabaseUser.id);
-        if (generation !== authGeneration) return;
-        setProfile(userProfile);
-        const latestCircle = await getLatestCircleForParticipant(supabaseUser.id);
-        if (generation !== authGeneration) return;
-        console.log('Logged in app user data:', { profile: userProfile, latestCircle });
-
-        // Sync to Supabase and get role
-        try {
-          const userRole = await syncUserToSupabase(
-            supabaseUser.id,
-            supabaseUser.email,
-            supabaseUser.user_metadata?.display_name ?? supabaseUser.email?.split('@')[0],
-            supabaseUser.user_metadata?.avatar_url ?? null
-          );
-          if (generation !== authGeneration) return;
-          setRole(userRole);
-          try {
-            await refreshSubscriptionStatus();
+          if (!authUserExists) {
+            await clearLocalAuthSession();
             if (generation !== authGeneration) return;
-            const refreshedProfile = await getUserProfile(supabaseUser.id);
-            if (generation !== authGeneration) return;
-            setProfile(refreshedProfile);
-          } catch (subscriptionError) {
-            if (generation !== authGeneration) return;
-            console.warn('Could not refresh subscription status:', subscriptionError);
+            setStaleAuthSessionCleared(true);
+            supabaseUser = null;
           }
-        } catch (error) {
+        }
+
+        if (supabaseUser) {
+          const freshUser = await getFreshAuthUser();
           if (generation !== authGeneration) return;
-          if (isSupabaseRlsError(error)) {
-            console.warn(
-              'Supabase users insert is blocked by RLS. Apply the ARCHITECTURE.md users INSERT policy to persist roles.'
-            );
+
+          if (!freshUser || freshUser.id !== supabaseUser.id) {
+            await clearLocalAuthSession();
+            if (generation !== authGeneration) return;
+            setStaleAuthSessionCleared(true);
+            supabaseUser = null;
           } else {
-            console.error('Error syncing user to Supabase:', error);
+            setStaleAuthSessionCleared(false);
+            supabaseUser = freshUser;
           }
-          setRole(getDefaultUserRole());
         }
-      } else {
+
+        setUser(supabaseUser);
+
+        if (supabaseUser) {
+          // Get profile from Supabase
+          const userProfile = await getUserProfile(supabaseUser.id);
+          if (generation !== authGeneration) return;
+          setProfile(userProfile);
+          const latestCircle = await getLatestCircleForParticipant(supabaseUser.id);
+          if (generation !== authGeneration) return;
+          console.log('Logged in app user data:', { profile: userProfile, latestCircle });
+
+          // Sync to Supabase and get role
+          try {
+            const userRole = await syncUserToSupabase(
+              supabaseUser.id,
+              supabaseUser.email,
+              supabaseUser.user_metadata?.display_name ?? supabaseUser.email?.split('@')[0],
+              supabaseUser.user_metadata?.avatar_url ?? null
+            );
+            if (generation !== authGeneration) return;
+            setRole(userRole);
+            try {
+              await refreshSubscriptionStatus();
+              if (generation !== authGeneration) return;
+              const refreshedProfile = await getUserProfile(supabaseUser.id);
+              if (generation !== authGeneration) return;
+              setProfile(refreshedProfile);
+            } catch (subscriptionError) {
+              if (generation !== authGeneration) return;
+              console.warn('Could not refresh subscription status:', subscriptionError);
+            }
+          } catch (error) {
+            if (generation !== authGeneration) return;
+            if (isSupabaseRlsError(error)) {
+              console.warn(
+                'Supabase users insert is blocked by RLS. Apply the ARCHITECTURE.md users INSERT policy to persist roles.'
+              );
+            } else {
+              console.error('Error syncing user to Supabase:', error);
+            }
+            setRole(getDefaultUserRole());
+          }
+        } else {
+          setProfile(null);
+          setRole(null);
+        }
+      } catch (error) {
+        if (generation !== authGeneration) return;
+        console.error('Error handling auth session:', error);
+        setUser(null);
         setProfile(null);
         setRole(null);
+      } finally {
+        if (generation === authGeneration) {
+          setLoading(false);
+        }
       }
+    };
 
-      if (generation === authGeneration) {
-        setLoading(false);
-      }
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      const generation = ++authGeneration;
+      setTimeout(() => {
+        void handleAuthSession(generation, session);
+      }, 0);
     });
 
     return () => {
+      authGeneration += 1;
       subscription.unsubscribe();
     };
   }, []);

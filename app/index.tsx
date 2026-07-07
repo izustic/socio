@@ -18,6 +18,7 @@ export default function SplashScreen() {
   const {
     currentStep,
     draft,
+    emailVerificationSessionActive,
     loading: onboardingLoading,
     resetOnboarding,
   } = useOnboarding();
@@ -59,6 +60,7 @@ export default function SplashScreen() {
     if (
       draft.emailVerificationRequired &&
       currentStep === 'otp' &&
+      emailVerificationSessionActive &&
       pendingEmailVerificationIsFresh
     ) {
       return <Redirect href="/(auth)/otp" />;

@@ -19,6 +19,7 @@ export default function AuthLayout() {
   const {
     currentStep,
     draft,
+    emailVerificationSessionActive,
     loading: onboardingLoading,
     resetOnboarding,
   } = useOnboarding();
@@ -57,6 +58,7 @@ export default function AuthLayout() {
       !user &&
       draft.emailVerificationRequired &&
       currentStep === 'otp' &&
+      emailVerificationSessionActive &&
       pendingEmailVerificationIsFresh
     ) {
       if (pathname !== OTP_PATHNAME) {
@@ -98,6 +100,7 @@ export default function AuthLayout() {
     staleAuthSessionCleared,
     currentStep,
     draft,
+    emailVerificationSessionActive,
     pathname,
   ]);
 

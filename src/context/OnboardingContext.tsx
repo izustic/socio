@@ -34,6 +34,7 @@ interface OnboardingContextType {
   currentStep: OnboardingStep;
   draft: OnboardingDraft;
   loading: boolean;
+  emailVerificationSessionActive: boolean;
   setStep: (step: OnboardingStep) => void;
   mergeDraft: (patch: Partial<OnboardingDraft>) => void;
   beginOnboarding: (seed?: Partial<OnboardingDraft>, step?: OnboardingStep) => void;
@@ -67,6 +68,10 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
   const [currentStep, setCurrentStep] = useState<OnboardingStep>(DEFAULT_ONBOARDING_STEP);
   const [draft, setDraft] = useState<OnboardingDraft>(defaultDraft);
   const [loading, setLoading] = useState(true);
+  const [
+    emailVerificationSessionActive,
+    setEmailVerificationSessionActive,
+  ] = useState(false);
   const currentStepRef = useRef(currentStep);
   const draftRef = useRef(draft);
 
@@ -127,6 +132,9 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
   }, [persistState]);
 
   const mergeDraft = useCallback((patch: Partial<OnboardingDraft>) => {
+    if (patch.emailVerificationRequired === true) {
+      setEmailVerificationSessionActive(true);
+    }
     setDraft((prev) => {
       const nextDraft = { ...prev, ...patch };
       draftRef.current = nextDraft;
@@ -140,6 +148,7 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
       ...defaultDraft,
       ...seed,
     };
+    setEmailVerificationSessionActive(Boolean(nextDraft.emailVerificationRequired));
     draftRef.current = nextDraft;
     currentStepRef.current = step;
     setDraft(nextDraft);
@@ -152,6 +161,7 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
     currentStepRef.current = DEFAULT_ONBOARDING_STEP;
     setDraft(defaultDraft);
     setCurrentStep(DEFAULT_ONBOARDING_STEP);
+    setEmailVerificationSessionActive(false);
     await AsyncStorage.removeItem(STORAGE_KEY);
   }, []);
 
@@ -159,11 +169,21 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
     currentStep,
     draft,
     loading,
+    emailVerificationSessionActive,
     setStep,
     mergeDraft,
     beginOnboarding,
     resetOnboarding,
-  }), [currentStep, draft, loading, setStep, mergeDraft, beginOnboarding, resetOnboarding]);
+  }), [
+    currentStep,
+    draft,
+    loading,
+    emailVerificationSessionActive,
+    setStep,
+    mergeDraft,
+    beginOnboarding,
+    resetOnboarding,
+  ]);
 
   return (
     <OnboardingContext.Provider value={value}>

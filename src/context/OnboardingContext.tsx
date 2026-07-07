@@ -11,6 +11,9 @@ const STORAGE_KEY = 'socio:onboarding';
 
 export interface OnboardingDraft {
   contactHint: string;
+  emailVerificationRequired: boolean;
+  emailVerified: boolean;
+  emailVerificationCodeSentAt: number | null;
   name: string;
   bio: string;
   age: number;
@@ -39,6 +42,9 @@ interface OnboardingContextType {
 
 const defaultDraft: OnboardingDraft = {
   contactHint: '',
+  emailVerificationRequired: false,
+  emailVerified: false,
+  emailVerificationCodeSentAt: null,
   name: '',
   bio: '',
   age: 24,

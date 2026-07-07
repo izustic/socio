@@ -35,7 +35,23 @@ const AUTH_ERROR_MAP: Record<string, AuthErrorInfo> = {
   },
   email_not_confirmed: {
     userMessage: "Please confirm your email first",
-    suggestion: "Check your inbox for the confirmation link",
+    suggestion: "Check your inbox for the verification code",
+  },
+  otp_expired: {
+    userMessage: "That code has expired",
+    suggestion: "Request a new code and try again",
+  },
+  token_expired: {
+    userMessage: "That code has expired",
+    suggestion: "Request a new code and try again",
+  },
+  invalid_otp: {
+    userMessage: "That code is not correct",
+    suggestion: "Check the code and try again",
+  },
+  otp_disabled: {
+    userMessage: "Email verification is not enabled",
+    suggestion: "Enable email OTP in Supabase Auth settings",
   },
   over_request_rate_limit: {
     userMessage: "Too many attempts",

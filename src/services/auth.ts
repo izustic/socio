@@ -117,6 +117,79 @@ export const signInWithGoogleIdToken = async (
   }
 };
 
+export const sendEmailVerificationCode = async (email: string) => {
+  if (!email) {
+    throw createAuthInputError("missing-fields", "Email is required");
+  }
+
+  try {
+    console.log("Sending email verification code to:", email);
+    const { data, error } = await supabase.auth.signInWithOtp({
+      email,
+      options: {
+        shouldCreateUser: false,
+      },
+    });
+
+    if (error) {
+      console.error("Email verification send error:", error.code, error.message);
+      const authError = getAuthErrorMessage(error);
+      throw Object.assign(new Error(authError.userMessage), {
+        code: error.code ?? "unknown",
+        suggestion: authError.suggestion,
+      });
+    }
+
+    console.log("Email verification code sent");
+    return data;
+  } catch (error: any) {
+    if (error.code) throw error;
+    console.error("Email verification send error:", error);
+    throw error;
+  }
+};
+
+export const verifyEmailVerificationCode = async (
+  email: string,
+  token: string,
+): Promise<User> => {
+  if (!email || !token) {
+    throw createAuthInputError(
+      "missing-fields",
+      "Email and verification code are required",
+    );
+  }
+
+  try {
+    console.log("Verifying email code for:", email);
+    const { data, error } = await supabase.auth.verifyOtp({
+      email,
+      token,
+      type: "email",
+    });
+
+    if (error) {
+      console.error("Email verification error:", error.code, error.message);
+      const authError = getAuthErrorMessage(error);
+      throw Object.assign(new Error(authError.userMessage), {
+        code: error.code ?? "unknown",
+        suggestion: authError.suggestion,
+      });
+    }
+
+    if (!data.user) {
+      throw new Error("We could not verify that code. Please try again.");
+    }
+
+    console.log("Email verified successfully");
+    return data.user;
+  } catch (error: any) {
+    if (error.code) throw error;
+    console.error("Email verification error:", error);
+    throw error;
+  }
+};
+
 export const signOut = async () => {
   try {
     console.log("Signing out");

@@ -1,4 +1,8 @@
 import LottieSplashScreen from '@/src/components/LottieSplashScreen';
+import {
+  getOnboardingRoute,
+  getSafeOnboardingStep,
+} from '@/src/constants/onboarding';
 import { useAuth } from '@/src/context/AuthContext';
 import { useOnboarding } from '@/src/context/OnboardingContext';
 import { useRole } from '@/src/hooks/useRole';
@@ -8,7 +12,11 @@ import { useEffect, useState } from 'react';
 export default function SplashScreen() {
   const [showSplash, setShowSplash] = useState(true);
   const { user, profile, loading } = useAuth();
-  const { loading: onboardingLoading } = useOnboarding();
+  const {
+    currentStep,
+    draft,
+    loading: onboardingLoading,
+  } = useOnboarding();
   const { loading: roleLoading, isBanned, isSuspended } = useRole();
 
   useEffect(() => {
@@ -27,12 +35,16 @@ export default function SplashScreen() {
 
   // No user → redirect to welcome screen
   if (!user) {
+    if (draft.emailVerificationRequired && currentStep === 'otp') {
+      return <Redirect href="/(auth)/otp" />;
+    }
     return <Redirect href="/(auth)/welcome" />;
   }
 
   // User + no profile → redirect to profile setup
   if (!profile?.profileComplete) {
-    return <Redirect href="/(auth)/profile-photo-name" />;
+    const targetStep = getSafeOnboardingStep(currentStep, draft);
+    return <Redirect href={getOnboardingRoute(targetStep) as any} />;
   }
 
   // Status 'banned' → redirect to banned screen

@@ -54,6 +54,7 @@ export const getOnboardingRoute = (step: OnboardingStep) => ONBOARDING_ROUTE_MAP
 export const getOnboardingPathname = (step: OnboardingStep) => ONBOARDING_PATHNAME_MAP[step];
 
 export const getFirstIncompleteOnboardingStep = (draft: OnboardingDraft): OnboardingStep => {
+  if (draft.emailVerificationRequired && !draft.emailVerified) return 'otp';
   if (!draft.locationPermissionResolved) return 'location-permission';
   if (!draft.notificationsPermissionResolved) return 'notifications-permission';
   if (!draft.name.trim()) return 'profile-photo-name';
@@ -67,6 +68,14 @@ export const getSafeOnboardingStep = (
   draft: OnboardingDraft,
 ): OnboardingStep => {
   const firstIncompleteStep = getFirstIncompleteOnboardingStep(draft);
+
+  if (
+    requestedStep === 'otp' &&
+    (!draft.emailVerificationRequired || draft.emailVerified)
+  ) {
+    return firstIncompleteStep;
+  }
+
   const requestedIndex = ONBOARDING_STEP_ORDER.indexOf(requestedStep);
   const incompleteIndex = ONBOARDING_STEP_ORDER.indexOf(firstIncompleteStep);
 
@@ -178,4 +187,3 @@ export const JOIN_MEETUP_VIBE_EMOJI: Record<JoinMeetupVibe, string> = {
   Study: '📚',
   Workout: '🏋️',
 };
-

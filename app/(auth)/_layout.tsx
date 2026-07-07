@@ -10,6 +10,7 @@ import { Redirect, Stack, usePathname } from 'expo-router';
 import { useMemo } from 'react';
 
 const WELCOME_PATHNAME = '/welcome';
+const OTP_PATHNAME = '/otp';
 
 export default function AuthLayout() {
   const { user, profile, loading } = useAuth();
@@ -28,6 +29,13 @@ export default function AuthLayout() {
       return <Redirect href="/(tabs)/home" />;
     }
     
+    if (!user && draft.emailVerificationRequired && currentStep === 'otp') {
+      if (pathname !== OTP_PATHNAME) {
+        return <Redirect href="/(auth)/otp" />;
+      }
+      return null;
+    }
+
     // No user → only allow welcome screen, redirect everything else to welcome
     if (!user && pathname !== WELCOME_PATHNAME) {
       return <Redirect href="/(auth)/welcome" />;

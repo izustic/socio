@@ -11,6 +11,7 @@ import { Colors,
 import { useOnboarding } from "@/src/context/OnboardingContext";
 import { getFirstIncompleteOnboardingStep } from "@/src/constants/onboarding";
 import {
+  sendEmailVerificationCode,
   signInWithEmail,
   signInWithGoogleIdToken,
   signUpWithEmail,
@@ -121,7 +122,7 @@ export default function SignUp() {
     async (
       uid: string,
       contactHint: string,
-      seed?: { name?: string; photoURL?: string },
+      seed?: Partial<OnboardingDraft>,
     ) => {
       const existingProfile = await getUserProfile(uid);
       if (existingProfile?.profileComplete) {
@@ -132,6 +133,11 @@ export default function SignUp() {
       const nextDraft: OnboardingDraft = existingProfile
         ? {
             contactHint,
+            emailVerificationRequired:
+              seed?.emailVerificationRequired ?? false,
+            emailVerified: seed?.emailVerified ?? false,
+            emailVerificationCodeSentAt:
+              seed?.emailVerificationCodeSentAt ?? null,
             name: existingProfile.name || seed?.name || "",
             bio: existingProfile.bio || "",
             age: existingProfile.age || 24,
@@ -152,6 +158,11 @@ export default function SignUp() {
           }
         : {
             contactHint,
+            emailVerificationRequired:
+              seed?.emailVerificationRequired ?? false,
+            emailVerified: seed?.emailVerified ?? false,
+            emailVerificationCodeSentAt:
+              seed?.emailVerificationCodeSentAt ?? null,
             name: seed?.name || "",
             bio: "",
             age: 24,
@@ -170,7 +181,7 @@ export default function SignUp() {
 
       beginOnboarding(
         nextDraft,
-        existingProfile ? getFirstIncompleteOnboardingStep(nextDraft) : "otp",
+        getFirstIncompleteOnboardingStep(nextDraft),
       );
     },
     [beginOnboarding],
@@ -224,6 +235,8 @@ export default function SignUp() {
         user.id,
         user.email || "your Google account",
         {
+          emailVerificationRequired: false,
+          emailVerified: true,
           name: (user.user_metadata?.display_name as string) || "",
           photoURL: (user.user_metadata?.avatar_url as string) || "",
         },
@@ -289,9 +302,22 @@ export default function SignUp() {
         throw new Error("Authentication failed");
       }
 
+      const emailConfirmedAt =
+        user.email_confirmed_at || user.confirmed_at || null;
+      const requiresEmailVerification = isSignUp || !emailConfirmedAt;
+      let codeSentAt: number | null = null;
+
+      if (requiresEmailVerification) {
+        await sendEmailVerificationCode(email);
+        codeSentAt = Date.now();
+      }
+
       setShowEmailModal(false);
       setPassword("");
       await continueIntoOnboarding(user.id, email, {
+        emailVerificationRequired: requiresEmailVerification,
+        emailVerified: !requiresEmailVerification,
+        emailVerificationCodeSentAt: codeSentAt,
         name: (user.user_metadata?.display_name as string) || "",
       });
     } catch (error: any) {

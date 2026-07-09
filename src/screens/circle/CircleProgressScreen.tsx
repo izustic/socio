@@ -20,6 +20,7 @@ import type { DimensionValue } from "react-native";
 import {
   ActivityIndicator,
   Alert,
+  ScrollView,
   StatusBar,
   StyleSheet,
   Text,
@@ -233,7 +234,11 @@ export default function CircleProgressScreen() {
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" />
 
-      <View style={styles.content}>
+      <ScrollView
+        style={styles.content}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
         <View>
           <Text style={styles.title}>{circle.name}</Text>
           <Text style={styles.subtitle}>Your circle is forming</Text>
@@ -282,7 +287,7 @@ export default function CircleProgressScreen() {
             {circle.meetupTimeframe || "Within 3 days"}
           </Text>
         </View>
-      </View>
+      </ScrollView>
 
       {(showContinueSwiping || isReadOnlyComplete || exitState) && (
         <View style={styles.footer}>
@@ -331,7 +336,10 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
+  },
+  scrollContent: {
     gap: Spacing.lg,
+    paddingBottom: Spacing.lg,
   },
   title: {
     ...Typography.h2,

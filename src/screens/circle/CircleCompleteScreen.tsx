@@ -19,6 +19,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  ScrollView,
   StatusBar,
   StyleSheet,
   Text,
@@ -213,7 +214,11 @@ export default function CircleCompleteScreen() {
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" />
 
-      <View style={styles.content}>
+      <ScrollView
+        style={styles.content}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
         <View style={styles.badge}>
           <Text style={styles.badgeText}>COMPLETE</Text>
         </View>
@@ -263,7 +268,7 @@ export default function CircleCompleteScreen() {
             </View>
           </View>
         </View>
-      </View>
+      </ScrollView>
 
       <View style={styles.footer}>
         <Button
@@ -314,8 +319,11 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
+  },
+  scrollContent: {
     alignItems: "center",
     gap: Spacing.lg,
+    paddingBottom: Spacing.lg,
   },
   badge: {
     alignSelf: "flex-start",

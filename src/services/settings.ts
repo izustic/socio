@@ -2,6 +2,7 @@ import type { RealtimeChannel } from "@supabase/supabase-js";
 import { User } from "@/src/types";
 import { supabase } from "./supabase";
 import { getUserProfile } from "./user";
+import { LocalizationService } from "./LocalizationService";
 
 export interface NotificationSettings {
   circleActivity: boolean;
@@ -129,7 +130,7 @@ export const updatePrivacySettings = async (
 export const verifyProfilePhoto = async (user: User): Promise<void> => {
   const hasPhoto = Boolean(user.photoURL || user.media?.some((item) => item.remoteUrl || item.uri));
   if (!hasPhoto) {
-    throw new Error("Add a profile photo before verifying it.");
+    throw new Error(LocalizationService.translate("en", "validation.profilePhotoRequired"));
   }
 
   const { error } = await supabase

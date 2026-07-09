@@ -8,6 +8,7 @@ import {
 } from "../types";
 import { supabase } from "./supabase";
 import { createNotification, createNotifications } from "./notifications";
+import { LocalizationService } from "./LocalizationService";
 
 export interface SwipeCandidate extends User {
   uid: string;
@@ -110,11 +111,25 @@ const getUserDisplayName = async (userId: string): Promise<string> => {
 
   if (error) {
     console.error("Error getting notification actor:", error);
-    return "Someone";
+    return LocalizationService.translate("en", "notification.someone");
   }
 
-  return data?.display_name || data?.email?.split("@")[0] || "Someone";
+  return data?.display_name || data?.email?.split("@")[0] || LocalizationService.translate("en", "notification.someone");
 };
+
+const localizedNotificationData = (
+  titleKey: string,
+  bodyKey: string,
+  params: Record<string, string | number>,
+  data: Record<string, unknown>,
+) => ({
+  ...data,
+  i18n: {
+    titleKey,
+    bodyKey,
+    params,
+  },
+});
 
 const getNotificationCircle = async (
   circleId: string,
@@ -143,12 +158,17 @@ const notifyCircleProgress = async (
     await createNotifications(
       members,
       "circle_complete",
-      "Your Circle is complete!",
-      `${circle.name} is ready to meet.`,
-      {
+      LocalizationService.translate("en", "notification.circleComplete.title"),
+      LocalizationService.translate("en", "notification.circleComplete.body", { circleName: circle.name }),
+      localizedNotificationData(
+        "notification.circleComplete.title",
+        "notification.circleComplete.body",
+        { circleName: circle.name },
+        {
         action: "circle_complete",
         circleId: circle.id,
-      },
+        },
+      ),
     );
     return;
   }
@@ -157,12 +177,17 @@ const notifyCircleProgress = async (
     await createNotification(
       circle.creator_id,
       "circle_almost_full",
-      "Circle almost full",
-      "1 more person to fill your Circle.",
-      {
+      LocalizationService.translate("en", "notification.circleAlmostFull.title"),
+      LocalizationService.translate("en", "notification.circleAlmostFull.body"),
+      localizedNotificationData(
+        "notification.circleAlmostFull.title",
+        "notification.circleAlmostFull.body",
+        {},
+        {
         action: "circle_progress",
         circleId: circle.id,
-      },
+        },
+      ),
     );
   }
 };
@@ -201,25 +226,35 @@ const notifySwipeOutcome = async ({
         await createNotification(
           circle.creator_id,
           "circle_accepted",
-          `${actorName} accepted`,
-          `Welcome them to ${circle.name}.`,
-          {
+          LocalizationService.translate("en", "notification.circleAccepted.title", { actorName }),
+          LocalizationService.translate("en", "notification.circleAccepted.hostBody", { circleName: circle.name }),
+          localizedNotificationData(
+            "notification.circleAccepted.title",
+            "notification.circleAccepted.hostBody",
+            { actorName, circleName: circle.name },
+            {
             action: "circle_progress",
             actorId,
             circleId,
-          },
+            },
+          ),
         );
       } else {
         await createNotification(
           circle.creator_id,
           "circle_invite",
-          `${actorName} wants to join`,
-          `${actorName} liked ${circle.name}.`,
-          {
+          LocalizationService.translate("en", "notification.circleInvite.title", { actorName }),
+          LocalizationService.translate("en", "notification.circleInvite.body", { actorName, circleName: circle.name }),
+          localizedNotificationData(
+            "notification.circleInvite.title",
+            "notification.circleInvite.body",
+            { actorName, circleName: circle.name },
+            {
             action: "review_joiner",
             actorId,
             circleId,
-          },
+            },
+          ),
         );
       }
     }
@@ -228,13 +263,18 @@ const notifySwipeOutcome = async ({
       await createNotification(
         targetUserId,
         "circle_accepted",
-        `${actorName} accepted`,
-        `You both wanted to be in ${circle.name}.`,
-        {
+        LocalizationService.translate("en", "notification.circleAccepted.title", { actorName }),
+        LocalizationService.translate("en", "notification.circleAccepted.joinerBody", { circleName: circle.name }),
+        localizedNotificationData(
+          "notification.circleAccepted.title",
+          "notification.circleAccepted.joinerBody",
+          { actorName, circleName: circle.name },
+          {
           action: "circle_progress",
           actorId,
           circleId,
-        },
+          },
+        ),
       );
     }
 

@@ -2,6 +2,7 @@ import { Colors } from '@/src/constants/theme';
 import LottieSplashScreen from '@/src/components/LottieSplashScreen';
 import { useAuth } from '@/src/context/AuthContext';
 import { useSwipeTabVisibility } from '@/src/context/SwipeTabVisibilityContext';
+import { useLocale } from '@/src/providers/LocaleProvider';
 import { Redirect, Tabs, useFocusEffect } from 'expo-router';
 import { Bell, Layers, Sparkles, User, Users } from 'lucide-react-native';
 import { useCallback } from 'react';
@@ -9,6 +10,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 function TabLayoutInner() {
   const insets = useSafeAreaInsets();
+  const { t } = useLocale();
   const { swipeTabVisible, circleTabVisible, refreshSwipeTabVisibility } =
     useSwipeTabVisibility();
 
@@ -36,7 +38,7 @@ function TabLayoutInner() {
       <Tabs.Screen
         name="home"
         options={{
-          title: 'Circle',
+          title: t('tabs.circle'),
           href: circleTabVisible ? undefined : null,
           tabBarIcon: ({ color, size }) => <Users size={size} color={color} strokeWidth={2.2} />,
         }}
@@ -44,7 +46,7 @@ function TabLayoutInner() {
       <Tabs.Screen
         name="swipe"
         options={{
-          title: 'Swipe',
+          title: t('tabs.swipe'),
           href: swipeTabVisible ? undefined : null,
           tabBarIcon: ({ color, size }) => <Layers size={size} color={color} strokeWidth={2.2} />,
         }}
@@ -52,21 +54,21 @@ function TabLayoutInner() {
       <Tabs.Screen
         name="likes"
         options={{
-          title: 'Likes',
+          title: t('tabs.likes'),
           tabBarIcon: ({ color, size }) => <Sparkles size={size} color={color} strokeWidth={2.2} />,
         }}
       />
       <Tabs.Screen
         name="notifications"
         options={{
-          title: 'Alerts',
+          title: t('tabs.alerts'),
           tabBarIcon: ({ color, size }) => <Bell size={size} color={color} strokeWidth={2.2} />,
         }}
       />
       <Tabs.Screen
         name="profile"
         options={{
-          title: 'Profile',
+          title: t('tabs.profile'),
           tabBarIcon: ({ color, size }) => <User size={size} color={color} strokeWidth={2.2} />,
         }}
       />

@@ -4,6 +4,7 @@ import {
   Spacing,
   Typography } from "@/src/constants/theme";
 import { useAuth } from "@/src/context/AuthContext";
+import { useLocale } from "@/src/providers/LocaleProvider";
 import {
   AppNotification,
   getNotifications,
@@ -36,25 +37,46 @@ import {
   View,
 } from "react-native";
 
-const formatTime = (createdAt: string) => {
+const formatTime = (
+  createdAt: string,
+  t: (key: string) => string,
+  formatDate: (value: Date | string | number, options?: Intl.DateTimeFormatOptions) => string,
+) => {
   const created = new Date(createdAt);
   const diffMs = Date.now() - created.getTime();
   const diffMinutes = Math.max(0, Math.floor(diffMs / 60000));
 
-  if (diffMinutes < 1) return "Just now";
+  if (diffMinutes < 1) return t("notifications.justNow");
   if (diffMinutes < 60) return `${diffMinutes}m`;
 
   const diffHours = Math.floor(diffMinutes / 60);
   if (diffHours < 24) return `${diffHours}h`;
 
   const diffDays = Math.floor(diffHours / 24);
-  if (diffDays === 1) return "Yesterday";
+  if (diffDays === 1) return t("notifications.yesterday");
   if (diffDays < 7) return `${diffDays}d`;
 
-  return created.toLocaleDateString(undefined, {
+  return formatDate(created, {
     month: "short",
     day: "numeric",
   });
+};
+
+const translateNotificationField = (
+  notification: AppNotification,
+  field: "title" | "body",
+  t: (key: string, params?: Record<string, string | number | boolean | null | undefined>) => string,
+) => {
+  const i18n = notification.data?.i18n;
+  if (!i18n || typeof i18n !== "object") return notification[field];
+
+  const keyName = `${field}Key`;
+  const key = keyName in i18n ? (i18n as Record<string, unknown>)[keyName] : undefined;
+  const params = "params" in i18n ? (i18n as Record<string, unknown>).params : undefined;
+
+  return typeof key === "string"
+    ? t(key, typeof params === "object" && params ? params as Record<string, string | number | boolean | null | undefined> : undefined)
+    : notification[field];
 };
 
 const getNotificationStyle = (type: AppNotification["type"]) => {
@@ -123,6 +145,7 @@ const getNotificationRoute = (notification: AppNotification) => {
 
 export default function NotificationsScreen() {
   const { user } = useAuth();
+  const { t, formatDate } = useLocale();
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -257,15 +280,15 @@ export default function NotificationsScreen() {
 
         <View style={styles.notificationCopy}>
           <Text style={styles.notificationTitle} numberOfLines={1}>
-            {item.title}
+            {translateNotificationField(item, "title", t)}
           </Text>
           <Text style={styles.notificationBody} numberOfLines={2}>
-            {item.body}
+            {translateNotificationField(item, "body", t)}
           </Text>
         </View>
 
         <View style={styles.meta}>
-          <Text style={styles.timeText}>{formatTime(item.createdAt)}</Text>
+          <Text style={styles.timeText}>{formatTime(item.createdAt, t, formatDate)}</Text>
           {!item.read && <View style={styles.unreadDot} />}
         </View>
       </TouchableOpacity>
@@ -276,7 +299,7 @@ export default function NotificationsScreen() {
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" />
       <View style={styles.header}>
-        <Text style={styles.title}>Notifications</Text>
+        <Text style={styles.title}>{t("notifications.settingsTitle")}</Text>
         <TouchableOpacity
           activeOpacity={0.7}
           disabled={unreadCount === 0}
@@ -289,7 +312,7 @@ export default function NotificationsScreen() {
               unreadCount === 0 && styles.markAllDisabled,
             ]}
           >
-            Mark all
+            {t("notifications.markAll")}
           </Text>
         </TouchableOpacity>
       </View>
@@ -319,9 +342,9 @@ export default function NotificationsScreen() {
               <View style={styles.emptyIcon}>
                 <Clock3 size={22} color={Colors.textPrimary} strokeWidth={2} />
               </View>
-              <Text style={styles.emptyTitle}>No alerts yet</Text>
+              <Text style={styles.emptyTitle}>{t("notifications.emptyTitle")}</Text>
               <Text style={styles.emptyText}>
-                Circle updates, matches, and messages will show up here.
+                {t("notifications.emptyText")}
               </Text>
             </View>
           }

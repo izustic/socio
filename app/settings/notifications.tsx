@@ -5,6 +5,7 @@ import {
   Spacing,
   Typography } from "@/src/constants/theme";
 import { useAuth } from "@/src/context/AuthContext";
+import { useLocale } from "@/src/providers/LocaleProvider";
 import {
   getSettingsSnapshot,
   NotificationSettings,
@@ -48,58 +49,59 @@ type NotificationKey = keyof Pick<
 >;
 
 const rows: {
-  group: "Your Circle" | "General";
+  group: "circle" | "general";
   key: NotificationKey;
-  title: string;
-  body: string;
+  titleKey: string;
+  bodyKey: string;
   Icon: LucideIcon;
 }[] = [
   {
-    group: "Your Circle",
+    group: "circle",
     key: "circleActivity",
-    title: "Circle activity",
-    body: "Joins, swipes back, when your Circle fills.",
+    titleKey: "notifications.circleActivity.title",
+    bodyKey: "notifications.circleActivity.body",
     Icon: Users,
   },
   {
-    group: "Your Circle",
+    group: "circle",
     key: "newMessages",
-    title: "New messages",
-    body: "Chats inside your Circle.",
+    titleKey: "notifications.newMessages.title",
+    bodyKey: "notifications.newMessages.body",
     Icon: Bell,
   },
   {
-    group: "Your Circle",
+    group: "circle",
     key: "mutualMatches",
-    title: "Mutual matches",
-    body: "When someone swipes you back.",
+    titleKey: "notifications.mutualMatches.title",
+    bodyKey: "notifications.mutualMatches.body",
     Icon: Heart,
   },
   {
-    group: "General",
+    group: "general",
     key: "suggestions",
-    title: "Suggestions for you",
-    body: "New people and Circles near you.",
+    titleKey: "notifications.suggestions.title",
+    bodyKey: "notifications.suggestions.body",
     Icon: Sparkles,
   },
   {
-    group: "General",
+    group: "general",
     key: "productUpdates",
-    title: "Product updates",
-    body: "Occasional emails about new features.",
+    titleKey: "notifications.productUpdates.title",
+    bodyKey: "notifications.productUpdates.body",
     Icon: Mail,
   },
   {
-    group: "General",
+    group: "general",
     key: "quietHours",
-    title: "Quiet hours",
-    body: "Silence everything from 10pm - 8am.",
+    titleKey: "notifications.quietHours.title",
+    bodyKey: "notifications.quietHours.body",
     Icon: Moon,
   },
 ];
 
 export default function NotificationSettingsScreen() {
   const { user } = useAuth();
+  const { t } = useLocale();
   const [settings, setSettings] = useState<NotificationSettings | null>(null);
   const [savingKey, setSavingKey] = useState<NotificationKey | null>(null);
   const [loading, setLoading] = useState(true);
@@ -115,7 +117,7 @@ export default function NotificationSettingsScreen() {
         if (active) setSettings(snapshot.notificationSettings);
       } catch (error) {
         console.error("Error loading notification settings:", error);
-        Alert.alert("Could not load settings", "Please try again.");
+        Alert.alert(t("notifications.loadError.title"), t("common.retry"));
       } finally {
         if (active) setLoading(false);
       }
@@ -126,7 +128,7 @@ export default function NotificationSettingsScreen() {
     return () => {
       active = false;
     };
-  }, [user]);
+  }, [t, user]);
 
   useEffect(() => {
     if (!user) return;
@@ -153,15 +155,17 @@ export default function NotificationSettingsScreen() {
     } catch (error) {
       console.error("Error updating notification setting:", error);
       setSettings(previous);
-      Alert.alert("Setting not saved", "Please try again.");
+      Alert.alert(t("notifications.saveError.title"), t("common.retry"));
     } finally {
       setSavingKey(null);
     }
   };
 
-  const renderGroup = (group: "Your Circle" | "General") => (
+  const renderGroup = (group: "circle" | "general") => (
     <View style={styles.section} key={group}>
-      <Text style={styles.sectionLabel}>{group}</Text>
+      <Text style={styles.sectionLabel}>
+        {group === "circle" ? t("notifications.groupCircle") : t("notifications.groupGeneral")}
+      </Text>
       <View style={styles.card}>
         {rows
           .filter((row) => row.group === group)
@@ -183,8 +187,8 @@ export default function NotificationSettingsScreen() {
                   />
                 </View>
                 <View style={styles.rowCopy}>
-                  <Text style={styles.rowTitle}>{row.title}</Text>
-                  <Text style={styles.rowBody}>{row.body}</Text>
+                  <Text style={styles.rowTitle}>{t(row.titleKey)}</Text>
+                  <Text style={styles.rowBody}>{t(row.bodyKey)}</Text>
                 </View>
                 <Switch
                   value={Boolean(settings?.[row.key])}
@@ -193,6 +197,7 @@ export default function NotificationSettingsScreen() {
                   trackColor={{ false: Colors.white, true: Colors.primary }}
                   thumbColor={Colors.textPrimary}
                   ios_backgroundColor={Colors.white}
+                  accessibilityLabel={t(row.titleKey)}
                 />
               </View>
             );
@@ -212,7 +217,7 @@ export default function NotificationSettingsScreen() {
         >
           <ChevronLeft size={22} color={Colors.textPrimary} strokeWidth={2.3} />
         </TouchableOpacity>
-        <Text style={styles.title}>Notifications</Text>
+        <Text style={styles.title}>{t("notifications.settingsTitle")}</Text>
       </View>
 
       {loading ? (
@@ -225,10 +230,10 @@ export default function NotificationSettingsScreen() {
           showsVerticalScrollIndicator={false}
         >
           <Text style={styles.description}>
-            Choose what reaches you. We keep it quiet by default.
+            {t("notifications.description")}
           </Text>
-          {renderGroup("Your Circle")}
-          {renderGroup("General")}
+          {renderGroup("circle")}
+          {renderGroup("general")}
         </ScrollView>
       )}
     </SafeAreaView>

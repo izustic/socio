@@ -5,6 +5,7 @@ import {
   Spacing,
   Typography } from '@/src/constants/theme';
 import { useAuth } from '@/src/context/AuthContext';
+import { useLocale } from '@/src/providers/LocaleProvider';
 import { router } from 'expo-router';
 import { signOut } from '@/src/services/auth';
 import { Bell,
@@ -12,6 +13,7 @@ import { Bell,
   Database,
   FileText,
   Flag,
+  Languages,
   LogOut,
   Pencil,
   Scale,
@@ -32,24 +34,22 @@ import { Image,
 } from 'react-native';
 import { useState } from 'react';
 
-const fallbackInterests = ['Add interests'];
-const fallbackTraits = ['Add traits'];
-
 export default function ProfileScreen() {
   const { user, profile, role } = useAuth();
+  const { t } = useLocale();
   const [logoutVisible, setLogoutVisible] = useState(false);
 
-  const displayName = profile?.name || (user?.user_metadata?.display_name as string) || 'Your profile';
+  const displayName = profile?.name || (user?.user_metadata?.display_name as string) || t('profile.yourProfile');
   const ageLabel = profile?.age ? `, ${profile.age}` : '';
-  const city = profile?.location?.city || 'Location not set';
+  const city = profile?.location?.city || t('profile.locationNotSet');
   const avatarUri =
     profile?.photoURL ||
     profile?.media?.find((item) => item.remoteUrl || item.uri)?.remoteUrl ||
     profile?.media?.find((item) => item.remoteUrl || item.uri)?.uri ||
     (user?.user_metadata?.avatar_url as string) ||
     undefined;
-  const interests = profile?.interests?.length ? profile.interests : fallbackInterests;
-  const traits = profile?.traits?.length ? profile.traits : fallbackTraits;
+  const interests = profile?.interests?.length ? profile.interests : [t('profile.addInterests')];
+  const traits = profile?.traits?.length ? profile.traits : [t('profile.addTraits')];
   const canModerate = role?.role === "moderator" || role?.role === "admin";
   const isAdmin = role?.role === "admin";
   const initials = displayName
@@ -72,7 +72,7 @@ export default function ProfileScreen() {
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
-        <Text style={styles.headerTitle}>Profile</Text>
+        <Text style={styles.headerTitle}>{t('profile.title')}</Text>
 
         <View style={styles.hero}>
           <View style={styles.avatarShell}>
@@ -98,35 +98,35 @@ export default function ProfileScreen() {
             onPress={() => router.push('/profile/edit')}
           >
             <Pencil size={17} color={Colors.textPrimary} strokeWidth={2.2} />
-            <Text style={styles.editText}>Edit profile</Text>
+            <Text style={styles.editText}>{t('profile.edit')}</Text>
           </TouchableOpacity>
         </View>
 
-        <ProfileSection title="Interests" values={interests} />
-        <ProfileSection title="Traits" values={traits} />
+        <ProfileSection title={t('profile.interests')} values={interests} />
+        <ProfileSection title={t('profile.traits')} values={traits} />
 
         {canModerate ? (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Staff tools</Text>
+            <Text style={styles.sectionTitle}>{t('profile.staffTools')}</Text>
             <View style={styles.staffCard}>
               {isAdmin ? (
                 <SettingsRow
                   icon={ShieldCheck}
-                  title="Admin dashboard"
-                  rightText="Admin"
+                  title={t('profile.adminDashboard')}
+                  rightText={t('profile.admin')}
                   onPress={() => router.push("/admin/dashboard")}
                 />
               ) : null}
               <SettingsRow
                 icon={UserCog}
-                title="Moderation queue"
-                rightText={isAdmin ? "Reports" : "Moderator"}
+                title={t('profile.moderationQueue')}
+                rightText={isAdmin ? t('profile.reports') : t('profile.moderator')}
                 onPress={() => router.push("/moderator/dashboard")}
               />
               <View style={styles.staffNoteRow}>
                 <Flag size={17} color={Colors.textSecondary} strokeWidth={2} />
                 <Text style={styles.staffNoteText}>
-                  You can use Sociol normally. These tools are only opened when you need them.
+                  {t('profile.staffNote')}
                 </Text>
               </View>
             </View>
@@ -134,44 +134,49 @@ export default function ProfileScreen() {
         ) : null}
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Settings</Text>
+          <Text style={styles.sectionTitle}>{t('settings.title')}</Text>
           <View style={styles.settingsCard}>
             <SettingsRow
               icon={Bell}
-              title="Notifications"
-              rightText={profile?.notificationsEnabled ? "On" : "Off"}
+              title={t('settings.notifications')}
+              rightText={profile?.notificationsEnabled ? t('common.on') : t('common.off')}
               onPress={() => router.push("/settings/notifications")}
             />
             <SettingsRow
+              icon={Languages}
+              title={t('settings.appearanceLanguage')}
+              onPress={() => router.push("/settings/appearance")}
+            />
+            <SettingsRow
               icon={Shield}
-              title="Privacy & safety"
+              title={t('settings.privacySafety')}
               onPress={() => router.push("/settings/privacy-safety")}
             />
-            <SettingsRow icon={LogOut} title="Log out" onPress={() => setLogoutVisible(true)} />
+            <SettingsRow icon={LogOut} title={t('profile.logout')} onPress={() => setLogoutVisible(true)} />
           </View>
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Legal</Text>
+          <Text style={styles.sectionTitle}>{t('settings.legal')}</Text>
           <View style={styles.settingsCard}>
             <SettingsRow
               icon={FileText}
-              title="Privacy Policy"
+              title={t('legal.privacyPolicy')}
               onPress={() => router.push("/legal/privacy")}
             />
             <SettingsRow
               icon={Scale}
-              title="Terms of Use"
+              title={t('legal.termsOfUse')}
               onPress={() => router.push("/legal/terms")}
             />
             <SettingsRow
               icon={Database}
-              title="Data & Compliance"
+              title={t('legal.dataCompliance')}
               onPress={() => router.push("/legal/data-compliance")}
             />
             <SettingsRow
               icon={Trash2}
-              title="Delete account"
+              title={t('settings.deleteAccount')}
               danger
               onPress={() => router.push("/settings/delete-account")}
             />
@@ -190,9 +195,9 @@ export default function ProfileScreen() {
             <View style={styles.logoutIconWrap}>
               <LogOut size={31} color={Colors.textPrimary} strokeWidth={2.1} />
             </View>
-            <Text style={styles.logoutTitle}>Log out of Sociol?</Text>
+            <Text style={styles.logoutTitle}>{t('profile.logoutTitle')}</Text>
             <Text style={styles.logoutMessage}>
-              You&apos;ll need to sign back in to access your Circle and chats.
+              {t('profile.logoutMessage')}
             </Text>
             <View style={styles.logoutActions}>
               <TouchableOpacity
@@ -200,14 +205,14 @@ export default function ProfileScreen() {
                 style={[styles.logoutButton, styles.cancelButton]}
                 onPress={() => setLogoutVisible(false)}
               >
-                <Text style={styles.cancelText}>Cancel</Text>
+                <Text style={styles.cancelText}>{t('common.cancel')}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 activeOpacity={0.82}
                 style={[styles.logoutButton, styles.confirmButton]}
                 onPress={handleLogout}
               >
-                <Text style={styles.confirmText}>Log out</Text>
+                <Text style={styles.confirmText}>{t('profile.logout')}</Text>
               </TouchableOpacity>
             </View>
           </View>

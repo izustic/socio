@@ -27,6 +27,7 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { tx } from "@/src/utils/localization";
 
 const arrangeMembers = (
   memberIds: string[],
@@ -109,7 +110,7 @@ export default function CircleCompleteScreen() {
     if (!user) return members.map((m) => m.name.split(" ")[0]).join(", ");
 
     return members
-      .map((m) => (m.uid === user.id ? "You" : m.name.split(" ")[0]))
+      .map((m) => (m.uid === user.id ? tx("common.you") : m.name.split(" ")[0]))
       .join(", ");
   }, [members, user]);
 
@@ -144,14 +145,14 @@ export default function CircleCompleteScreen() {
     if (!circle || !user || !exitState || exitState.locked || exiting) return;
 
     Alert.alert(
-      exitState.isHost ? "Close Circle?" : "Leave Circle?",
+      exitState.isHost ? tx("circle.CircleCompleteScreen.closeCircle") : tx("circle.CircleCompleteScreen.leaveCircle"),
       exitState.isHost
-        ? `${exitState.helperText}\n\nThis will delete ${circle.name} and remove everyone from the Circle. This cannot be undone.`
-        : `${exitState.helperText}\n\nYou will leave ${circle.name} and lose access to its chat.`,
+        ? tx("circle.CircleCompleteScreen.value1ThisWillDeleteValue2AndRemoveEveryoneFrom", { value1: exitState.helperText, value2: circle.name })
+        : tx("circle.CircleCompleteScreen.value1YouWillLeaveValue2AndLoseAccessTo", { value1: exitState.helperText, value2: circle.name }),
       [
-        { text: "Cancel", style: "cancel" },
+        { text: tx("circle.CircleCompleteScreen.cancel"), style: "cancel" },
         {
-          text: exitState.isHost ? "Close Circle" : "Leave",
+          text: exitState.isHost ? tx("circle.CircleCompleteScreen.closeCircle2") : tx("circle.CircleCompleteScreen.leave"),
           style: "destructive",
           onPress: async () => {
             setExiting(true);
@@ -169,7 +170,7 @@ export default function CircleCompleteScreen() {
               router.replace("/(tabs)/home");
             } catch (error) {
               console.error("Error exiting circle:", error);
-              Alert.alert("Could not update Circle", "Please try again.");
+              Alert.alert(tx("circle.CircleCompleteScreen.couldNotUpdateCircle"), tx("circle.CircleCompleteScreen.pleaseTryAgain"));
             } finally {
               setExiting(false);
             }
@@ -195,13 +196,12 @@ export default function CircleCompleteScreen() {
       <SafeAreaView style={styles.container}>
         <StatusBar barStyle="dark-content" />
         <View style={styles.centered}>
-          <Text style={styles.title}>No active Circle</Text>
+          <Text style={styles.title}>{tx("circle.CircleCompleteScreen.noActiveCircle")}</Text>
           <Text style={styles.subtitle}>
-            Create or join a Circle to get started.
-          </Text>
+            {tx("circle.CircleCompleteScreen.createOrJoinACircleToGetStarted")}</Text>
           <View style={styles.emptyAction}>
             <Button
-              title="Back to Circle"
+              title={tx("circle.CircleCompleteScreen.backToCircle")}
               onPress={() => router.replace("/(tabs)/home")}
             />
           </View>
@@ -220,12 +220,12 @@ export default function CircleCompleteScreen() {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.badge}>
-          <Text style={styles.badgeText}>COMPLETE</Text>
+          <Text style={styles.badgeText}>{tx("circle.CircleCompleteScreen.complete")}</Text>
         </View>
 
         <View>
           <Text style={styles.title}>{circle.name}</Text>
-          <Text style={styles.subtitle}>Your Circle is ready to meet</Text>
+          <Text style={styles.subtitle}>{tx("circle.CircleCompleteScreen.yourCircleIsReadyToMeet")}</Text>
         </View>
 
         <View style={styles.membersRow}>
@@ -237,7 +237,7 @@ export default function CircleCompleteScreen() {
                 placeholder={!member.photoURL}
               />
               <Text numberOfLines={1} style={styles.memberName}>
-                {member.uid === user?.id ? "You" : member.name.split(" ")[0]}
+                {member.uid === user?.id ? tx("circle.CircleCompleteScreen.you") : member.name.split(" ")[0]}
               </Text>
             </View>
           ))}
@@ -247,24 +247,23 @@ export default function CircleCompleteScreen() {
 
         <View style={styles.countdownCard}>
           <Text style={styles.countdownLabel}>
-            {(circle.meetupGoal || "Circle meetup").toUpperCase()} IN
-          </Text>
+            {(circle.meetupGoal || tx("circleComplete.meetup")).toUpperCase()} {tx("circle.CircleCompleteScreen.in")}</Text>
           <View style={styles.countdownColumns}>
             <View style={styles.countdownColumn}>
               <Text style={styles.countdownValue}>{countdown.days}</Text>
-              <Text style={styles.countdownUnit}>DAYS</Text>
+              <Text style={styles.countdownUnit}>{tx("circle.CircleCompleteScreen.days")}</Text>
             </View>
             <View style={styles.countdownColumn}>
               <Text style={styles.countdownValue}>{countdown.hours}</Text>
-              <Text style={styles.countdownUnit}>HRS</Text>
+              <Text style={styles.countdownUnit}>{tx("circle.CircleCompleteScreen.hrs")}</Text>
             </View>
             <View style={styles.countdownColumn}>
               <Text style={styles.countdownValue}>{countdown.minutes}</Text>
-              <Text style={styles.countdownUnit}>MIN</Text>
+              <Text style={styles.countdownUnit}>{tx("circle.CircleCompleteScreen.min")}</Text>
             </View>
             <View style={styles.countdownColumn}>
               <Text style={styles.countdownValue}>{countdown.seconds}</Text>
-              <Text style={styles.countdownUnit}>SEC</Text>
+              <Text style={styles.countdownUnit}>{tx("circle.CircleCompleteScreen.sec")}</Text>
             </View>
           </View>
         </View>
@@ -272,11 +271,11 @@ export default function CircleCompleteScreen() {
 
       <View style={styles.footer}>
         <Button
-          title="Enter Circle"
+          title={tx("circle.CircleCompleteScreen.enterCircle")}
           onPress={() => router.push("/(tabs)/home?circleView=chat")}
         />
         <Button
-          title="View details"
+          title={tx("circle.CircleCompleteScreen.viewDetails")}
           variant="ghost"
           onPress={() => router.push("/(tabs)/home?circleView=progress")}
         />
@@ -291,7 +290,7 @@ export default function CircleCompleteScreen() {
             onPress={confirmExitCircle}
           >
             <Text style={styles.exitButtonText}>
-              {exiting ? "Working..." : exitState.label}
+              {exiting ? tx("circle.CircleCompleteScreen.working") : exitState.label}
             </Text>
             <Text style={styles.exitHelper}>{exitState.helperText}</Text>
           </TouchableOpacity>

@@ -1,10 +1,11 @@
 import { I18nManager, NativeModules, Platform } from "react-native";
 import en from "@/localization/en.json";
-import fr from "@/localization/fr.json";
-import es from "@/localization/es.json";
-import de from "@/localization/de.json";
-import pt from "@/localization/pt.json";
-import ar from "@/localization/ar.json";
+import {
+  getActiveTranslationLanguage,
+  setActiveTranslationLanguage,
+  translateActiveResource,
+  translateResource,
+} from "./TranslationService";
 
 export const SUPPORTED_LANGUAGES = ["en", "fr", "es", "pt", "de", "ar"] as const;
 export type SupportedLanguage = (typeof SUPPORTED_LANGUAGES)[number];
@@ -12,15 +13,6 @@ export type LanguagePreference = SupportedLanguage | "system";
 export type TextDirection = "ltr" | "rtl";
 export type TranslationKey = keyof typeof en;
 export type TranslationParams = Record<string, string | number | boolean | null | undefined>;
-
-const resources: Record<SupportedLanguage, Record<string, string>> = {
-  en,
-  fr,
-  es,
-  pt,
-  de,
-  ar,
-};
 
 const LANGUAGE_STORAGE_KEY = "socio:languagePreference";
 const RTL_LANGUAGES = new Set<SupportedLanguage>(["ar"]);
@@ -38,14 +30,6 @@ const getDeviceLocale = (): string => {
   const iosLocale = settings?.AppleLocale || settings?.AppleLanguages?.[0];
   const androidLocale = NativeModules.I18nManager?.localeIdentifier;
   return (Platform.OS === "ios" ? iosLocale : androidLocale) || Intl.DateTimeFormat().resolvedOptions().locale || "en";
-};
-
-const interpolate = (template: string, params?: TranslationParams): string => {
-  if (!params) return template;
-  return template.replace(/\{\{(\w+)\}\}/g, (_, key: string) => {
-    const value = params[key];
-    return value === null || value === undefined ? "" : String(value);
-  });
 };
 
 export const LocalizationService = {
@@ -75,6 +59,18 @@ export const LocalizationService = {
     return this.getDirection(language) === "rtl";
   },
 
+  setActiveLanguage(language: SupportedLanguage) {
+    setActiveTranslationLanguage(language);
+  },
+
+  getActiveLanguage(): SupportedLanguage {
+    return getActiveTranslationLanguage() as SupportedLanguage;
+  },
+
+  translateActive(key: TranslationKey | string, params?: TranslationParams): string {
+    return translateActiveResource(key, params);
+  },
+
   applyDirection(language: SupportedLanguage) {
     const isRTL = this.isRTL(language);
     if (I18nManager.isRTL !== isRTL) {
@@ -84,14 +80,9 @@ export const LocalizationService = {
   },
 
   translate(language: SupportedLanguage, key: TranslationKey | string, params?: TranslationParams): string {
-    const value = resources[language]?.[key] ?? resources.en[key];
-    if (!value) {
-      if (__DEV__) console.warn(`[i18n] Missing translation key: ${key}`);
-      return key;
-    }
-    if (__DEV__ && language !== "en" && !resources[language]?.[key]) {
-      console.warn(`[i18n] Missing ${language} translation for "${key}", falling back to English.`);
-    }
-    return interpolate(value, params);
+    return translateResource(language, key, params);
   },
 };
+
+export const translate = (key: TranslationKey | string, params?: TranslationParams) =>
+  LocalizationService.translateActive(key, params);

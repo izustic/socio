@@ -4,6 +4,7 @@ import { useAuth } from '@/src/context/AuthContext';
 import { useOnboarding } from '@/src/context/OnboardingContext';
 import { router } from 'expo-router';
 import { StyleSheet, Text, View } from 'react-native';
+import { optionLabel, tx } from "@/src/utils/localization";
 
 export default function ProfileCompleteScreen() {
   const { draft, resetOnboarding } = useOnboarding();
@@ -23,19 +24,19 @@ export default function ProfileCompleteScreen() {
         <View style={styles.innerRing} />
       </View>
 
-      <Text style={styles.title}>You&apos;re all set, {draft.name || 'friend'}!</Text>
-      <Text style={styles.subtitle}>Time to find your Circle.</Text>
+      <Text style={styles.title}>{tx("profileComplete.allSet", { name: draft.name || tx("app.auth.profileComplete.friend") })}</Text>
+      <Text style={styles.subtitle}>{tx("app.auth.profileComplete.timeToFindYourCircle")}</Text>
 
       <View style={styles.chips}>
         {draft.interests.slice(0, 3).map((interest) => (
           <View key={interest} style={styles.chip}>
-            <Text style={styles.chipText}>{interest}</Text>
+            <Text style={styles.chipText}>{optionLabel(interest)}</Text>
           </View>
         ))}
       </View>
 
       <View style={styles.footer}>
-        <Button title="Find My Circle" onPress={handleEnterApp} style={styles.cta} />
+        <Button title={tx("app.auth.profileComplete.findMyCircle")} onPress={handleEnterApp} style={styles.cta} />
       </View>
     </View>
   );

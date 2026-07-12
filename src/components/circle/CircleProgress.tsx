@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Colors, Radius, Spacing, Typography } from '@/src/constants/theme';
+import { tx } from "@/src/utils/localization";
 
 interface CircleProgressProps {
   current: number;
@@ -28,7 +29,7 @@ export default function CircleProgress({
     <View style={styles.container}>
       {showLabel && (
         <View style={styles.labelContainer}>
-          <Text style={styles.label}>Circle Progress</Text>
+          <Text style={styles.label}>{tx("circle.CircleProgress.circleProgress")}</Text>
           {showPercentage && (
             <Text style={styles.percentage}>{Math.round(percentage)}%</Text>
           )}
@@ -59,7 +60,7 @@ export default function CircleProgress({
             {current} / {max}
           </Text>
           <Text style={styles.status}>
-            {isComplete ? 'Complete!' : `${max - current} spots left`}
+            {isComplete ? tx("circle.CircleProgress.complete") : tx("circle.CircleProgress.value1SpotsLeft", { value1: max - current })}
           </Text>
         </View>
       </View>

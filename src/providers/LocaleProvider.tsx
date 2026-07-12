@@ -33,6 +33,7 @@ export function LocaleProvider({ children }: { children: React.ReactNode }) {
   const locale = LocalizationService.getLocale(language);
   const region = RegionService.getRegionInfo(locale);
   const isRTL = LocalizationService.isRTL(language);
+  LocalizationService.setActiveLanguage(language);
 
   useEffect(() => {
     AsyncStorage.getItem(LocalizationService.storageKey)
@@ -93,7 +94,11 @@ export function LocaleProvider({ children }: { children: React.ReactNode }) {
     },
   }), [isRTL, language, languagePreference, locale, region, setLanguagePreference, t]);
 
-  return <LocaleContext.Provider value={value}>{children}</LocaleContext.Provider>;
+  return (
+    <LocaleContext.Provider value={value}>
+      <React.Fragment key={language}>{children}</React.Fragment>
+    </LocaleContext.Provider>
+  );
 }
 
 export const useLocale = () => {

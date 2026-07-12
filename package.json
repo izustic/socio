@@ -10,6 +10,7 @@
     "web": "expo start --web",
     "postinstall": "patch-package",
     "lint": "eslint app src constants scripts index.js --ext .js,.ts,.tsx",
+    "lint:i18n": "node scripts/audit-hardcoded-ui.mjs",
     "test": "vitest run"
   },
   "dependencies": {

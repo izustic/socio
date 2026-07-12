@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Colors, Radius, Spacing, Typography } from '@/src/constants/theme';
 import Avatar from '../ui/Avatar';
+import { formatLocalizedDate, tx } from "@/src/utils/localization";
 
 interface MemberRowProps {
   member: {
@@ -44,21 +45,21 @@ export default function MemberRow({
           <Text style={styles.name}>{member.name}</Text>
           {showHostBadge && member.isHost && (
             <View style={styles.hostBadge}>
-              <Text style={styles.hostBadgeText}>HOST</Text>
+              <Text style={styles.hostBadgeText}>{tx("circle.MemberRow.host")}</Text>
             </View>
           )}
         </View>
         
         {showJoinDate && member.joinedAt && (
           <Text style={styles.joinDate}>
-            Joined {new Date(member.joinedAt).toLocaleDateString()}
+            {tx("member.joinedDate", { date: formatLocalizedDate(member.joinedAt) })}
           </Text>
         )}
       </View>
 
       <View style={styles.status}>
         <View style={[styles.statusDot, { backgroundColor: Colors.success }]} />
-        <Text style={styles.statusText}>Active</Text>
+        <Text style={styles.statusText}>{tx("circle.MemberRow.active")}</Text>
       </View>
     </TouchableOpacity>
   );

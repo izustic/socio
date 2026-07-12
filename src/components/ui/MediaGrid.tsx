@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Image } from 'expo-image';
 import { Colors, Radius, Spacing, Typography } from '@/src/constants/theme';
+import { tx } from "@/src/utils/localization";
 
 interface MediaItem {
   uri: string;
@@ -55,7 +56,7 @@ export default function MediaGrid({
       )}
       {index === 0 && (
         <View style={styles.mainBadge}>
-          <Text style={styles.mainBadgeText}>MAIN</Text>
+          <Text style={styles.mainBadgeText}>{tx("ui.MediaGrid.main")}</Text>
         </View>
       )}
     </TouchableOpacity>
@@ -68,7 +69,7 @@ export default function MediaGrid({
       activeOpacity={0.8}
     >
       <Text style={styles.addIcon}>+</Text>
-      <Text style={styles.addText}>Add</Text>
+      <Text style={styles.addText}>{tx("ui.MediaGrid.add")}</Text>
     </TouchableOpacity>
   );
 

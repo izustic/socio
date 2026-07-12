@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { uploadAvatar } from '@/src/services/supabase';
+import { tx } from '@/src/utils/localization';
 
 interface ImageUploadOptions {
   maxSize?: number; // bytes, default 5MB
@@ -24,7 +25,7 @@ export function useImageUpload(options: ImageUploadOptions = {}) {
 
   const uploadImages = async (userId: string, imageUris: string[]) => {
     if (imageUris.length > maxItems) {
-      setError(`Maximum ${maxItems} images allowed`);
+      setError(tx("upload.maximumImages", { count: maxItems }));
       return null;
     }
 
@@ -35,7 +36,7 @@ export function useImageUpload(options: ImageUploadOptions = {}) {
     try {
       const uploadPromises = imageUris.map(async (uri, index) => {
         if (!validateImage(uri)) {
-          throw new Error(`Invalid image at index ${index}`);
+          throw new Error(tx("upload.invalidImageAtIndex", { index }));
         }
 
         const downloadUrl = await uploadAvatar(userId, uri);
@@ -47,7 +48,7 @@ export function useImageUpload(options: ImageUploadOptions = {}) {
       return results;
     } catch (error) {
       console.error('Image upload error:', error);
-      setError('Failed to upload images');
+      setError(tx("upload.imagesFailed"));
       return null;
     } finally {
       setUploading(false);
@@ -56,7 +57,7 @@ export function useImageUpload(options: ImageUploadOptions = {}) {
 
   const uploadSingleImage = async (userId: string, imageUri: string) => {
     if (!validateImage(imageUri)) {
-      setError('Invalid image file');
+      setError(tx("upload.invalidImage"));
       return null;
     }
 
@@ -70,7 +71,7 @@ export function useImageUpload(options: ImageUploadOptions = {}) {
       return downloadUrl;
     } catch (error) {
       console.error('Single image upload error:', error);
-      setError('Failed to upload image');
+      setError(tx("upload.imageFailed"));
       return null;
     } finally {
       setUploading(false);

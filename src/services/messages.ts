@@ -7,7 +7,7 @@ import {
   rowToMessage,
 } from "./messages.helpers";
 import { createNotifications } from "./notifications";
-import { LocalizationService } from "./LocalizationService";
+import { translateResource } from "./TranslationService";
 import { supabase } from "./supabase";
 
 const notifyCircleMembersOfMessage = async (
@@ -39,8 +39,8 @@ const notifyCircleMembersOfMessage = async (
     await createNotifications(
       recipients,
       "message",
-      LocalizationService.translate("en", "notification.message.title", { senderName }),
-      LocalizationService.translate("en", "notification.message.body", { message: body }),
+      translateResource("en", "notification.message.title", { senderName }),
+      translateResource("en", "notification.message.body", { message: body }),
       {
         action: "open_chat",
         circleId,

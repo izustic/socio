@@ -53,31 +53,32 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { formatLocalizedDate, optionLabel, tx } from "@/src/utils/localization";
 
 type PrivacyKey = keyof PrivacySettings;
 
 const visibilityRows: {
   key: PrivacyKey;
-  title: string;
-  body: string;
+  titleKey: string;
+  bodyKey: string;
   Icon: LucideIcon;
 }[] = [
   {
     key: "showInCircleSwipes",
-    title: "Show me in Circle swipes",
-    body: "Hide to take a break from new matches.",
+    titleKey: "privacy.showInCircleSwipes",
+    bodyKey: "privacy.showInCircleSwipesDescription",
     Icon: Eye,
   },
   {
     key: "shareApproximateDistance",
-    title: "Share approximate distance",
-    body: "Others see distance, never your exact location.",
+    titleKey: "privacy.shareApproximateDistance",
+    bodyKey: "privacy.shareApproximateDistanceDescription",
     Icon: MapPin,
   },
   {
     key: "privateProfile",
-    title: "Private profile",
-    body: "Only people in your Circle can see your full profile.",
+    titleKey: "privacy.privateProfile",
+    bodyKey: "privacy.privateProfileDescription",
     Icon: Lock,
   },
 ];
@@ -124,7 +125,7 @@ export default function PrivacySafetyScreen() {
         setReports(reportRows);
       } catch (error) {
         console.error("Error loading privacy settings:", error);
-        Alert.alert("Could not load settings", "Please try again.");
+        Alert.alert(tx("app.settings.privacySafety.couldNotLoadSettings"), tx("app.settings.privacySafety.pleaseTryAgain"));
       } finally {
         if (active) setLoading(false);
       }
@@ -168,7 +169,7 @@ export default function PrivacySafetyScreen() {
     } catch (error) {
       console.error("Error updating privacy setting:", error);
       setSettings(previous);
-      Alert.alert("Setting not saved", "Please try again.");
+      Alert.alert(tx("app.settings.privacySafety.settingNotSaved"), tx("app.settings.privacySafety.pleaseTryAgain"));
     } finally {
       setSavingKey(null);
     }
@@ -181,28 +182,28 @@ export default function PrivacySafetyScreen() {
       await verifyProfilePhoto(profile);
       setVerifiedPhoto(true);
       await refreshProfile();
-      Alert.alert("Photo verified", "Your profile photo is marked verified.");
+      Alert.alert(tx("app.settings.privacySafety.photoVerified"), tx("app.settings.privacySafety.yourProfilePhotoIsMarkedVerified"));
     } catch (error) {
       const message =
-        error instanceof Error ? error.message : "Please try again.";
-      Alert.alert("Could not verify photo", message);
+        error instanceof Error ? error.message : tx("common.retry");
+      Alert.alert(tx("app.settings.privacySafety.couldNotVerifyPhoto"), message);
     }
   };
 
   const handleUnblock = (account: BlockedAccount) => {
     if (!user) return;
 
-    Alert.alert("Unblock account?", `${account.name} will be able to interact with you again.`, [
-      { text: "Cancel", style: "cancel" },
+    Alert.alert(tx("app.settings.privacySafety.unblockAccount"), tx("app.settings.privacySafety.value1WillBeAbleToInteractWithYouAgain", { value1: account.name }), [
+      { text: tx("app.settings.privacySafety.cancel"), style: "cancel" },
       {
-        text: "Unblock",
+        text: tx("app.settings.privacySafety.unblock"),
         onPress: async () => {
           try {
             await unblockAccount(user.id, account.id);
             await loadSafetyLists();
           } catch (error) {
             console.error("Error unblocking account:", error);
-            Alert.alert("Could not unblock", "Please try again.");
+            Alert.alert(tx("app.settings.privacySafety.couldNotUnblock"), tx("app.settings.privacySafety.pleaseTryAgain"));
           }
         },
       },
@@ -218,13 +219,13 @@ export default function PrivacySafetyScreen() {
       const path = `${FileSystem.documentDirectory}sociol-data-${Date.now()}.json`;
       await FileSystem.writeAsStringAsync(path, JSON.stringify(data, null, 2));
       await Share.share({
-        title: "Sociol data export",
-        message: `Your Sociol data export is ready: ${path}`,
+        title: tx("privacy.dataExportTitle"),
+        message: tx("privacy.dataExportReady", { path }),
         url: path,
       });
     } catch (error) {
       console.error("Error exporting data:", error);
-      Alert.alert("Export failed", "Please try again.");
+      Alert.alert(tx("app.settings.privacySafety.exportFailed"), tx("app.settings.privacySafety.pleaseTryAgain"));
     } finally {
       setExporting(false);
     }
@@ -232,7 +233,7 @@ export default function PrivacySafetyScreen() {
 
   const renderVisibility = () => (
     <View style={styles.section}>
-      <Text style={styles.sectionLabel}>Visibility</Text>
+      <Text style={styles.sectionLabel}>{tx("app.settings.privacySafety.visibility")}</Text>
       <View style={styles.card}>
         {visibilityRows.map((row, index) => {
           const Icon = row.Icon;
@@ -248,8 +249,8 @@ export default function PrivacySafetyScreen() {
                 <Icon size={19} color={Colors.textPrimary} strokeWidth={2.1} />
               </View>
               <View style={styles.rowCopy}>
-                <Text style={styles.rowTitle}>{row.title}</Text>
-                <Text style={styles.rowBody}>{row.body}</Text>
+                <Text style={styles.rowTitle}>{tx(row.titleKey)}</Text>
+                <Text style={styles.rowBody}>{tx(row.bodyKey)}</Text>
               </View>
               <Switch
                 value={Boolean(settings?.[row.key])}
@@ -277,7 +278,7 @@ export default function PrivacySafetyScreen() {
         >
           <ChevronLeft size={22} color={Colors.textPrimary} strokeWidth={2.3} />
         </TouchableOpacity>
-        <Text style={styles.title}>Privacy & safety</Text>
+        <Text style={styles.title}>{tx("app.settings.privacySafety.privacySafety")}</Text>
       </View>
 
       {loading ? (
@@ -292,42 +293,40 @@ export default function PrivacySafetyScreen() {
           <View style={styles.trustBanner}>
             <ShieldCheck size={22} color={Colors.textPrimary} strokeWidth={2.1} />
             <Text style={styles.trustText}>
-              Sociol is built around small, trusted Circles. You control who sees
-              what and you can pause anytime.
-            </Text>
+              {tx("app.settings.privacySafety.sociolIsBuiltAroundSmallTrustedCirclesYouControl")}</Text>
           </View>
 
           {renderVisibility()}
 
           <View style={styles.section}>
-            <Text style={styles.sectionLabel}>Safety</Text>
+            <Text style={styles.sectionLabel}>{tx("app.settings.privacySafety.safety")}</Text>
             <View style={styles.card}>
               <ActionRow
                 Icon={ShieldCheck}
-                title="Verified photo"
-                rightText={verifiedPhoto ? "Verified" : "Verify"}
+                title={tx("app.settings.privacySafety.verifiedPhoto")}
+                rightText={verifiedPhoto ? tx("privacy.verified") : tx("privacy.verify")}
                 onPress={handleVerifyPhoto}
               />
               <ActionRow
                 Icon={UserX}
-                title="Blocked accounts"
+                title={tx("app.settings.privacySafety.blockedAccounts")}
                 rightText={String(blocked.length)}
                 onPress={() => setBlockedVisible(true)}
               />
               <ActionRow
                 Icon={Flag}
-                title="Report history"
+                title={tx("app.settings.privacySafety.reportHistory")}
                 rightText={reports.length ? String(reports.length) : undefined}
                 onPress={() => setReportsVisible(true)}
               />
               <ActionRow
                 Icon={Download}
-                title={exporting ? "Preparing data..." : "Download my data"}
+                title={exporting ? tx("app.settings.privacySafety.preparingData") : tx("app.settings.privacySafety.downloadMyData")}
                 onPress={handleExportData}
               />
               <ActionRow
                 Icon={Trash2}
-                title="Delete account"
+                title={tx("app.settings.privacySafety.deleteAccount")}
                 onPress={() => router.push("/settings/delete-account")}
                 danger
                 last
@@ -339,20 +338,20 @@ export default function PrivacySafetyScreen() {
 
       <ListModal
         visible={blockedVisible}
-        title="Blocked accounts"
+        title={tx("app.settings.privacySafety.blockedAccounts")}
         onClose={() => setBlockedVisible(false)}
       >
         <FlatList
           data={blocked}
           keyExtractor={(item) => item.id}
-          ListEmptyComponent={<EmptyText text="No blocked accounts." />}
+          ListEmptyComponent={<EmptyText text={tx("app.settings.privacySafety.noBlockedAccounts")} />}
           renderItem={({ item }) => (
             <View style={styles.modalRow}>
               <Avatar uri={item.photoURL} size={42} />
               <View style={styles.modalCopy}>
                 <Text style={styles.modalTitle}>{item.name}</Text>
                 <Text style={styles.modalBody}>
-                  Blocked {new Date(item.blockedAt).toLocaleDateString()}
+                  {tx("privacy.blockedOn", { date: formatLocalizedDate(item.blockedAt) })}
                 </Text>
               </View>
               <TouchableOpacity
@@ -360,7 +359,7 @@ export default function PrivacySafetyScreen() {
                 style={styles.smallButton}
                 onPress={() => handleUnblock(item)}
               >
-                <Text style={styles.smallButtonText}>Unblock</Text>
+                <Text style={styles.smallButtonText}>{tx("app.settings.privacySafety.unblock")}</Text>
               </TouchableOpacity>
             </View>
           )}
@@ -369,13 +368,13 @@ export default function PrivacySafetyScreen() {
 
       <ListModal
         visible={reportsVisible}
-        title="Report history"
+        title={tx("app.settings.privacySafety.reportHistory")}
         onClose={() => setReportsVisible(false)}
       >
         <FlatList
           data={reports}
           keyExtractor={(item) => item.id}
-          ListEmptyComponent={<EmptyText text="No reports submitted." />}
+          ListEmptyComponent={<EmptyText text={tx("app.settings.privacySafety.noReportsSubmitted")} />}
           renderItem={({ item }) => (
             <View style={styles.modalRow}>
               <View style={styles.modalIcon}>
@@ -384,7 +383,7 @@ export default function PrivacySafetyScreen() {
               <View style={styles.modalCopy}>
                 <Text style={styles.modalTitle}>{item.reason}</Text>
                 <Text style={styles.modalBody}>
-                  {item.status} · {new Date(item.createdAt).toLocaleDateString()}
+                  {optionLabel(item.status)} · {formatLocalizedDate(item.createdAt)}
                 </Text>
               </View>
             </View>

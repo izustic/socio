@@ -8,6 +8,7 @@ import {
 } from "livekit-client";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { getLivekitToken } from "../services/livekit";
+import { tx } from "../utils/localization";
 
 const LIVEKIT_URL = process.env.EXPO_PUBLIC_LIVEKIT_URL!;
 
@@ -121,9 +122,8 @@ export const useCircleCall = (
       setIsCameraEnabled(true);
       buildParticipantList(room);
     } catch (err) {
-      const message =
-        err instanceof Error ? err.message : "Failed to connect to call";
-      setError(message);
+      console.error("Could not connect to call:", err);
+      setError(tx("call.connectError"));
       roomRef.current = null;
       setConnectionState(ConnectionState.Disconnected);
     }

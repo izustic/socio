@@ -4,6 +4,7 @@ import { Colors, Radius, Spacing, Typography } from '@/src/constants/theme';
 import Avatar from '../ui/Avatar';
 import AvatarStack from '../ui/AvatarStack';
 import CapacityBadge from '../ui/CapacityBadge';
+import { tx } from "@/src/utils/localization";
 
 interface CircleCardProps {
   circle: {
@@ -36,7 +37,7 @@ export default function CircleCard({
         <View style={styles.hostInfo}>
           <Avatar uri={circle.hostPhoto} size={40} />
           <View style={styles.hostDetails}>
-            <Text style={styles.hostName}>{circle.hostName}&apos;s Circle</Text>
+            <Text style={styles.hostName}>{circle.hostName}{tx("circle.CircleCard.sCircle")}</Text>
             <Text style={styles.circleName}>{circle.name}</Text>
           </View>
         </View>
@@ -58,7 +59,7 @@ export default function CircleCard({
       {/* Vibe */}
       {circle.vibe && (
         <View style={styles.vibeContainer}>
-          <Text style={styles.vibeLabel}>Vibe:</Text>
+          <Text style={styles.vibeLabel}>{tx("circle.CircleCard.vibe")}</Text>
           <Text style={styles.vibeText}>{circle.vibe}</Text>
         </View>
       )}
@@ -74,7 +75,7 @@ export default function CircleCard({
       {/* Members */}
       {circle.memberAvatars && circle.memberAvatars.length > 0 && (
         <View style={styles.membersContainer}>
-          <Text style={styles.membersLabel}>Members:</Text>
+          <Text style={styles.membersLabel}>{tx("circle.CircleCard.members")}</Text>
           <AvatarStack 
             avatars={circle.memberAvatars}
             maxVisible={3}

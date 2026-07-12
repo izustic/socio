@@ -16,74 +16,75 @@ import type { LucideIcon } from "lucide-react-native";
 import React from "react";
 import { ScrollView, StatusBar, StyleSheet, Text, View } from "react-native";
 import { Colors, Radius, Spacing, Typography } from "@/src/constants/theme";
+import { tx } from "@/src/utils/localization";
 
 type PlanRow = {
-  feature: string;
+  featureKey: string;
   free: string;
   socio: string;
   socioIcon?: LucideIcon;
 };
 
 type Benefit = {
-  title: string;
-  subtitle: string;
+  titleKey: string;
+  subtitleKey: string;
   Icon: LucideIcon;
 };
 
 const PLAN_ROWS: PlanRow[] = [
-  { feature: "Circle size", free: "5", socio: "8" },
-  { feature: "Filters", free: "Basic", socio: "All" },
-  { feature: "Daily swipes", free: "20", socio: "∞" },
-  { feature: "Circle extensions", free: "1", socio: "∞" },
-  { feature: "Backtracks", free: "-", socio: "∞" },
-  { feature: "Spotlight", free: "-", socio: "2x/wk" },
-  { feature: "See who liked you", free: "Count", socio: "Full" },
+  { featureKey: "plans.circleSize", free: "5", socio: "8" },
+  { featureKey: "plans.filters", free: "plans.basic", socio: "plans.all" },
+  { featureKey: "plans.dailySwipes", free: "20", socio: "∞" },
+  { featureKey: "plans.circleExtensions", free: "1", socio: "∞" },
+  { featureKey: "plans.backtracks", free: "-", socio: "∞" },
+  { featureKey: "plans.spotlight", free: "-", socio: "plans.twiceWeekly" },
+  { featureKey: "plans.seeWhoLikedYou", free: "plans.count", socio: "plans.full" },
 ];
 
 const BENEFITS: Benefit[] = [
   {
-    title: "Bigger Circles",
-    subtitle: "Up to 8 members instead of 5",
+    titleKey: "plans.biggerCircles",
+    subtitleKey: "plans.biggerCirclesDescription",
     Icon: Users,
   },
   {
-    title: "All filters",
-    subtitle: "Traits, education, recently active",
+    titleKey: "plans.allFilters",
+    subtitleKey: "plans.allFiltersDescription",
     Icon: SlidersHorizontal,
   },
   {
-    title: "Unlimited swipes",
-    subtitle: "No daily cap",
+    titleKey: "plans.unlimitedSwipes",
+    subtitleKey: "plans.unlimitedSwipesDescription",
     Icon: Infinity,
   },
   {
-    title: "Unlimited extensions",
-    subtitle: "Keep your Circle alive",
+    titleKey: "plans.unlimitedExtensions",
+    subtitleKey: "plans.unlimitedExtensionsDescription",
     Icon: Clock,
   },
   {
-    title: "Unlimited backtracks",
-    subtitle: "Undo any swipe",
+    titleKey: "plans.unlimitedBacktracks",
+    subtitleKey: "plans.unlimitedBacktracksDescription",
     Icon: RotateCcw,
   },
   {
-    title: "Spotlight",
-    subtitle: "2x per week",
+    titleKey: "plans.spotlight",
+    subtitleKey: "plans.twicePerWeek",
     Icon: Zap,
   },
   {
-    title: "See who liked you",
-    subtitle: "Full names and photos",
+    titleKey: "plans.seeWhoLikedYou",
+    subtitleKey: "plans.seeWhoLikedYouDescription",
     Icon: Eye,
   },
   {
-    title: "Premium badge",
-    subtitle: "Stand out on your profile",
+    titleKey: "plans.premiumBadge",
+    subtitleKey: "plans.premiumBadgeDescription",
     Icon: BadgeCheck,
   },
   {
-    title: "Circle analytics",
-    subtitle: "Host insights",
+    titleKey: "plans.circleAnalytics",
+    subtitleKey: "plans.circleAnalyticsDescription",
     Icon: BarChart3,
   },
 ];
@@ -97,35 +98,35 @@ export default function LikesScreen() {
         contentContainerStyle={styles.content}
       >
         <View style={styles.topRow}>
-          <Text style={styles.screenTitle}>Likes</Text>
+          <Text style={styles.screenTitle}>{tx("app.tabs.likes.likes")}</Text>
           <View style={styles.plusPill}>
             <Sparkles size={15} color={Colors.textPrimary} strokeWidth={2.3} />
-            <Text style={styles.plusText}>SOCIOL+</Text>
+            <Text style={styles.plusText}>{tx("app.tabs.likes.sociol")}</Text>
           </View>
         </View>
 
         <View style={styles.heroIcon}>
           <LockKeyhole size={28} color={Colors.textPrimary} strokeWidth={2.3} />
         </View>
-        <Text style={styles.kicker}>COMING SOON</Text>
-        <Text style={styles.title}>Free vs Sociol+</Text>
-        <Text style={styles.subtitle}>Everything in Free, plus a lot more.</Text>
+        <Text style={styles.kicker}>{tx("app.tabs.likes.comingSoon")}</Text>
+        <Text style={styles.title}>{tx("app.tabs.likes.freeVsSociol")}</Text>
+        <Text style={styles.subtitle}>{tx("app.tabs.likes.everythingInFreePlusALotMore")}</Text>
 
         <View style={styles.table}>
           <View style={[styles.tableRow, styles.tableHeader]}>
-            <Text style={[styles.tableHeaderText, styles.featureCell]}>FEATURE</Text>
-            <Text style={[styles.tableHeaderText, styles.valueCell]}>FREE</Text>
+            <Text style={[styles.tableHeaderText, styles.featureCell]}>{tx("app.tabs.likes.feature")}</Text>
+            <Text style={[styles.tableHeaderText, styles.valueCell]}>{tx("app.tabs.likes.free")}</Text>
             <View style={[styles.socioHeaderCell, styles.valueCell]}>
               <Sparkles size={15} color={Colors.textPrimary} strokeWidth={2.2} />
-              <Text style={styles.socioHeaderText}>SOCIOL+</Text>
+              <Text style={styles.socioHeaderText}>{tx("app.tabs.likes.sociol")}</Text>
             </View>
           </View>
 
           {PLAN_ROWS.map((row) => (
-            <View key={row.feature} style={styles.tableRow}>
-              <Text style={styles.featureText}>{row.feature}</Text>
-              <Text style={styles.freeText}>{row.free}</Text>
-              <Text style={styles.socioText}>{row.socio}</Text>
+            <View key={row.featureKey} style={styles.tableRow}>
+              <Text style={styles.featureText}>{tx(row.featureKey)}</Text>
+              <Text style={styles.freeText}>{row.free.startsWith("plans.") ? tx(row.free) : row.free}</Text>
+              <Text style={styles.socioText}>{row.socio.startsWith("plans.") ? tx(row.socio) : row.socio}</Text>
             </View>
           ))}
         </View>
@@ -135,23 +136,21 @@ export default function LikesScreen() {
             <Sparkles size={22} color={Colors.textPrimary} strokeWidth={2.3} />
           </View>
           <View style={styles.noticeCopy}>
-            <Text style={styles.noticeTitle}>Billing is being set up</Text>
+            <Text style={styles.noticeTitle}>{tx("app.tabs.likes.billingIsBeingSetUp")}</Text>
             <Text style={styles.noticeText}>
-              Sociol+ purchases will open after App Store and Google Play products
-              are ready.
-            </Text>
+              {tx("app.tabs.likes.sociolPurchasesWillOpenAfterAppStoreAndGoogle")}</Text>
           </View>
         </View>
 
         <View style={styles.benefitGrid}>
-          {BENEFITS.map(({ title, subtitle, Icon }) => (
-            <View key={title} style={styles.benefitCard}>
+          {BENEFITS.map(({ titleKey, subtitleKey, Icon }) => (
+            <View key={titleKey} style={styles.benefitCard}>
               <View style={styles.benefitIcon}>
                 <Icon size={21} color={Colors.textPrimary} strokeWidth={2.2} />
               </View>
               <View style={styles.benefitCopy}>
-                <Text style={styles.benefitTitle}>{title}</Text>
-                <Text style={styles.benefitText}>{subtitle}</Text>
+                <Text style={styles.benefitTitle}>{tx(titleKey)}</Text>
+                <Text style={styles.benefitText}>{tx(subtitleKey)}</Text>
               </View>
             </View>
           ))}

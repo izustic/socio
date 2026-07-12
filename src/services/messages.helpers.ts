@@ -1,4 +1,5 @@
 import { Message } from "../types";
+import { translateActiveResource as tx } from "./TranslationService";
 
 export interface MessageRow {
   id: string;
@@ -73,7 +74,7 @@ export const rowToMessage = (row: MessageRow): Message => ({
   replyTo: row.reply_to_message_id
     ? {
         messageId: row.reply_to_message_id,
-        senderName: row.reply_to_sender_name ?? "Someone",
+        senderName: row.reply_to_sender_name ?? tx("common.someone"),
         text: row.reply_to_text ?? "",
         mediaType: row.reply_to_media_type ?? null,
       }
@@ -88,7 +89,7 @@ export const getMessageNotificationBody = (
   pollId?: string,
 ) => {
   if (pollId || text.startsWith("__poll__:")) {
-    return `${senderName} sent a poll.`;
+    return tx("messageNotification.poll", { senderName });
   }
 
   const trimmedText = text.trim();
@@ -98,9 +99,9 @@ export const getMessageNotificationBody = (
       : trimmedText;
   }
 
-  if (mediaType === "audio") return `${senderName} sent a voice message.`;
-  if (mediaType === "video") return `${senderName} sent a video.`;
-  if (mediaType === "image") return `${senderName} sent a photo.`;
+  if (mediaType === "audio") return tx("messageNotification.voice", { senderName });
+  if (mediaType === "video") return tx("messageNotification.video", { senderName });
+  if (mediaType === "image") return tx("messageNotification.photo", { senderName });
 
-  return `${senderName} sent a message.`;
+  return tx("messageNotification.message", { senderName });
 };

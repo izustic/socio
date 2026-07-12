@@ -23,6 +23,7 @@ import {
   Text,
   View,
 } from "react-native";
+import { tx } from "@/src/utils/localization";
 
 export default function SwipeTabScreen() {
   const { user } = useAuth();
@@ -102,7 +103,7 @@ export default function SwipeTabScreen() {
         <StatusBar barStyle="dark-content" />
         <View style={styles.centerContent}>
           <ActivityIndicator size="large" color={Colors.primary} />
-          <Text style={styles.loadingText}>Finding your matches...</Text>
+          <Text style={styles.loadingText}>{tx("app.tabs.swipe.findingYourMatches")}</Text>
         </View>
       </SafeAreaView>
     );

@@ -41,6 +41,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { optionLabel, tx } from "@/src/utils/localization";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
@@ -169,7 +170,7 @@ export default function SwipeUsersScreen() {
       setCircle(activeCircle);
       setCandidates(nextCandidates);
     } catch (error: any) {
-      showAlert("Unable to load swipes", error?.message || "Please try again.");
+      showAlert(tx("circle.SwipeUsersScreen.unableToLoadSwipes"), error?.message || tx("circle.SwipeUsersScreen.pleaseTryAgain"));
     } finally {
       setLoading(false);
     }
@@ -236,10 +237,10 @@ export default function SwipeUsersScreen() {
 
       if (result.circleComplete) {
         showAlert(
-          "Circle complete!",
-          "Your circle is now full. Opening your Circle tab.",
+          tx("circle.SwipeUsersScreen.circleComplete"),
+          tx("circle.SwipeUsersScreen.yourCircleIsNowFullOpeningYourCircleTab"),
           {
-            primaryLabel: "View Circle",
+            primaryLabel: tx("circle.SwipeUsersScreen.viewCircle"),
             onConfirm: () => {
               replaceAfterInteractions("/(tabs)/home?circleView=complete");
             },
@@ -250,14 +251,12 @@ export default function SwipeUsersScreen() {
 
       if (liked && result.mutualMatch && result.addedToCircle) {
         showAlert(
-          `${swipedCandidateName} has joined your circle!`,
-          `${swipedCandidateName} is now listed as a member of ${circle.name}.`,
+          tx("circle.SwipeUsersScreen.value1HasJoinedYourCircle", { value1: swipedCandidateName }),
+          tx("circle.SwipeUsersScreen.value1IsNowListedAsAMemberOfValue2", { value1: swipedCandidateName, value2: circle.name }),
           {
-            primaryLabel: "View Circle",
+            primaryLabel: tx("circle.SwipeUsersScreen.viewCircle"),
             imageUri: swipedCandidate.photoURL || undefined,
-            detail: `${swipedCandidate.age} · ${
-              swipedCandidate.bio || "Ready to meet the Circle."
-            }`,
+            detail: tx("circle.SwipeUsersScreen.value1Value2", { value1: swipedCandidate.age, value2: swipedCandidate.bio || tx("circleSwipe.readyToMeet") }),
             onConfirm: () => {
               replaceAfterInteractions("/(tabs)/home?circleView=progress");
             },
@@ -280,7 +279,7 @@ export default function SwipeUsersScreen() {
     } catch (error: any) {
       setCandidates(previousCandidates);
       setCurrentMediaIndex(0);
-      showAlert("Swipe failed", error?.message || "Please try again.");
+      showAlert(tx("circle.SwipeUsersScreen.swipeFailed"), error?.message || tx("circle.SwipeUsersScreen.pleaseTryAgain"));
     } finally {
       setSwiping(false);
     }
@@ -292,7 +291,7 @@ export default function SwipeUsersScreen() {
         <StatusBar barStyle="dark-content" />
         <View style={styles.centerContent}>
           <ActivityIndicator size="large" color={Colors.primaryDark} />
-          <Text style={styles.emptySubtitle}>Finding your best matches...</Text>
+          <Text style={styles.emptySubtitle}>{tx("circle.SwipeUsersScreen.findingYourBestMatches")}</Text>
         </View>
       </SafeAreaView>
     );
@@ -304,13 +303,12 @@ export default function SwipeUsersScreen() {
         <StatusBar barStyle="dark-content" />
         <View style={styles.centerContent}>
           <View style={styles.emptyArtwork} />
-          <Text style={styles.emptyTitle}>No active circle yet</Text>
+          <Text style={styles.emptyTitle}>{tx("circle.SwipeUsersScreen.noActiveCircleYet")}</Text>
           <Text style={styles.emptySubtitle}>
-            Create a circle first, then come back to start swiping.
-          </Text>
+            {tx("circle.SwipeUsersScreen.createACircleFirstThenComeBackToStart")}</Text>
           <View style={styles.emptyCtaWrap}>
             <Button
-              title="Create Circle"
+              title={tx("circle.SwipeUsersScreen.createCircle")}
               onPress={() => router.push("/circle/create")}
             />
           </View>
@@ -348,14 +346,12 @@ export default function SwipeUsersScreen() {
           <View style={styles.caughtUpIconWrap}>
             <Text style={styles.caughtUpIcon}>◌</Text>
           </View>
-          <Text style={styles.caughtUpTitle}>You&apos;re all caught up</Text>
+          <Text style={styles.caughtUpTitle}>{tx("circle.SwipeUsersScreen.youReAllCaughtUp")}</Text>
           <Text style={styles.caughtUpCopy}>
-            No more people match your filters right now. Try widening your
-            radius or adjusting interests to see more.
-          </Text>
+            {tx("circle.SwipeUsersScreen.noMorePeopleMatchYourFiltersRightNowTry")}</Text>
           <View style={styles.caughtUpButtons}>
             <Button
-              title="Adjust filters"
+              title={tx("circle.SwipeUsersScreen.adjustFilters")}
               onPress={() =>
                 router.push({
                   pathname: "/circle/create-preferences",
@@ -364,15 +360,14 @@ export default function SwipeUsersScreen() {
               }
             />
             <Button
-              title="Check back later"
+              title={tx("circle.SwipeUsersScreen.checkBackLater")}
               variant="outline"
               onPress={() => router.push("/(tabs)/home?circleView=chat")}
             />
           </View>
         </View>
         <Text style={styles.footerHint}>
-          We&apos;ll notify you when new people join near you
-        </Text>
+          {tx("circle.SwipeUsersScreen.weLlNotifyYouWhenNewPeopleJoinNear")}</Text>
       </SafeAreaView>
     );
   }
@@ -388,11 +383,9 @@ export default function SwipeUsersScreen() {
           pointerEvents="none"
         >
           <View style={styles.guideCard}>
-            <Text style={styles.guideTitle}>👆 Swipe to connect</Text>
+            <Text style={styles.guideTitle}>{tx("circle.SwipeUsersScreen.swipeToConnect")}</Text>
             <Text style={styles.guideText}>
-              Swipe right on people you&apos;d like in your Circle. If they also
-              like you, they&apos;ll be added!
-            </Text>
+              {tx("circle.SwipeUsersScreen.swipeRightOnPeopleYouDLikeInYour")}</Text>
           </View>
         </Animated.View>
       )}
@@ -466,7 +459,7 @@ export default function SwipeUsersScreen() {
         {/* Animated ADD Label (Left) */}
         {showOverlayLabels && (
           <Animated.View style={[styles.addLabel, { opacity: overlayOpacity }]}>
-            <Text style={styles.addLabelText}>ADD ✓</Text>
+            <Text style={styles.addLabelText}>{tx("circle.SwipeUsersScreen.add")}</Text>
           </Animated.View>
         )}
 
@@ -475,7 +468,7 @@ export default function SwipeUsersScreen() {
           <Animated.View
             style={[styles.skipLabel, { opacity: overlayOpacity }]}
           >
-            <Text style={styles.skipLabelText}>SKIP ✕</Text>
+            <Text style={styles.skipLabelText}>{tx("circle.SwipeUsersScreen.skip")}</Text>
           </Animated.View>
         )}
 
@@ -488,14 +481,14 @@ export default function SwipeUsersScreen() {
             {currentCandidate.name}, {currentCandidate.age}
           </Text>
           <Text style={styles.userBio}>
-            {currentCandidate.bio || "Looking to make meaningful friendships."}
+            {currentCandidate.bio || tx("circle.SwipeUsersScreen.lookingToMakeMeaningfulFriendships")}
           </Text>
           <View style={styles.interestChipsRow}>
             {(currentCandidate.interests || [])
               .slice(0, 3)
               .map((interest, idx) => (
                 <View key={`${interest}-${idx}`} style={styles.interestChip}>
-                  <Text style={styles.interestChipText}>{interest}</Text>
+                  <Text style={styles.interestChipText}>{optionLabel(interest)}</Text>
                 </View>
               ))}
           </View>
@@ -528,7 +521,7 @@ export default function SwipeUsersScreen() {
         type="match_started"
         userName={toastUser?.name}
         userAge={toastUser?.age}
-        statusText="Waiting for this person to swipe on your circle"
+        statusText={tx("circle.SwipeUsersScreen.waitingForThisPersonToSwipeOnYourCircle")}
         onDismiss={() => setShowToast(false)}
       />
 

@@ -44,6 +44,7 @@ import {
   isSuccessResponse,
 } from "@react-native-google-signin/google-signin";
 import type { OnboardingDraft } from "@/src/context/OnboardingContext";
+import { tx } from "@/src/utils/localization";
 
 export default function SignUp() {
   const { beginOnboarding } = useOnboarding();
@@ -67,9 +68,9 @@ export default function SignUp() {
     }
 
     Alert.alert(
-      "App not configured",
-      `This build is missing: ${missing.join(", ")}.\n\n` +
-        "Local dev reads these from .env. EAS builds need the same values set as project environment variables (`eas env:create` or Expo dashboard).",
+      tx("app.auth.welcome.appNotConfigured"),
+      tx("app.auth.welcome.thisBuildIsMissingValue1", { value1: missing.join(", ") }) +
+        tx("app.auth.welcome.localDevReadsTheseFromEnvEasBuildsNeed"),
     );
     return false;
   };
@@ -90,11 +91,11 @@ export default function SignUp() {
   const validateEmail = (email: string) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!email) {
-      setEmailError("Email is required");
+      setEmailError(tx("validation.emailRequired"));
       return false;
     }
     if (!emailRegex.test(email)) {
-      setEmailError("Please enter a valid email");
+      setEmailError(tx("validation.emailInvalid"));
       return false;
     }
     setEmailError("");
@@ -103,11 +104,11 @@ export default function SignUp() {
 
   const validatePassword = (password: string) => {
     if (!password) {
-      setPasswordError("Password is required");
+      setPasswordError(tx("validation.passwordRequired"));
       return false;
     }
     if (password.length < 6) {
-      setPasswordError("Password must be at least 6 characters");
+      setPasswordError(tx("validation.passwordLength"));
       return false;
     }
     setPasswordError("");
@@ -191,8 +192,8 @@ export default function SignUp() {
   const handleGoogleSignIn = async () => {
     if (!canUseGoogleSignIn || !googleWebClientId) {
       Alert.alert(
-        "Google Sign In",
-        "Google sign-in is not configured for this build. Set EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID to the web OAuth client ID.",
+        tx("app.auth.welcome.googleSignIn"),
+        tx("app.auth.welcome.googleSignInIsNotConfiguredForThisBuild"),
       );
       return;
     }
@@ -234,7 +235,7 @@ export default function SignUp() {
       );
       await continueIntoOnboarding(
         user.id,
-        user.email || "your Google account",
+        user.email || tx("auth.yourGoogleAccount"),
         {
           emailVerificationRequired: false,
           emailVerified: true,
@@ -258,20 +259,20 @@ export default function SignUp() {
 
       if (isDeveloperError) {
         Alert.alert(
-          "Google Sign-In not configured for this build",
-          "EAS builds are signed with a different certificate than local dev. " +
-            "Add the EAS keystore SHA-1 to Google Cloud Console:\n\n" +
-            "1. Run: eas credentials -p android\n" +
-            "2. Open Credentials → Android OAuth client\n" +
-            "3. Create a client for package com.izustic.socio with that SHA-1\n" +
-            "4. Keep EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID as the Web client ID\n\n" +
-            "Changes apply without rebuilding — wait a few minutes, then try again.",
+          tx("app.auth.welcome.googleSignInNotConfiguredForThisBuild"),
+          tx("app.auth.welcome.easBuildsAreSignedWithADifferentCertificateThan") +
+            tx("app.auth.welcome.addTheEasKeystoreSha1ToGoogleCloud") +
+            tx("app.auth.welcome.1RunEasCredentialsPAndroid") +
+            tx("app.auth.welcome.2OpenCredentialsAndroidOauthClient") +
+            tx("app.auth.welcome.3CreateAClientForPackageComIzusticSocio") +
+            tx("app.auth.welcome.4KeepExpoPublicGoogleWebClientIdAs") +
+            tx("app.auth.welcome.changesApplyWithoutRebuildingWaitAFewMinutesThen"),
         );
         return;
       }
 
       console.error("Google sign in error:", error);
-      const errorInfo = showErrorAlert(error, "Google Sign In");
+      const errorInfo = showErrorAlert(error, tx("auth.googleSignIn"));
       Alert.alert(errorInfo.title, errorInfo.message);
     } finally {
       setLoading(false);
@@ -324,7 +325,7 @@ export default function SignUp() {
       console.error("Email auth error:", error);
       const errorAlert = showErrorAlert(
         error,
-        isSignUp ? "Sign Up" : "Sign In",
+        isSignUp ? tx("auth.signUp") : tx("auth.signIn"),
       );
       Alert.alert(errorAlert.title, errorAlert.message);
     } finally {
@@ -343,11 +344,9 @@ export default function SignUp() {
             style={styles.logo}
           />
         </View>
-        <Text style={styles.title}>One Circle. Real friendships.</Text>
+        <Text style={styles.title}>{tx("app.auth.welcome.oneCircleRealFriendships")}</Text>
         <Text style={styles.subtitle}>
-          Form one meaningful friend group through shared interests and
-          real-life meetups.
-        </Text>
+          {tx("app.auth.welcome.formOneMeaningfulFriendGroupThroughSharedInterestsAnd")}</Text>
       </View>
 
       <View style={styles.actions}>
@@ -358,8 +357,8 @@ export default function SignUp() {
             disabled={loading}
             onPress={handleGoogleSignIn}
           >
-            <Text style={styles.socialIcon}>G</Text>
-            <Text style={styles.socialText}>Continue with Google</Text>
+            <Text style={styles.socialIcon}>{tx("app.auth.welcome.g")}</Text>
+            <Text style={styles.socialText}>{tx("app.auth.welcome.continueWithGoogle")}</Text>
             <View style={styles.iconSpacer} />
           </TouchableOpacity>
         ) : null}
@@ -367,13 +366,13 @@ export default function SignUp() {
         {canUseGoogleSignIn ? (
           <View style={styles.dividerRow}>
             <View style={styles.dividerLine} />
-            <Text style={styles.dividerText}>or</Text>
+            <Text style={styles.dividerText}>{tx("app.auth.welcome.or")}</Text>
             <View style={styles.dividerLine} />
           </View>
         ) : null}
 
         <Button
-          title="Sign up with Email"
+          title={tx("app.auth.welcome.signUpWithEmail")}
           variant="ghost"
           onPress={() => {
             setIsSignUp(true);
@@ -389,8 +388,8 @@ export default function SignUp() {
             setShowEmailModal(true);
           }}
         >
-          <Text style={styles.loginText}>Already have an account? </Text>
-          <Text style={styles.loginAccent}>Log in</Text>
+          <Text style={styles.loginText}>{tx("app.auth.welcome.alreadyHaveAnAccount")}</Text>
+          <Text style={styles.loginAccent}>{tx("app.auth.welcome.logIn")}</Text>
         </TouchableOpacity>
 
         <LegalConsentText />
@@ -416,17 +415,17 @@ export default function SignUp() {
               keyboardShouldPersistTaps="handled"
             >
               <Text style={styles.modalTitle}>
-                {isSignUp ? "Create your account" : "Welcome back"}
+                {isSignUp ? tx("app.auth.welcome.createYourAccount") : tx("app.auth.welcome.welcomeBack")}
               </Text>
               <Text style={styles.modalSubtitle}>
                 {isSignUp
-                  ? "We will use this to set up your Circle."
-                  : "Pick up where you left off."}
+                  ? tx("app.auth.welcome.weWillUseThisToSetUpYourCircle")
+                  : tx("app.auth.welcome.pickUpWhereYouLeftOff")}
               </Text>
 
               <View>
                 <Input
-                  placeholder="Email"
+                  placeholder={tx("app.auth.welcome.email")}
                   value={email}
                   onChangeText={(text) => {
                     setEmail(text);
@@ -442,7 +441,7 @@ export default function SignUp() {
 
               <View>
                 <Input
-                  placeholder="Password"
+                  placeholder={tx("app.auth.welcome.password")}
                   value={password}
                   onChangeText={(text) => {
                     setPassword(text);
@@ -459,14 +458,14 @@ export default function SignUp() {
                   onPress={() => setShowPassword((prev) => !prev)}
                 >
                   <Text style={styles.passwordToggleText}>
-                    {showPassword ? "Hide" : "Show"}
+                    {showPassword ? tx("app.auth.welcome.hide") : tx("app.auth.welcome.show")}
                   </Text>
                 </TouchableOpacity>
               </View>
 
               <Button
                 title={
-                  loading ? "Please wait..." : isSignUp ? "Continue" : "Log in"
+                  loading ? tx("app.auth.welcome.pleaseWait") : isSignUp ? tx("app.auth.welcome.continue") : tx("app.auth.welcome.logIn")
                 }
                 onPress={handleEmailAuth}
                 disabled={loading}
@@ -477,8 +476,8 @@ export default function SignUp() {
               <Button
                 title={
                   isSignUp
-                    ? "Already have an account? Log in"
-                    : "Don't have an account? Sign up"
+                    ? tx("app.auth.welcome.alreadyHaveAnAccountLogIn")
+                    : tx("app.auth.welcome.donTHaveAnAccountSignUp")
                 }
                 variant="ghost"
                 onPress={() => setIsSignUp((prev) => !prev)}
@@ -494,20 +493,18 @@ export default function SignUp() {
 function LegalConsentText({ compact = false }: { compact?: boolean }) {
   return (
     <Text style={[styles.terms, compact && styles.termsCompact]}>
-      By continuing, you agree to Sociol&apos;s{" "}
+      {tx("app.auth.welcome.byContinuingYouAgreeToSociolS")}{" "}
       <Text
         style={styles.termsLink}
         onPress={() => router.push("/legal/terms")}
       >
-        Terms of Use
-      </Text>
-      {" "}and acknowledge the{" "}
+        {tx("app.auth.welcome.termsOfUse")}</Text>
+      {" "}{tx("app.auth.welcome.andAcknowledgeThe")}{" "}
       <Text
         style={styles.termsLink}
         onPress={() => router.push("/legal/privacy")}
       >
-        Privacy Policy
-      </Text>
+        {tx("app.auth.welcome.privacyPolicy")}</Text>
       .
     </Text>
   );

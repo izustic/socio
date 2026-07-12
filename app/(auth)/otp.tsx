@@ -16,6 +16,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import { tx } from "@/src/utils/localization";
 
 const CODE_LENGTH = 6;
 const RESEND_COOLDOWN_SECONDS = 60;
@@ -137,7 +138,7 @@ export default function OtpScreen() {
       });
       setStep('location-permission');
     } catch (error) {
-      const errorAlert = showErrorAlert(error, 'Email verification');
+      const errorAlert = showErrorAlert(error, tx("auth.emailVerification"));
       Alert.alert(errorAlert.title, errorAlert.message);
     } finally {
       setVerifying(false);
@@ -154,7 +155,7 @@ export default function OtpScreen() {
       mergeDraft({ emailVerificationCodeSentAt: Date.now() });
       inputs.current[0]?.focus();
     } catch (error) {
-      const errorAlert = showErrorAlert(error, 'Email verification');
+      const errorAlert = showErrorAlert(error, tx("auth.emailVerification"));
       Alert.alert(errorAlert.title, errorAlert.message);
     } finally {
       setResending(false);
@@ -163,17 +164,17 @@ export default function OtpScreen() {
 
   const resendLabel =
     cooldown > 0
-      ? `Resend in 0:${cooldown.toString().padStart(2, '0')}`
+      ? tx("auth.resendCountdown", { seconds: cooldown.toString().padStart(2, '0') })
       : resending
-        ? 'Sending...'
-        : 'Resend code';
+        ? tx("auth.sending")
+        : tx("auth.resendCode");
 
   return (
     <OnboardingLayout
-      title="Verify your email"
-      subtitle={`Enter the 6-digit code we sent to ${email || 'your email'}.`}
-      stepNumber="02  EMAIL VERIFICATION"
-      primaryLabel="Verify"
+      title={tx("app.auth.otp.verifyYourEmail")}
+      subtitle={tx("app.auth.otp.enterThe6DigitCodeWeSentToValue1", { value1: email || tx("auth.yourEmail") })}
+      stepNumber={tx("onboarding.step.emailVerification")}
+      primaryLabel={tx("app.auth.otp.verify")}
       onPrimaryPress={handleVerify}
       primaryDisabled={!complete || verifying || resending}
       primaryLoading={verifying}
@@ -203,8 +204,7 @@ export default function OtpScreen() {
         ))}
       </View>
       <Text style={styles.caption}>
-        Didn&apos;t get the code? Check spam, then resend when the timer ends.
-      </Text>
+        {tx("app.auth.otp.didnTGetTheCodeCheckSpamThenResend")}</Text>
     </OnboardingLayout>
   );
 }

@@ -10,6 +10,7 @@ import {
   type CircleRow,
 } from "./circle.helpers";
 import { supabase, uploadCircleImage } from "./supabase";
+import { translateActiveResource } from "./TranslationService";
 
 const isMissingCircleImageColumnError = (error: unknown) =>
   Boolean(
@@ -60,7 +61,7 @@ export const createCircle = async (
 
     if (error) throw error;
 
-    if (!data) throw new Error("Circle was created without returning an id.");
+    if (!data) throw new Error(translateActiveResource("circleErrors.createFailed"));
 
     console.log("Circle created:", data.id);
     return data.id;
@@ -261,7 +262,7 @@ export const addMember = async (
 
     // Check if circle is full
     if (circle.members.length >= circle.size) {
-      throw new Error("Circle is full");
+      throw new Error(translateActiveResource("circleErrors.full"));
     }
 
     // Add member

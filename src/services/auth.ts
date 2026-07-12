@@ -4,6 +4,7 @@ import {
   getAuthErrorMessage,
 } from "./auth.helpers";
 import { supabase } from "./supabase";
+import { translateActiveResource as tx } from "./TranslationService";
 
 export const EMAIL_ONBOARDING_VERIFIED_METADATA_KEY =
   "email_verified_for_onboarding";
@@ -233,7 +234,7 @@ export const verifyEmailVerificationCode = async (
     }
 
     if (!data.user) {
-      throw new Error("We could not verify that code. Please try again.");
+      throw new Error(tx("authErrors.verifyCode"));
     }
 
     const { data: updatedData, error: updateError } =

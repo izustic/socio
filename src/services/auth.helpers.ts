@@ -1,3 +1,5 @@
+import { translateActiveResource as tx } from "./TranslationService";
+
 export interface AuthErrorInfo {
   userMessage: string;
   suggestion?: string;
@@ -8,83 +10,87 @@ export type AuthErrorLike = {
   message?: string | null;
 };
 
-const AUTH_ERROR_MAP: Record<string, AuthErrorInfo> = {
+type AuthErrorTranslation = {
+  userMessageKey: string;
+  suggestionKey?: string;
+};
+
+const AUTH_ERROR_MAP: Record<string, AuthErrorTranslation> = {
   already_registered: {
-    userMessage: "This email is already registered",
-    suggestion: "Try signing in instead, or use a different email",
+    userMessageKey: "authErrors.alreadyRegistered",
+    suggestionKey: "authErrors.alreadyRegisteredHint",
   },
   invalid_email: {
-    userMessage: "Please enter a valid email address",
-    suggestion: "Check your email for typos",
+    userMessageKey: "authErrors.invalidEmail",
+    suggestionKey: "authErrors.invalidEmailHint",
   },
   invalid_credentials: {
-    userMessage: "Incorrect password or email",
-    suggestion: "Try again or reset your password",
+    userMessageKey: "authErrors.invalidCredentials",
+    suggestionKey: "authErrors.invalidCredentialsHint",
   },
   user_not_found: {
-    userMessage: "No account found with this email",
-    suggestion: "Check your email or create an account",
+    userMessageKey: "authErrors.userNotFound",
+    suggestionKey: "authErrors.userNotFoundHint",
   },
   identity_provider: {
-    userMessage: "Email already used with different method",
-    suggestion: "Try the original sign-in method",
+    userMessageKey: "authErrors.identityProvider",
+    suggestionKey: "authErrors.identityProviderHint",
   },
   network_error: {
-    userMessage: "Network connection failed",
-    suggestion: "Check your internet connection",
+    userMessageKey: "authErrors.network",
+    suggestionKey: "authErrors.networkHint",
   },
   email_not_confirmed: {
-    userMessage: "Please confirm your email first",
-    suggestion: "Check your inbox for the verification code",
+    userMessageKey: "authErrors.emailNotConfirmed",
+    suggestionKey: "authErrors.emailNotConfirmedHint",
   },
   otp_expired: {
-    userMessage: "That code has expired",
-    suggestion: "Request a new code and try again",
+    userMessageKey: "authErrors.codeExpired",
+    suggestionKey: "authErrors.codeExpiredHint",
   },
   token_expired: {
-    userMessage: "That code has expired",
-    suggestion: "Request a new code and try again",
+    userMessageKey: "authErrors.codeExpired",
+    suggestionKey: "authErrors.codeExpiredHint",
   },
   invalid_otp: {
-    userMessage: "That code is not correct",
-    suggestion: "Check the code and try again",
+    userMessageKey: "authErrors.invalidCode",
+    suggestionKey: "authErrors.invalidCodeHint",
   },
   otp_disabled: {
-    userMessage: "Email verification is not enabled",
-    suggestion: "Enable email OTP in Supabase Auth settings",
+    userMessageKey: "authErrors.otpDisabled",
+    suggestionKey: "authErrors.otpDisabledHint",
   },
   over_request_rate_limit: {
-    userMessage: "Too many attempts",
-    suggestion: "Please wait a few minutes and try again",
+    userMessageKey: "authErrors.tooManyAttempts",
+    suggestionKey: "authErrors.tooManyAttemptsHint",
   },
   over_email_send_rate_limit: {
-    userMessage: "Too many verification emails",
-    suggestion: "Please wait a minute and try again",
+    userMessageKey: "authErrors.tooManyEmails",
+    suggestionKey: "authErrors.tooManyEmailsHint",
   },
   user_banned: {
-    userMessage: "This account has been disabled",
-    suggestion: "Contact support for assistance",
+    userMessageKey: "authErrors.userBanned",
+    suggestionKey: "authErrors.userBannedHint",
   },
   signup_disabled: {
-    userMessage: "Sign up is currently unavailable",
-    suggestion: "Try again later or contact support",
+    userMessageKey: "authErrors.signupDisabled",
+    suggestionKey: "authErrors.signupDisabledHint",
   },
   bad_json: {
-    userMessage: "Could not reach the authentication server",
-    suggestion:
-      "Check that EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_ANON_KEY are set for this build",
+    userMessageKey: "authErrors.serverUnavailable",
+    suggestionKey: "authErrors.serverUnavailableHint",
   },
   weak_password: {
-    userMessage: "Password is too weak",
-    suggestion: "Use at least 8 characters with numbers and symbols",
+    userMessageKey: "authErrors.weakPassword",
+    suggestionKey: "authErrors.weakPasswordHint",
   },
   "password-too-short": {
-    userMessage: "Password is too short",
-    suggestion: "Use at least 6 characters",
+    userMessageKey: "authErrors.shortPassword",
+    suggestionKey: "authErrors.shortPasswordHint",
   },
   "missing-fields": {
-    userMessage: "Please fill in all fields",
-    suggestion: "Complete the form to continue",
+    userMessageKey: "authErrors.missingFields",
+    suggestionKey: "authErrors.missingFieldsHint",
   },
 };
 
@@ -93,10 +99,16 @@ export const getAuthErrorMessage = (
 ): AuthErrorInfo => {
   const code = typeof error === "string" ? error : error?.code || "unknown";
 
-  return AUTH_ERROR_MAP[code] || {
-    userMessage: "Something went wrong",
-    suggestion: "Please try again",
-  };
+  const mapped = AUTH_ERROR_MAP[code];
+  return mapped
+    ? {
+        userMessage: tx(mapped.userMessageKey),
+        suggestion: mapped.suggestionKey ? tx(mapped.suggestionKey) : undefined,
+      }
+    : {
+        userMessage: tx("errors.somethingWentWrong"),
+        suggestion: tx("authErrors.genericHint"),
+      };
 };
 
 export const createAuthInputError = (code: string, message: string) => {

@@ -1,4 +1,5 @@
 import React from 'react';
+import { formatLocalizedTime, tx } from '@/src/utils/localization';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Colors, Radius, Spacing, Typography } from '@/src/constants/theme';
 import Avatar from '../ui/Avatar';
@@ -35,7 +36,7 @@ export default function MessageBubble({
   highlighted = false
 }: MessageBubbleProps) {
   const formatTime = (date: Date) => {
-    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    return formatLocalizedTime(date);
   };
 
   return (
@@ -90,7 +91,7 @@ export default function MessageBubble({
                   message.isOwn ? styles.ownReplyText : styles.otherReplyText,
                 ]}>
                   {message.replyTo.mediaType
-                    ? `${message.replyTo.mediaType === 'image' ? 'Photo' : message.replyTo.mediaType === 'video' ? 'Video' : 'Voice message'}${message.replyTo.text ? ` · ${message.replyTo.text}` : ''}`
+                    ? tx("chat.MessageBubble.value1Value2", { value1: message.replyTo.mediaType === 'image' ? tx("chat.photo") : message.replyTo.mediaType === 'video' ? tx("chat.video") : tx("chat.voiceMessage"), value2: message.replyTo.text ? ` · ${message.replyTo.text}` : '' })
                     : message.replyTo.text}
                 </Text>
               </View>

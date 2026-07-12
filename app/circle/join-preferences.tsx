@@ -38,6 +38,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { optionLabel, tx } from "@/src/utils/localization";
 
 type GenderMix = "Male" | "Female" | "Both";
 
@@ -116,7 +117,7 @@ export default function JoinCirclePreferencesScreen() {
         >
           <ChevronLeft size={22} color={Colors.textPrimary} strokeWidth={2.4} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Join a Circle</Text>
+        <Text style={styles.headerTitle}>{tx("app.circle.joinPreferences.joinACircle")}</Text>
         <View style={styles.headerSpacer} />
       </View>
 
@@ -124,17 +125,16 @@ export default function JoinCirclePreferencesScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.content}
       >
-        <Text style={styles.stepLabel}>FIND YOUR FIT</Text>
-        <Text style={styles.title}>What kind of Circle?</Text>
+        <Text style={styles.stepLabel}>{tx("app.circle.joinPreferences.findYourFit")}</Text>
+        <Text style={styles.title}>{tx("app.circle.joinPreferences.whatKindOfCircle")}</Text>
         <Text style={styles.subtitle}>
-          We&apos;ll only show Circles that match these preferences.
-        </Text>
+          {tx("app.circle.joinPreferences.weLlOnlyShowCirclesThatMatchThesePreferences")}</Text>
 
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.label}>DISTANCE</Text>
+            <Text style={styles.label}>{tx("app.circle.joinPreferences.distance")}</Text>
             <Text style={styles.valueLabel}>
-              {distance} {distance >= 50 ? "km+" : "km"}
+              {distance} {distance >= 50 ? tx("app.circle.joinPreferences.km") : tx("app.circle.joinPreferences.km2")}
             </Text>
           </View>
           <SingleSlider
@@ -145,14 +145,14 @@ export default function JoinCirclePreferencesScreen() {
             style={styles.ageTrack}
           />
           <View style={styles.ageLabels}>
-            <Text style={styles.helperText}>1 km</Text>
-            <Text style={styles.helperText}>50+ km</Text>
+            <Text style={styles.helperText}>{tx("app.circle.joinPreferences.1Km")}</Text>
+            <Text style={styles.helperText}>{tx("app.circle.joinPreferences.50Km")}</Text>
           </View>
         </View>
 
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.label}>AGE RANGE</Text>
+            <Text style={styles.label}>{tx("app.circle.joinPreferences.ageRange")}</Text>
             <Text style={styles.valueLabel}>
               {ageRange[0]}–{ageRange[1]}
             </Text>
@@ -172,7 +172,7 @@ export default function JoinCirclePreferencesScreen() {
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.label}>GENDER MIX</Text>
+          <Text style={styles.label}>{tx("app.circle.joinPreferences.genderMix")}</Text>
           <View style={styles.genderRow}>
             {GENDER_OPTIONS.map((option) => {
               const selected = genderMix === option.label;
@@ -191,7 +191,7 @@ export default function JoinCirclePreferencesScreen() {
                       selected && styles.selectedText,
                     ]}
                   >
-                    {option.label}
+                    {optionLabel(option.label)}
                   </Text>
                 </TouchableOpacity>
               );
@@ -200,13 +200,13 @@ export default function JoinCirclePreferencesScreen() {
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.label}>EDUCATION</Text>
+          <Text style={styles.label}>{tx("app.circle.joinPreferences.education")}</Text>
           <TouchableOpacity
             activeOpacity={0.82}
             style={styles.selectButton}
             onPress={() => setEducationOpen(true)}
           >
-            <Text style={styles.selectText}>{educationLevel}</Text>
+            <Text style={styles.selectText}>{optionLabel(educationLevel)}</Text>
             <ChevronDown
               size={18}
               color={Colors.textPrimary}
@@ -216,9 +216,9 @@ export default function JoinCirclePreferencesScreen() {
         </View>
 
         <ChipSection
-          title="MEETUP VIBE"
+          title={tx("app.circle.joinPreferences.meetupVibe")}
           countLabel={
-            selectedVibes.length > 0 ? `${selectedVibes.length} picked` : ""
+            selectedVibes.length > 0 ? tx("options.pickedCount", { count: selectedVibes.length }) : ""
           }
           items={JOIN_MEETUP_VIBES as unknown as JoinMeetupVibe[]}
           selectedItems={selectedVibes}
@@ -227,10 +227,10 @@ export default function JoinCirclePreferencesScreen() {
         />
 
         <ChipSection
-          title="INTERESTS"
+          title={tx("app.circle.joinPreferences.interests")}
           countLabel={
             selectedInterests.length > 0
-              ? `${selectedInterests.length} picked`
+              ? tx("options.pickedCount", { count: selectedInterests.length })
               : ""
           }
           items={ONBOARDING_INTERESTS}
@@ -240,9 +240,9 @@ export default function JoinCirclePreferencesScreen() {
         />
 
         <ChipSection
-          title="PERSONALITY"
+          title={tx("app.circle.joinPreferences.personality")}
           countLabel={
-            selectedTraits.length > 0 ? `${selectedTraits.length} picked` : ""
+            selectedTraits.length > 0 ? tx("options.pickedCount", { count: selectedTraits.length }) : ""
           }
           items={ONBOARDING_TRAITS}
           selectedItems={selectedTraits}
@@ -257,7 +257,7 @@ export default function JoinCirclePreferencesScreen() {
           style={styles.primaryButton}
           onPress={handleShowCircles}
         >
-          <Text style={styles.primaryButtonText}>Show me Circles</Text>
+          <Text style={styles.primaryButtonText}>{tx("app.circle.joinPreferences.showMeCircles")}</Text>
         </TouchableOpacity>
       </View>
 
@@ -275,7 +275,7 @@ export default function JoinCirclePreferencesScreen() {
             style={styles.menu}
             onPress={(event) => event.stopPropagation()}
           >
-            <Text style={styles.menuTitle}>Education</Text>
+            <Text style={styles.menuTitle}>{tx("app.circle.joinPreferences.education2")}</Text>
             {["Any", ...EDUCATION_OPTIONS].map((option) => {
               const selected = educationLevel === option;
               return (
@@ -294,7 +294,7 @@ export default function JoinCirclePreferencesScreen() {
                       selected && styles.menuItemTextSelected,
                     ]}
                   >
-                    {option}
+                    {optionLabel(option)}
                   </Text>
                 </TouchableOpacity>
               );
@@ -338,7 +338,7 @@ function ChipSection<T extends string>({
               onPress={() => onToggle(item)}
             >
               <Text style={[styles.chipText, selected && styles.selectedText]}>
-                {emojiMap[item]} {item}
+                {emojiMap[item]} {optionLabel(item)}
               </Text>
             </TouchableOpacity>
           );

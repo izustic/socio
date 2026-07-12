@@ -48,6 +48,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { optionLabel, tx } from "@/src/utils/localization";
 
 const SLOT_COUNT = 5;
 const MIN_AGE = 18;
@@ -61,13 +62,13 @@ type SlotState = {
 type EditableGender = User["gender"];
 
 const GENDER_OPTIONS: {
-  label: string;
+  labelKey: string;
   value: EditableGender;
   icon: string;
 }[] = [
-  { label: "Male", value: "Male", icon: "👨" },
-  { label: "Female", value: "Female", icon: "👩" },
-  { label: "Other", value: "Prefer not to say", icon: "🌈" },
+  { labelKey: "gender.male", value: "Male", icon: "👨" },
+  { labelKey: "gender.female", value: "Female", icon: "👩" },
+  { labelKey: "gender.other", value: "Prefer not to say", icon: "🌈" },
 ];
 
 const getMediaUri = (media?: ProfileMedia | null) =>
@@ -103,7 +104,7 @@ export default function EditProfileScreen() {
 
   const isBusy = saving || Object.keys(slotStates).length > 0;
   const canSave = name.trim().length > 0 && !isBusy;
-  const cityLabel = location?.city || "Location not set";
+  const cityLabel = location?.city || tx("profile.locationNotSet");
 
   const setSlotProgress = (slot: number, state: SlotState | null) => {
     setSlotStates((prev) => {
@@ -130,15 +131,15 @@ export default function EditProfileScreen() {
 
   const handlePickMedia = async (slot: number) => {
     if (!user) {
-      setErrorText("Please sign in again before uploading media.");
-      Alert.alert("Not signed in", "Please sign in again before uploading media.");
+      setErrorText(tx("app.profile.edit.pleaseSignInAgainBeforeUploadingMedia"));
+      Alert.alert(tx("app.profile.edit.notSignedIn"), tx("app.profile.edit.pleaseSignInAgainBeforeUploadingMedia"));
       return;
     }
 
     const hasPermission = await requestMediaLibraryPermission();
     if (!hasPermission) {
-      setErrorText("Photo library access is required to add media.");
-      Alert.alert("Permission needed", "Please allow photo library access to add media.");
+      setErrorText(tx("app.profile.edit.photoLibraryAccessIsRequiredToAddMedia"));
+      Alert.alert(tx("app.profile.edit.permissionNeeded"), tx("app.profile.edit.pleaseAllowPhotoLibraryAccessToAddMedia"));
       return;
     }
 
@@ -158,9 +159,9 @@ export default function EditProfileScreen() {
       const message =
         error instanceof Error
           ? error.message
-          : "We could not upload that file. Please try again.";
+          : tx("errors.uploadFile");
       setErrorText(message);
-      Alert.alert("Upload failed", message);
+      Alert.alert(tx("app.profile.edit.uploadFailed"), message);
     } finally {
       setSlotProgress(slot, null);
     }
@@ -201,25 +202,25 @@ export default function EditProfileScreen() {
   const handleChangeLocation = async () => {
     const currentLocation = await getCurrentLocation();
     if (!currentLocation) {
-      setErrorText("Location access is required to update your location.");
-      Alert.alert("Location unavailable", "Please allow location access and try again.");
+      setErrorText(tx("app.profile.edit.locationAccessIsRequiredToUpdateYourLocation"));
+      Alert.alert(tx("app.profile.edit.locationUnavailable"), tx("app.profile.edit.pleaseAllowLocationAccessAndTryAgain"));
       return;
     }
 
     setLocation({
       lat: currentLocation.coords.latitude,
       lng: currentLocation.coords.longitude,
-      city: address || location?.city || "Current location",
+      city: address || location?.city || tx("profile.currentLocation"),
     });
   };
 
   const handleSave = async () => {
     if (!user) {
-      setErrorText("Please sign in again before saving your profile.");
+      setErrorText(tx("app.profile.edit.pleaseSignInAgainBeforeSavingYourProfile"));
       return;
     }
     if (!name.trim()) {
-      setErrorText("Please add your name before saving.");
+      setErrorText(tx("app.profile.edit.pleaseAddYourNameBeforeSaving"));
       return;
     }
     if (!canSave) return;
@@ -244,9 +245,9 @@ export default function EditProfileScreen() {
     } catch (error) {
       console.error("Error updating profile:", error);
       const message =
-        error instanceof Error ? error.message : "Please try again.";
+        error instanceof Error ? error.message : tx("common.retry");
       setErrorText(message);
-      Alert.alert("Could not save profile", message);
+      Alert.alert(tx("app.profile.edit.couldNotSaveProfile"), message);
     } finally {
       setSaving(false);
     }
@@ -284,7 +285,7 @@ export default function EditProfileScreen() {
         {slot === 0 && item ? (
           <View style={styles.mainBadge}>
             <Star size={11} color={Colors.textPrimary} fill={Colors.textPrimary} />
-            <Text style={styles.mainBadgeText}>MAIN</Text>
+            <Text style={styles.mainBadgeText}>{tx("app.profile.edit.main")}</Text>
           </View>
         ) : null}
 
@@ -303,7 +304,7 @@ export default function EditProfileScreen() {
           <View style={styles.progressOverlay}>
             <ActivityIndicator size="small" color={Colors.primary} />
             <Text style={styles.progressText}>
-              {slotState.stage === "uploading" ? "Uploading" : "Preparing"}
+              {slotState.stage === "uploading" ? tx("app.profile.edit.uploading") : tx("app.profile.edit.preparing")}
             </Text>
             <View style={styles.progressTrack}>
               <View
@@ -334,7 +335,7 @@ export default function EditProfileScreen() {
           >
             <ChevronLeft size={22} color={Colors.textPrimary} strokeWidth={2.2} />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Edit Profile</Text>
+          <Text style={styles.headerTitle}>{tx("app.profile.edit.editProfile")}</Text>
           <TouchableOpacity
             activeOpacity={0.78}
             disabled={!canSave}
@@ -345,8 +346,7 @@ export default function EditProfileScreen() {
               <ActivityIndicator size="small" color={Colors.primaryDark} />
             ) : (
               <Text style={[styles.saveText, !canSave && styles.saveDisabled]}>
-                Save
-              </Text>
+                {tx("app.profile.edit.save")}</Text>
             )}
           </TouchableOpacity>
         </View>
@@ -363,8 +363,8 @@ export default function EditProfileScreen() {
           keyboardShouldPersistTaps="handled"
         >
           <View style={styles.section}>
-            <Text style={styles.label}>PHOTOS & VIDEOS</Text>
-            <Text style={styles.helper}>Up to 5. The first is your main.</Text>
+            <Text style={styles.label}>{tx("app.profile.edit.photosVideos")}</Text>
+            <Text style={styles.helper}>{tx("app.profile.edit.upTo5TheFirstIsYourMain")}</Text>
             <View style={styles.mediaLayout}>
               {renderMediaTile(0, true)}
               <View style={styles.sideMediaColumn}>
@@ -376,28 +376,28 @@ export default function EditProfileScreen() {
               {renderMediaTile(3)}
               {renderMediaTile(4)}
             </View>
-            <Text style={styles.mediaHint}>Tap to replace · Hold to make main · Hold pencil to remove</Text>
+            <Text style={styles.mediaHint}>{tx("app.profile.edit.tapToReplaceHoldToMakeMainHoldPencil")}</Text>
           </View>
 
           <View style={styles.section}>
-            <Text style={styles.label}>NAME</Text>
+            <Text style={styles.label}>{tx("app.profile.edit.name")}</Text>
             <TextInput
               value={name}
               onChangeText={(value) => {
                 setName(value);
                 if (errorText) setErrorText(null);
               }}
-              placeholder="Your name"
+              placeholder={tx("app.profile.edit.yourName")}
               placeholderTextColor={Colors.textDisabled}
               style={styles.input}
             />
             {!name.trim() ? (
-              <Text style={styles.fieldHint}>Your name is required to save changes.</Text>
+              <Text style={styles.fieldHint}>{tx("app.profile.edit.yourNameIsRequiredToSaveChanges")}</Text>
             ) : null}
           </View>
 
           <View style={styles.section}>
-            <Text style={styles.label}>AGE</Text>
+            <Text style={styles.label}>{tx("app.profile.edit.age")}</Text>
             <View style={styles.stepperRow}>
               <TouchableOpacity
                 activeOpacity={0.82}
@@ -418,7 +418,7 @@ export default function EditProfileScreen() {
           </View>
 
           <View style={styles.section}>
-            <Text style={styles.label}>GENDER</Text>
+            <Text style={styles.label}>{tx("app.profile.edit.gender")}</Text>
             <View style={styles.genderRow}>
               {GENDER_OPTIONS.map((option) => {
                 const selected = gender === option.value;
@@ -430,7 +430,7 @@ export default function EditProfileScreen() {
                     onPress={() => setGender(option.value)}
                   >
                     <Text style={styles.genderIcon}>{option.icon}</Text>
-                    <Text style={styles.genderText}>{option.label}</Text>
+                    <Text style={styles.genderText}>{tx(option.labelKey)}</Text>
                   </TouchableOpacity>
                 );
               })}
@@ -438,11 +438,11 @@ export default function EditProfileScreen() {
           </View>
 
           <View style={styles.section}>
-            <Text style={styles.label}>ABOUT YOU</Text>
+            <Text style={styles.label}>{tx("app.profile.edit.aboutYou")}</Text>
             <TextInput
               value={bio}
               onChangeText={setBio}
-              placeholder="Coffee, slow Sundays, and good company."
+              placeholder={tx("app.profile.edit.coffeeSlowSundaysAndGoodCompany")}
               placeholderTextColor={Colors.textDisabled}
               multiline
               maxLength={180}
@@ -451,8 +451,8 @@ export default function EditProfileScreen() {
           </View>
 
           <PickerSection
-            title="INTERESTS"
-            count={`${interests.length} picked`}
+            title={tx("app.profile.edit.interests")}
+            count={tx("options.pickedCount", { count: interests.length })}
             options={ONBOARDING_INTERESTS}
             selected={interests}
             emojiMap={INTEREST_EMOJI}
@@ -460,8 +460,8 @@ export default function EditProfileScreen() {
           />
 
           <PickerSection
-            title="PERSONALITY"
-            count={`${traits.length} picked`}
+            title={tx("app.profile.edit.personality")}
+            count={tx("options.pickedCount", { count: traits.length })}
             options={ONBOARDING_TRAITS}
             selected={traits}
             emojiMap={TRAIT_EMOJI}
@@ -469,7 +469,7 @@ export default function EditProfileScreen() {
           />
 
           <View style={styles.section}>
-            <Text style={styles.label}>LOCATION</Text>
+            <Text style={styles.label}>{tx("app.profile.edit.location")}</Text>
             <View style={styles.locationRow}>
               <Text style={styles.locationText} numberOfLines={1}>
                 {cityLabel}
@@ -480,7 +480,7 @@ export default function EditProfileScreen() {
                 disabled={locationLoading}
               >
                 <Text style={styles.changeText}>
-                  {locationLoading ? "Locating..." : "Change"}
+                  {locationLoading ? tx("app.profile.edit.locating") : tx("app.profile.edit.change")}
                 </Text>
               </TouchableOpacity>
             </View>
@@ -497,7 +497,7 @@ export default function EditProfileScreen() {
             ) : (
               <>
                 <Check size={19} color={Colors.textPrimary} strokeWidth={2.4} />
-                <Text style={styles.primarySaveText}>Save changes</Text>
+                <Text style={styles.primarySaveText}>{tx("app.profile.edit.saveChanges")}</Text>
               </>
             )}
           </TouchableOpacity>
@@ -539,7 +539,7 @@ function PickerSection<T extends string>({
               onPress={() => onToggle(option)}
             >
               <Text style={[styles.choiceText, active && styles.choiceTextSelected]}>
-                {emojiMap[option]} {option}
+                {emojiMap[option]} {optionLabel(option)}
               </Text>
             </TouchableOpacity>
           );

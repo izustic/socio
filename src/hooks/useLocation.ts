@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import * as Location from 'expo-location';
 import { getLocationFromCoordinates } from '../utils/nominatimService';
+import { tx } from '../utils/localization';
 
 interface LocationState {
   location: Location.LocationObject | null;
@@ -27,7 +28,7 @@ export function useLocation() {
       setState(prev => ({
         ...prev,
         permissionGranted: granted,
-        error: granted ? null : 'Location permission denied',
+        error: granted ? null : tx("location.permissionDenied"),
       }));
 
       return granted;
@@ -35,7 +36,7 @@ export function useLocation() {
       console.error('Permission request error:', error);
       setState(prev => ({
         ...prev,
-        error: 'Failed to request location permission',
+        error: tx("location.permissionRequestFailed"),
       }));
       return false;
     }
@@ -72,7 +73,7 @@ export function useLocation() {
       console.error('Location error:', error);
       setState(prev => ({
         ...prev,
-        error: 'Failed to get location',
+        error: tx("location.getFailed"),
         loading: false,
       }));
       return null;
@@ -100,7 +101,7 @@ export function useLocation() {
       console.error('Location watch error:', error);
       setState(prev => ({
         ...prev,
-        error: 'Failed to watch location',
+        error: tx("location.watchFailed"),
       }));
       return null;
     }

@@ -39,6 +39,7 @@ import {
 
 const formatTime = (
   createdAt: string,
+  locale: string,
   t: (key: string) => string,
   formatDate: (value: Date | string | number, options?: Intl.DateTimeFormatOptions) => string,
 ) => {
@@ -47,14 +48,18 @@ const formatTime = (
   const diffMinutes = Math.max(0, Math.floor(diffMs / 60000));
 
   if (diffMinutes < 1) return t("notifications.justNow");
-  if (diffMinutes < 60) return `${diffMinutes}m`;
+  const relative = new Intl.RelativeTimeFormat(locale, {
+    numeric: "always",
+    style: "narrow",
+  });
+  if (diffMinutes < 60) return relative.format(-diffMinutes, "minute");
 
   const diffHours = Math.floor(diffMinutes / 60);
-  if (diffHours < 24) return `${diffHours}h`;
+  if (diffHours < 24) return relative.format(-diffHours, "hour");
 
   const diffDays = Math.floor(diffHours / 24);
   if (diffDays === 1) return t("notifications.yesterday");
-  if (diffDays < 7) return `${diffDays}d`;
+  if (diffDays < 7) return relative.format(-diffDays, "day");
 
   return formatDate(created, {
     month: "short",
@@ -145,7 +150,7 @@ const getNotificationRoute = (notification: AppNotification) => {
 
 export default function NotificationsScreen() {
   const { user } = useAuth();
-  const { t, formatDate } = useLocale();
+  const { locale, t, formatDate } = useLocale();
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -288,7 +293,7 @@ export default function NotificationsScreen() {
         </View>
 
         <View style={styles.meta}>
-          <Text style={styles.timeText}>{formatTime(item.createdAt, t, formatDate)}</Text>
+          <Text style={styles.timeText}>{formatTime(item.createdAt, locale, t, formatDate)}</Text>
           {!item.read && <View style={styles.unreadDot} />}
         </View>
       </TouchableOpacity>

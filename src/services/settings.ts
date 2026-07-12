@@ -2,7 +2,7 @@ import type { RealtimeChannel } from "@supabase/supabase-js";
 import { User } from "@/src/types";
 import { supabase } from "./supabase";
 import { getUserProfile } from "./user";
-import { LocalizationService } from "./LocalizationService";
+import { translateActiveResource, translateResource } from "./TranslationService";
 
 export interface NotificationSettings {
   circleActivity: boolean;
@@ -130,7 +130,7 @@ export const updatePrivacySettings = async (
 export const verifyProfilePhoto = async (user: User): Promise<void> => {
   const hasPhoto = Boolean(user.photoURL || user.media?.some((item) => item.remoteUrl || item.uri));
   if (!hasPhoto) {
-    throw new Error(LocalizationService.translate("en", "validation.profilePhotoRequired"));
+    throw new Error(translateResource("en", "validation.profilePhotoRequired"));
   }
 
   const { error } = await supabase
@@ -214,7 +214,7 @@ export const getBlockedAccounts = async (
     const blocked = byId.get(row.blocked_id);
     return {
       id: row.blocked_id,
-      name: blocked?.display_name || "Blocked account",
+      name: blocked?.display_name || translateActiveResource("privacy.blockedAccount"),
       photoURL: blocked?.photo_url || "",
       blockedAt: row.created_at,
     };

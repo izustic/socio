@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { uploadChatMedia } from '@/src/services/supabase';
+import { tx } from '@/src/utils/localization';
 
 interface MediaUploadOptions {
   circleId: string;
@@ -31,7 +32,7 @@ export function useMediaUpload(options: MediaUploadOptions) {
 
   const uploadMedia = async (uri: string, type: 'image' | 'video' | 'audio') => {
     if (!validateMedia(uri, type)) {
-      setError('Invalid media file');
+      setError(tx("upload.invalidMedia"));
       return null;
     }
 
@@ -51,7 +52,7 @@ export function useMediaUpload(options: MediaUploadOptions) {
       return downloadUrl;
     } catch (error) {
       console.error('Upload error:', error);
-      setError('Failed to upload media');
+      setError(tx("upload.mediaFailed"));
       return null;
     } finally {
       setUploading(false);

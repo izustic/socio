@@ -12,12 +12,15 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { tx, useLocale } from "@/src/utils/localization";
 
 export default function LegalDocumentScreen({
   document,
 }: {
   document: LegalDocument;
 }) {
+  const { formatDate } = useLocale();
+
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" />
@@ -26,11 +29,11 @@ export default function LegalDocumentScreen({
           activeOpacity={0.76}
           style={styles.backButton}
           onPress={() => router.back()}
-          accessibilityLabel="Go back"
+          accessibilityLabel={tx("legal.LegalDocumentScreen.goBack")}
         >
           <ChevronLeft size={22} color={Colors.textPrimary} strokeWidth={2.3} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>{document.title}</Text>
+        <Text style={styles.headerTitle}>{tx(document.title)}</Text>
       </View>
 
       <ScrollView
@@ -38,26 +41,27 @@ export default function LegalDocumentScreen({
         contentContainerStyle={styles.content}
       >
         <View style={styles.hero}>
-          <Text style={styles.eyebrow}>{document.eyebrow}</Text>
-          <Text style={styles.title}>{document.title}</Text>
-          <Text style={styles.summary}>{document.summary}</Text>
-          <Text style={styles.updated}>Last updated {document.updatedAt}</Text>
+          <Text style={styles.eyebrow}>{tx(document.eyebrow)}</Text>
+          <Text style={styles.title}>{tx(document.title)}</Text>
+          <Text style={styles.summary}>{tx(document.summary)}</Text>
+          <Text style={styles.updated}>
+            {tx("legal.LegalDocumentScreen.lastUpdated")}
+            {formatDate(document.updatedAt, { dateStyle: "long" })}
+          </Text>
         </View>
 
         <View style={styles.notice}>
           <Text style={styles.noticeText}>
-            This page is provided for transparency and should be reviewed by
-            counsel before public launch.
-          </Text>
+            {tx("legal.LegalDocumentScreen.thisPageIsProvidedForTransparencyAndShouldBe")}</Text>
         </View>
 
         <View style={styles.sections}>
           {document.sections.map((section) => (
             <View key={section.title} style={styles.section}>
-              <Text style={styles.sectionTitle}>{section.title}</Text>
+              <Text style={styles.sectionTitle}>{tx(section.title)}</Text>
               {section.body.map((paragraph) => (
                 <Text key={paragraph} style={styles.paragraph}>
-                  {paragraph}
+                  {tx(paragraph)}
                 </Text>
               ))}
               {section.bullets ? (
@@ -65,7 +69,7 @@ export default function LegalDocumentScreen({
                   {section.bullets.map((bullet) => (
                     <View key={bullet} style={styles.bulletRow}>
                       <Text style={styles.bulletMarker}>•</Text>
-                      <Text style={styles.bulletText}>{bullet}</Text>
+                      <Text style={styles.bulletText}>{tx(bullet)}</Text>
                     </View>
                   ))}
                 </View>

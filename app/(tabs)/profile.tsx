@@ -8,6 +8,7 @@ import { useAuth } from '@/src/context/AuthContext';
 import { useLocale } from '@/src/providers/LocaleProvider';
 import { router } from 'expo-router';
 import { signOut } from '@/src/services/auth';
+import { optionLabel } from '@/src/utils/localization';
 import { Bell,
   ChevronRight,
   Database,
@@ -229,7 +230,7 @@ function ProfileSection({ title, values }: { title: string; values: string[] }) 
       <View style={styles.chips}>
         {values.map((value) => (
           <View key={value} style={styles.chip}>
-            <Text style={styles.chipText}>{value}</Text>
+            <Text style={styles.chipText}>{optionLabel(value)}</Text>
           </View>
         ))}
       </View>

@@ -8,7 +8,7 @@ import {
 } from "../types";
 import { supabase } from "./supabase";
 import { createNotification, createNotifications } from "./notifications";
-import { LocalizationService } from "./LocalizationService";
+import { translateActiveResource, translateResource } from "./TranslationService";
 
 export interface SwipeCandidate extends User {
   uid: string;
@@ -111,10 +111,10 @@ const getUserDisplayName = async (userId: string): Promise<string> => {
 
   if (error) {
     console.error("Error getting notification actor:", error);
-    return LocalizationService.translate("en", "notification.someone");
+    return translateResource("en", "notification.someone");
   }
 
-  return data?.display_name || data?.email?.split("@")[0] || LocalizationService.translate("en", "notification.someone");
+  return data?.display_name || data?.email?.split("@")[0] || translateResource("en", "notification.someone");
 };
 
 const localizedNotificationData = (
@@ -158,8 +158,8 @@ const notifyCircleProgress = async (
     await createNotifications(
       members,
       "circle_complete",
-      LocalizationService.translate("en", "notification.circleComplete.title"),
-      LocalizationService.translate("en", "notification.circleComplete.body", { circleName: circle.name }),
+      translateResource("en", "notification.circleComplete.title"),
+      translateResource("en", "notification.circleComplete.body", { circleName: circle.name }),
       localizedNotificationData(
         "notification.circleComplete.title",
         "notification.circleComplete.body",
@@ -177,8 +177,8 @@ const notifyCircleProgress = async (
     await createNotification(
       circle.creator_id,
       "circle_almost_full",
-      LocalizationService.translate("en", "notification.circleAlmostFull.title"),
-      LocalizationService.translate("en", "notification.circleAlmostFull.body"),
+      translateResource("en", "notification.circleAlmostFull.title"),
+      translateResource("en", "notification.circleAlmostFull.body"),
       localizedNotificationData(
         "notification.circleAlmostFull.title",
         "notification.circleAlmostFull.body",
@@ -226,8 +226,8 @@ const notifySwipeOutcome = async ({
         await createNotification(
           circle.creator_id,
           "circle_accepted",
-          LocalizationService.translate("en", "notification.circleAccepted.title", { actorName }),
-          LocalizationService.translate("en", "notification.circleAccepted.hostBody", { circleName: circle.name }),
+          translateResource("en", "notification.circleAccepted.title", { actorName }),
+          translateResource("en", "notification.circleAccepted.hostBody", { circleName: circle.name }),
           localizedNotificationData(
             "notification.circleAccepted.title",
             "notification.circleAccepted.hostBody",
@@ -243,8 +243,8 @@ const notifySwipeOutcome = async ({
         await createNotification(
           circle.creator_id,
           "circle_invite",
-          LocalizationService.translate("en", "notification.circleInvite.title", { actorName }),
-          LocalizationService.translate("en", "notification.circleInvite.body", { actorName, circleName: circle.name }),
+          translateResource("en", "notification.circleInvite.title", { actorName }),
+          translateResource("en", "notification.circleInvite.body", { actorName, circleName: circle.name }),
           localizedNotificationData(
             "notification.circleInvite.title",
             "notification.circleInvite.body",
@@ -263,8 +263,8 @@ const notifySwipeOutcome = async ({
       await createNotification(
         targetUserId,
         "circle_accepted",
-        LocalizationService.translate("en", "notification.circleAccepted.title", { actorName }),
-        LocalizationService.translate("en", "notification.circleAccepted.joinerBody", { circleName: circle.name }),
+        translateResource("en", "notification.circleAccepted.title", { actorName }),
+        translateResource("en", "notification.circleAccepted.joinerBody", { circleName: circle.name }),
         localizedNotificationData(
           "notification.circleAccepted.title",
           "notification.circleAccepted.joinerBody",
@@ -575,7 +575,7 @@ export const submitSwipe = async (
     data: { user },
   } = await supabase.auth.getUser();
   if (!user || user.id !== currentUserId) {
-    throw new Error("Not authenticated");
+    throw new Error(translateActiveResource("auth.sessionExpired"));
   }
 
   const { data, error } = await supabase.rpc("submit_host_swipe", {
@@ -763,7 +763,7 @@ export const submitCircleSwipe = async (
     data: { user },
   } = await supabase.auth.getUser();
   if (!user || user.id !== userId) {
-    throw new Error("Not authenticated");
+    throw new Error(translateActiveResource("auth.sessionExpired"));
   }
 
   const { data, error } = await supabase.rpc("submit_circle_swipe", {

@@ -1,6 +1,7 @@
 import { ProfileMedia } from "@/src/types";
 import * as FileSystem from "expo-file-system";
 import * as ImagePicker from "expo-image-picker";
+import { translateActiveResource as tx } from "./TranslationService";
 import { supabase } from "./supabase";
 
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
@@ -58,7 +59,7 @@ const fetchBlob = async (uri: string, contentType: string = "image/jpeg") => {
 
   const response = await fetch(uri);
   if (!response.ok) {
-    throw new Error("We could not read that file. Please try another one.");
+    throw new Error(tx("upload.readError"));
   }
   return response.blob();
 };
@@ -67,12 +68,12 @@ const validateVideo = async (asset: ImagePicker.ImagePickerAsset) => {
   const originalSize = await getFileSize(asset.uri, asset.fileSize);
 
   if ((asset.duration || 0) > MAX_VIDEO_DURATION_MS) {
-    throw new Error("Please choose a video that is 15 seconds or shorter.");
+    throw new Error(tx("upload.videoDuration"));
   }
 
   if (originalSize > MAX_VIDEO_BYTES) {
     throw new Error(
-      "Please choose a shorter or lower quality video (max 25 MB).",
+      tx("upload.videoTooLarge"),
     );
   }
 
@@ -87,7 +88,7 @@ const validateImage = async (asset: ImagePicker.ImagePickerAsset) => {
   const originalSize = await getFileSize(asset.uri, asset.fileSize);
 
   if (originalSize > MAX_IMAGE_BYTES) {
-    throw new Error("Please choose an image under 5 MB.");
+    throw new Error(tx("upload.imageTooLarge"));
   }
 
   return originalSize;
@@ -172,7 +173,7 @@ export const uploadProfileMedia = async ({
   } catch (error) {
     console.error("Profile media upload failed:", error);
     if (error instanceof Error) throw error;
-    throw new Error("We could not upload that file. Please try again.");
+    throw new Error(tx("errors.uploadFile"));
   } finally {
     if (cleanupUri) {
       await FileSystem.deleteAsync(cleanupUri, { idempotent: true }).catch(

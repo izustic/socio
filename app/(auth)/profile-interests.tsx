@@ -7,6 +7,7 @@ import { Colors, Radius, Spacing, Typography } from '@/src/constants/theme';
 import { useOnboarding } from '@/src/context/OnboardingContext';
 import { Interest } from '@/src/types';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { optionLabel, tx } from "@/src/utils/localization";
 
 export default function ProfileInterestsScreen() {
   const { draft, mergeDraft, setStep } = useOnboarding();
@@ -22,10 +23,10 @@ export default function ProfileInterestsScreen() {
 
   return (
     <OnboardingLayout
-      title="What are you into?"
-      subtitle="Pick things you genuinely love. This is how we find your people."
-      stepNumber="08  PROFILE  INTERESTS"
-      primaryLabel="Continue"
+      title={tx("app.auth.profileInterests.whatAreYouInto")}
+      subtitle={tx("app.auth.profileInterests.pickThingsYouGenuinelyLoveThisIsHowWe")}
+      stepNumber={tx("onboarding.step.interests")}
+      primaryLabel={tx("app.auth.profileInterests.continue")}
       onPrimaryPress={() => {
         setStep('profile-traits');
       }}
@@ -33,8 +34,8 @@ export default function ProfileInterestsScreen() {
       onBackPress={() => setStep('profile-age-gender')}
     >
       <View style={styles.metaRow}>
-        <Text style={styles.pickHint}>Pick at least 3</Text>
-        <Text style={styles.count}>{draft.interests.length} selected</Text>
+        <Text style={styles.pickHint}>{tx("app.auth.profileInterests.pickAtLeast3")}</Text>
+        <Text style={styles.count}>{draft.interests.length} {tx("app.auth.profileInterests.selected")}</Text>
       </View>
 
       <View style={styles.grid}>
@@ -48,7 +49,7 @@ export default function ProfileInterestsScreen() {
               onPress={() => toggleInterest(interest)}
             >
               <Text style={styles.chipText}>
-                {INTEREST_EMOJI[interest]} {interest}
+                {INTEREST_EMOJI[interest]} {optionLabel(interest)}
               </Text>
             </TouchableOpacity>
           );

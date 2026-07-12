@@ -6,6 +6,7 @@ import { Mic, Pause, Play } from "lucide-react-native";
 import React, { useEffect, useMemo, useState } from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import Avatar from "../ui/Avatar";
+import { tx } from "@/src/utils/localization";
 
 interface MediaMessageProps {
   message: {
@@ -166,7 +167,7 @@ export default function MediaMessage({
           <Text style={styles.playIcon}>▶</Text>
         </View>
         {videoStatus === "error" && (
-          <Text style={styles.videoError}>Unable to preview</Text>
+          <Text style={styles.videoError}>{tx("chat.MediaMessage.unableToPreview")}</Text>
         )}
         {message.duration && (
           <Text style={styles.duration}>
@@ -362,7 +363,7 @@ export default function MediaMessage({
                 </Text>
                 <Text numberOfLines={1} style={styles.replyText}>
                   {message.replyTo.mediaType
-                    ? `${message.replyTo.mediaType === "image" ? "Photo" : message.replyTo.mediaType === "video" ? "Video" : "Voice message"}${message.replyTo.text ? ` · ${message.replyTo.text}` : ""}`
+                    ? tx("chat.MediaMessage.value1Value2", { value1: message.replyTo.mediaType === "image" ? tx("chat.photo") : message.replyTo.mediaType === "video" ? tx("chat.video") : tx("chat.voiceMessage"), value2: message.replyTo.text ? ` · ${message.replyTo.text}` : "" })
                     : message.replyTo.text}
                 </Text>
               </View>

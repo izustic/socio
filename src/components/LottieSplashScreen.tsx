@@ -4,6 +4,7 @@ import LottieView from 'lottie-react-native';
 import React, { useEffect, useRef } from 'react';
 import { StatusBar, StyleSheet, Text, View } from 'react-native';
 import animationData from '../../assets/animations/logo_coalescence_animation.json';
+import { tx } from "@/src/utils/localization";
 
 interface LottieSplashScreenProps {
   minDurationMs?: number;
@@ -75,8 +76,8 @@ export default function LottieSplashScreen({
           style={styles.animationFallback}
         />
       )}
-      <Text style={styles.logoText}>sociol</Text>
-      <Text style={styles.tagline}>The real social network</Text>
+      <Text style={styles.logoText}>{tx("LottieSplashScreen.sociol")}</Text>
+      <Text style={styles.tagline}>{tx("LottieSplashScreen.theRealSocialNetwork")}</Text>
     </View>
   );
 }

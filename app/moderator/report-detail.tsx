@@ -39,25 +39,20 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { formatLocalizedDate, formatLocalizedDateTime, optionLabel, tx } from "@/src/utils/localization";
 
 type ActionKind = "dismiss" | "suspend" | "ban" | null;
 
-const formatTimestamp = (value: string) =>
-  new Date(value).toLocaleString(undefined, {
-    month: "short",
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-  });
+const formatTimestamp = formatLocalizedDateTime;
 
 const formatDate = (value: string | null | undefined) =>
   value
-    ? new Date(value).toLocaleDateString(undefined, {
+    ? formatLocalizedDate(value, {
         month: "short",
         day: "numeric",
         year: "numeric",
       })
-    : "Not set";
+    : tx("moderation.notSet");
 
 export default function ReportDetail() {
   const params = useLocalSearchParams<{ reportId?: string | string[] }>();
@@ -84,7 +79,7 @@ export default function ReportDetail() {
       setReport(nextReport);
     } catch (error) {
       console.error("Error loading report detail:", error);
-      setMessage("We could not load this report right now.");
+      setMessage(tx("moderation.loadReportError"));
     } finally {
       setLoading(false);
     }
@@ -129,7 +124,7 @@ export default function ReportDetail() {
           reason: reason.trim() || report.reason,
           metadata: { circleId: report.circleId, messageId: report.messageId },
         });
-        setMessage("Report dismissed and logged.");
+        setMessage(tx("moderation.reportDismissed"));
       } else if (action === "suspend") {
         await suspendUser({
           userId: report.reportedUserId,
@@ -139,7 +134,7 @@ export default function ReportDetail() {
           reportId: report.id,
           metadata: { circleId: report.circleId, messageId: report.messageId },
         });
-        setMessage("User suspended and the report was resolved.");
+        setMessage(tx("moderation.userSuspended"));
       } else if (action === "ban") {
         await banUser({
           userId: report.reportedUserId,
@@ -148,14 +143,14 @@ export default function ReportDetail() {
           reportId: report.id,
           metadata: { circleId: report.circleId, messageId: report.messageId },
         });
-        setMessage("User banned and the report was resolved.");
+        setMessage(tx("moderation.userBanned"));
       }
 
       setAction(null);
       await load();
     } catch (error) {
       console.error("Error applying moderation action:", error);
-      setMessage("That action could not be completed.");
+      setMessage(tx("moderation.actionError"));
     } finally {
       setSaving(false);
     }
@@ -167,10 +162,9 @@ export default function ReportDetail() {
         <StatusBar barStyle="dark-content" />
         <View style={styles.centerState}>
           <ShieldAlert size={36} color={Colors.primaryDark} strokeWidth={2} />
-          <Text style={styles.centerTitle}>Moderator access only</Text>
+          <Text style={styles.centerTitle}>{tx("app.moderator.reportDetail.moderatorAccessOnly")}</Text>
           <Text style={styles.centerText}>
-            This report detail screen is reserved for moderator accounts.
-          </Text>
+            {tx("app.moderator.reportDetail.thisReportDetailScreenIsReservedForModeratorAccounts")}</Text>
         </View>
       </SafeAreaView>
     );
@@ -188,23 +182,22 @@ export default function ReportDetail() {
           <ChevronLeft size={20} color={Colors.textPrimary} strokeWidth={2.2} />
         </TouchableOpacity>
         <View style={styles.headerText}>
-          <Text style={styles.kicker}>Moderator</Text>
-          <Text style={styles.title}>Report detail</Text>
+          <Text style={styles.kicker}>{tx("app.moderator.reportDetail.moderator")}</Text>
+          <Text style={styles.title}>{tx("app.moderator.reportDetail.reportDetail")}</Text>
         </View>
       </View>
 
       {loading ? (
         <View style={styles.centerState}>
           <ActivityIndicator color={Colors.primary} />
-          <Text style={styles.centerText}>Loading report...</Text>
+          <Text style={styles.centerText}>{tx("app.moderator.reportDetail.loadingReport")}</Text>
         </View>
       ) : !report ? (
         <View style={styles.centerState}>
           <Flag size={36} color={Colors.textSecondary} strokeWidth={2} />
-          <Text style={styles.centerTitle}>Report not found</Text>
+          <Text style={styles.centerTitle}>{tx("app.moderator.reportDetail.reportNotFound")}</Text>
           <Text style={styles.centerText}>
-            The report may have already been reviewed or removed.
-          </Text>
+            {tx("app.moderator.reportDetail.theReportMayHaveAlreadyBeenReviewedOrRemoved")}</Text>
         </View>
       ) : (
         <ScrollView
@@ -220,9 +213,9 @@ export default function ReportDetail() {
                   <Flag size={18} color={Colors.primaryDark} strokeWidth={2} />
                 </View>
                 <View style={styles.summaryText}>
-                  <Text style={styles.sectionTitle}>{report.reason}</Text>
+                  <Text style={styles.sectionTitle}>{optionLabel(report.reason)}</Text>
                   <Text style={styles.sectionSubtitle}>
-                    Filed {formatTimestamp(report.createdAt)}
+                    {tx("moderation.filedOn", { date: formatTimestamp(report.createdAt) })}
                   </Text>
                 </View>
               </View>
@@ -232,60 +225,59 @@ export default function ReportDetail() {
               <Text style={styles.summaryBody}>{report.details}</Text>
             ) : (
               <Text style={styles.summaryBodyMuted}>
-                No extra details were attached to this report.
-              </Text>
+                {tx("app.moderator.reportDetail.noExtraDetailsWereAttachedToThisReport")}</Text>
             )}
           </View>
 
           <View style={styles.profileGrid}>
             <ProfileCard
-              label="Reporter"
+              label={tx("app.moderator.reportDetail.reporter")}
               name={report.reporter?.displayName || report.reporterId}
-              subtitle={report.reporter?.email || "No email on file"}
+              subtitle={report.reporter?.email || tx("app.moderator.reportDetail.noEmailOnFile")}
               avatarUrl={report.reporter?.photoUrl}
             />
             <ProfileCard
-              label="Reported user"
+              label={tx("app.moderator.reportDetail.reportedUser")}
               name={report.reportedUser?.displayName || report.reportedUserId}
-              subtitle={report.reportedUser?.email || "No email on file"}
+              subtitle={report.reportedUser?.email || tx("app.moderator.reportDetail.noEmailOnFile")}
               avatarUrl={report.reportedUser?.photoUrl}
               dangerous
             />
           </View>
 
           <View style={styles.infoCard}>
-            <SectionHeader title="Case context" />
-            <InfoRow label="Circle ID" value={report.circleId || "Not linked"} />
-            <InfoRow label="Message ID" value={report.messageId || "Not linked"} />
-            <InfoRow label="Reviewed by" value={report.reviewedBy || "Not reviewed"} />
-            <InfoRow label="Reviewed at" value={formatDate(report.reviewedAt)} />
+            <SectionHeader title={tx("app.moderator.reportDetail.caseContext")} />
+            <InfoRow label={tx("app.moderator.reportDetail.circleId")} value={report.circleId || tx("moderation.notLinked")} />
+            <InfoRow label={tx("app.moderator.reportDetail.messageId")} value={report.messageId || tx("moderation.notLinked")} />
+            <InfoRow label={tx("app.moderator.reportDetail.reviewedBy")} value={report.reviewedBy || tx("moderation.notReviewed")} />
+            <InfoRow label={tx("app.moderator.reportDetail.reviewedAt")} value={formatDate(report.reviewedAt)} />
           </View>
 
           <View style={styles.actionsCard}>
             <SectionHeader
-              title="Actions"
+              title={tx("app.moderator.reportDetail.actions")}
               subtitle={
                 reportIsClosed
-                  ? "This report has already been reviewed."
-                  : "Choose the least disruptive action that fixes the case."
+                  ? tx("app.moderator.reportDetail.thisReportHasAlreadyBeenReviewed")
+                  : tx("app.moderator.reportDetail.chooseTheLeastDisruptiveActionThatFixesTheCase")
               }
             />
             <View style={styles.actionButtons}>
               <ActionButton
                 icon={Shield}
-                label="Dismiss"
+                label={tx("app.moderator.reportDetail.dismiss")}
                 onPress={() => openAction("dismiss")}
                 disabled={reportIsClosed}
               />
               <ActionButton
                 icon={UserX}
-                label="Suspend"
+                label={tx("app.moderator.reportDetail.suspend")}
                 onPress={() => openAction("suspend")}
                 disabled={reportIsClosed}
               />
               <ActionButton
                 icon={Ban}
-                label="Ban"
+                label={tx("app.moderator.reportDetail.ban")}
                 danger
                 onPress={() => openAction("ban")}
                 disabled={reportIsClosed}
@@ -305,21 +297,21 @@ export default function ReportDetail() {
           <View style={styles.modalCard}>
             <Text style={styles.modalTitle}>
               {action === "dismiss"
-                ? "Dismiss report"
+                ? tx("app.moderator.reportDetail.dismissReport")
                 : action === "suspend"
-                  ? "Suspend user"
-                  : "Ban user"}
+                  ? tx("app.moderator.reportDetail.suspendUser")
+                  : tx("app.moderator.reportDetail.banUser")}
             </Text>
             <Text style={styles.modalMessage}>
               {action === "dismiss"
-                ? "Add an optional note and close the report."
+                ? tx("app.moderator.reportDetail.addAnOptionalNoteAndCloseTheReport")
                 : action === "suspend"
-                  ? "Set a short suspension and keep the reason on record."
-                  : "Confirm the ban and log the reason for the audit trail."}
+                  ? tx("app.moderator.reportDetail.setAShortSuspensionAndKeepTheReasonOn")
+                  : tx("app.moderator.reportDetail.confirmTheBanAndLogTheReasonForThe")}
             </Text>
 
             <Input
-              placeholder="Reason"
+              placeholder={tx("app.moderator.reportDetail.reason")}
               multiline
               numberOfLines={4}
               value={reason}
@@ -329,7 +321,7 @@ export default function ReportDetail() {
 
             {action === "suspend" ? (
               <>
-                <Text style={styles.modalLabel}>Suspension length in days</Text>
+                <Text style={styles.modalLabel}>{tx("app.moderator.reportDetail.suspensionLengthInDays")}</Text>
                 <Input
                   placeholder="7"
                   keyboardType="number-pad"
@@ -338,12 +330,11 @@ export default function ReportDetail() {
                   style={styles.dayInput}
                 />
                 <Text style={styles.helperText}>
-                  Suspends until {suspendPreview.toLocaleDateString(undefined, {
+                  {tx("moderation.suspendsUntil", { date: formatLocalizedDate(suspendPreview, {
                     month: "short",
                     day: "numeric",
                     year: "numeric",
-                  })}
-                  .
+                  }) })}
                 </Text>
               </>
             ) : null}
@@ -355,7 +346,7 @@ export default function ReportDetail() {
                 onPress={closeAction}
                 disabled={saving}
               >
-                <Text style={styles.secondaryButtonText}>Cancel</Text>
+                <Text style={styles.secondaryButtonText}>{tx("app.moderator.reportDetail.cancel")}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 activeOpacity={0.82}
@@ -372,10 +363,10 @@ export default function ReportDetail() {
                 ) : (
                   <Text style={styles.primaryButtonText}>
                     {action === "dismiss"
-                      ? "Dismiss"
+                      ? tx("app.moderator.reportDetail.dismiss")
                       : action === "suspend"
-                        ? "Suspend"
-                        : "Ban"}
+                        ? tx("app.moderator.reportDetail.suspend")
+                        : tx("app.moderator.reportDetail.ban")}
                   </Text>
                 )}
               </TouchableOpacity>
@@ -412,7 +403,7 @@ function StatusPill({ status }: { status: string }) {
 
   return (
     <View style={[styles.statusPill, { backgroundColor: palette.backgroundColor }]}>
-      <Text style={[styles.statusPillText, { color: palette.color }]}>{status}</Text>
+      <Text style={[styles.statusPillText, { color: palette.color }]}>{optionLabel(status)}</Text>
     </View>
   );
 }

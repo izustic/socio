@@ -39,27 +39,35 @@ import {
 
 const formatTime = (
   createdAt: string,
-  locale: string,
-  t: (key: string) => string,
+  t: (key: string, params?: Record<string, string | number>) => string,
   formatDate: (value: Date | string | number, options?: Intl.DateTimeFormatOptions) => string,
+  formatNumber: (value: number) => string,
 ) => {
   const created = new Date(createdAt);
   const diffMs = Date.now() - created.getTime();
   const diffMinutes = Math.max(0, Math.floor(diffMs / 60000));
 
   if (diffMinutes < 1) return t("notifications.justNow");
-  const relative = new Intl.RelativeTimeFormat(locale, {
-    numeric: "always",
-    style: "narrow",
-  });
-  if (diffMinutes < 60) return relative.format(-diffMinutes, "minute");
+  if (diffMinutes < 60) {
+    return t("notifications.minutesAgoShort", {
+      value: formatNumber(diffMinutes),
+    });
+  }
 
   const diffHours = Math.floor(diffMinutes / 60);
-  if (diffHours < 24) return relative.format(-diffHours, "hour");
+  if (diffHours < 24) {
+    return t("notifications.hoursAgoShort", {
+      value: formatNumber(diffHours),
+    });
+  }
 
   const diffDays = Math.floor(diffHours / 24);
   if (diffDays === 1) return t("notifications.yesterday");
-  if (diffDays < 7) return relative.format(-diffDays, "day");
+  if (diffDays < 7) {
+    return t("notifications.daysAgoShort", {
+      value: formatNumber(diffDays),
+    });
+  }
 
   return formatDate(created, {
     month: "short",
@@ -150,7 +158,7 @@ const getNotificationRoute = (notification: AppNotification) => {
 
 export default function NotificationsScreen() {
   const { user } = useAuth();
-  const { locale, t, formatDate } = useLocale();
+  const { t, formatDate, formatNumber } = useLocale();
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -293,7 +301,9 @@ export default function NotificationsScreen() {
         </View>
 
         <View style={styles.meta}>
-          <Text style={styles.timeText}>{formatTime(item.createdAt, locale, t, formatDate)}</Text>
+          <Text style={styles.timeText}>
+            {formatTime(item.createdAt, t, formatDate, formatNumber)}
+          </Text>
           {!item.read && <View style={styles.unreadDot} />}
         </View>
       </TouchableOpacity>

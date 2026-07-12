@@ -1,9 +1,8 @@
-import { Colors, Radius } from "@/src/constants/theme";
+import { createThemedStyles, Radius } from "@/src/constants/theme";
 import React, { useCallback, useMemo, useRef, useState } from "react";
 import {
   LayoutChangeEvent,
   StyleProp,
-  StyleSheet,
   View,
   ViewStyle,
 } from "react-native";
@@ -112,7 +111,7 @@ export default function RangeSlider({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createThemedStyles((Colors) => ({
   track: {
     height: 24,
     justifyContent: "center",
@@ -131,4 +130,4 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     backgroundColor: Colors.primary,
   },
-});
+}));

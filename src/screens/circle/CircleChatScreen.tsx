@@ -4,7 +4,7 @@ import MessageBubble from "@/src/components/chat/MessageBubble";
 import { PollCreator, PollMessage } from "@/src/components/chat/PollComponents";
 
 import type { PollData } from "@/src/components/chat/PollComponents";
-import { Colors, Radius, Spacing, Typography } from "@/src/constants/theme";
+import { createThemedStyles, Colors, Radius, Spacing, Typography } from "@/src/constants/theme";
 import { useAuth } from "@/src/context/AuthContext";
 import { useSwipeTabVisibility } from "@/src/context/SwipeTabVisibilityContext";
 import {
@@ -58,7 +58,6 @@ import {
   Modal,
   Platform,
   StatusBar,
-  StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
@@ -971,7 +970,7 @@ export default function CircleChatRoute() {
   if (loading) {
     return (
       <SafeAreaView style={styles.container}>
-        <StatusBar barStyle="dark-content" />
+        <StatusBar />
         <View style={styles.centered}>
           <ActivityIndicator size="large" color={Colors.primary} />
         </View>
@@ -982,7 +981,7 @@ export default function CircleChatRoute() {
   if (!circle) {
     return (
       <SafeAreaView style={styles.container}>
-        <StatusBar barStyle="dark-content" />
+        <StatusBar />
         <View style={styles.centered}>
           <Text style={styles.title}>{tx("circle.CircleChatScreen.noActiveCircle")}</Text>
           <Text style={styles.emptyText}>
@@ -998,7 +997,7 @@ export default function CircleChatRoute() {
       style={styles.keyboardView}
     >
       <SafeAreaView style={styles.container}>
-        <StatusBar barStyle="dark-content" />
+        <StatusBar />
 
         <View style={styles.header}>
           <TouchableOpacity
@@ -1206,7 +1205,7 @@ export default function CircleChatRoute() {
           }}
         >
           <SafeAreaView style={styles.searchContainer}>
-            <StatusBar barStyle="dark-content" />
+            <StatusBar />
             <View style={styles.searchHeader}>
               <TouchableOpacity
                 activeOpacity={0.76}
@@ -1396,7 +1395,7 @@ export default function CircleChatRoute() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createThemedStyles((Colors) => ({
   keyboardView: {
     flex: 1,
     backgroundColor: Colors.background,
@@ -1467,7 +1466,7 @@ const styles = StyleSheet.create({
   },
   menuOverlay: {
     flex: 1,
-    backgroundColor: "rgba(255, 255, 255, 0.7)",
+    backgroundColor: Colors.surface,
     alignItems: "flex-end",
     paddingTop: 84,
     paddingRight: Spacing.screenPadding,
@@ -1670,4 +1669,4 @@ const styles = StyleSheet.create({
     width: "100%",
     height: "100%",
   },
-});
+}));

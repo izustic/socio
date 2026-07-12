@@ -1,6 +1,6 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
-import { Colors, Radius, Spacing, Typography } from '@/src/constants/theme';
+import { View, Text } from 'react-native';
+import { createThemedStyles, Colors, Radius, Spacing, Typography } from '@/src/constants/theme';
 import { tx } from "@/src/utils/localization";
 
 interface CircleProgressProps {
@@ -68,7 +68,7 @@ export default function CircleProgress({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createThemedStyles((Colors) => ({
   container: {
     gap: Spacing.sm,
   },
@@ -109,4 +109,4 @@ const styles = StyleSheet.create({
     ...Typography.bodySmall,
     color: Colors.textSecondary,
   },
-});
+}));

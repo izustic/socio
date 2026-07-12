@@ -1,9 +1,9 @@
 import Button from '@/src/components/ui/Button';
-import { Colors, Radius, Spacing, Typography } from '@/src/constants/theme';
+import { createThemedStyles, Radius, Spacing, Typography } from '@/src/constants/theme';
 import { useAuth } from '@/src/context/AuthContext';
 import { useOnboarding } from '@/src/context/OnboardingContext';
 import { router } from 'expo-router';
-import { StyleSheet, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 import { optionLabel, tx } from "@/src/utils/localization";
 
 export default function ProfileCompleteScreen() {
@@ -42,7 +42,7 @@ export default function ProfileCompleteScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createThemedStyles((Colors) => ({
   container: {
     flex: 1,
     backgroundColor: Colors.primary,
@@ -109,6 +109,6 @@ const styles = StyleSheet.create({
     marginTop: 'auto',
   },
   cta: {
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.surface,
   },
-});
+}));

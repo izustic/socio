@@ -1,9 +1,8 @@
-import { Colors, Radius, Spacing, Typography } from '@/src/constants/theme';
+import { createThemedStyles, Radius, Spacing, Typography } from '@/src/constants/theme';
 import React, { useCallback, useEffect, useRef } from 'react';
 import {
     Animated,
     Image,
-    StyleSheet,
     Text,
     View,
 } from 'react-native';
@@ -150,7 +149,7 @@ export default function Toast({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createThemedStyles((Colors) => ({
   container: {
     position: 'absolute',
     top: 60, // Status bar height + padding
@@ -159,7 +158,7 @@ const styles = StyleSheet.create({
     zIndex: 1000,
   },
   toast: {
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.surface,
     borderRadius: Radius.lg,
     padding: Spacing.md,
     shadowColor: 'rgba(0, 0, 0, 0.1)',
@@ -225,7 +224,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 2,
-    borderColor: Colors.white,
+    borderColor: Colors.surface,
   },
   checkmarkText: {
     color: Colors.white,
@@ -269,4 +268,4 @@ const styles = StyleSheet.create({
     color: Colors.textSecondary,
     fontWeight: '500',
   },
-});
+}));

@@ -1,9 +1,9 @@
 import React from 'react';
-import { View, Text, StyleSheet, Dimensions } from 'react-native';
+import { View, Text, Dimensions } from 'react-native';
 import { Image } from 'expo-image';
 import { GestureDetector, Gesture } from 'react-native-gesture-handler';
 import Animated, { useAnimatedStyle, useSharedValue, withSpring, runOnJS } from 'react-native-reanimated';
-import { Colors, Radius, Spacing, Typography } from '@/src/constants/theme';
+import { createThemedStyles, Radius, Spacing, Typography } from '@/src/constants/theme';
 import Avatar from '../ui/Avatar';
 import Button from '../ui/Button';
 import { optionLabel, tx } from "@/src/utils/localization";
@@ -175,7 +175,7 @@ export default function ProfileCard({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createThemedStyles((Colors) => ({
   container: {
     alignItems: 'center',
   },
@@ -286,4 +286,4 @@ const styles = StyleSheet.create({
   button: {
     minWidth: 80,
   },
-});
+}));

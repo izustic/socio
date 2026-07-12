@@ -1,5 +1,5 @@
 import { SafeAreaView } from "react-native-safe-area-context";
-import {
+import { createThemedStyles,
   Colors,
   Spacing,
   Typography } from "@/src/constants/theme";
@@ -19,7 +19,6 @@ import React,
 import {
   ActivityIndicator,
   StatusBar,
-  StyleSheet,
   Text,
   View,
 } from "react-native";
@@ -100,7 +99,7 @@ export default function SwipeTabScreen() {
   if (loading || tabVisibilityLoading) {
     return (
       <SafeAreaView style={styles.container}>
-        <StatusBar barStyle="dark-content" />
+        <StatusBar />
         <View style={styles.centerContent}>
           <ActivityIndicator size="large" color={Colors.primary} />
           <Text style={styles.loadingText}>{tx("app.tabs.swipe.findingYourMatches")}</Text>
@@ -116,7 +115,7 @@ export default function SwipeTabScreen() {
   return <SwipeCirclesScreen filters={filters} />;
 }
 
-const styles = StyleSheet.create({
+const styles = createThemedStyles((Colors) => ({
   container: {
     flex: 1,
     backgroundColor: Colors.background,
@@ -131,4 +130,4 @@ const styles = StyleSheet.create({
     marginTop: Spacing.md,
     color: Colors.textSecondary,
   },
-});
+}));

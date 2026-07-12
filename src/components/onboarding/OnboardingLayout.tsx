@@ -1,6 +1,6 @@
 import { SafeAreaView } from "react-native-safe-area-context";
 import Button from '@/src/components/ui/Button';
-import {
+import { createThemedStyles,
   Colors,
   Radius,
   Spacing,
@@ -12,7 +12,6 @@ import {
   Platform,
   ScrollView,
   StatusBar,
-  StyleSheet,
   Text,
   TouchableOpacity,
   View,
@@ -68,7 +67,7 @@ export default function OnboardingLayout({
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <StatusBar barStyle="dark-content" />
+      <StatusBar />
       <KeyboardAvoidingView
         style={styles.flex}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -118,7 +117,7 @@ export default function OnboardingLayout({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createThemedStyles((Colors) => ({
   safeArea: {
     flex: 1,
     backgroundColor: Colors.background,
@@ -137,7 +136,7 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: Radius.full,
-    backgroundColor: '#F7F4EB',
+    backgroundColor: Colors.inputBg,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -198,4 +197,4 @@ const styles = StyleSheet.create({
     color: Colors.textSecondary,
     fontWeight: '600',
   },
-});
+}));

@@ -1,5 +1,5 @@
 import OnboardingLayout from '@/src/components/onboarding/OnboardingLayout';
-import { Colors, Radius, Spacing, Typography } from '@/src/constants/theme';
+import { createThemedStyles, Radius, Spacing, Typography } from '@/src/constants/theme';
 import { useAuth } from '@/src/context/AuthContext';
 import { useOnboarding } from '@/src/context/OnboardingContext';
 import {
@@ -11,7 +11,6 @@ import { showErrorAlert } from '@/src/utils/errorHandling';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Alert,
-  StyleSheet,
   Text,
   TextInput,
   View,
@@ -209,7 +208,7 @@ export default function OtpScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createThemedStyles((Colors) => ({
   row: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -219,7 +218,7 @@ const styles = StyleSheet.create({
     width: 48,
     height: 64,
     borderRadius: Radius.md,
-    backgroundColor: '#F7F4EB',
+    backgroundColor: Colors.inputBg,
     fontSize: 26,
     fontWeight: '800',
     color: Colors.textPrimary,
@@ -232,4 +231,4 @@ const styles = StyleSheet.create({
     ...Typography.bodySmall,
     color: Colors.textSecondary,
   },
-});
+}));

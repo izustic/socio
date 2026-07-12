@@ -1,6 +1,6 @@
 import Avatar from "@/src/components/ui/Avatar";
 import Button from "@/src/components/ui/Button";
-import { Colors, Radius, Spacing, Typography } from "@/src/constants/theme";
+import { createThemedStyles, Colors, Radius, Spacing, Typography } from "@/src/constants/theme";
 import { useAuth } from "@/src/context/AuthContext";
 import { useSwipeTabVisibility } from "@/src/context/SwipeTabVisibilityContext";
 import {
@@ -21,7 +21,6 @@ import {
   Alert,
   ScrollView,
   StatusBar,
-  StyleSheet,
   Text,
   TouchableOpacity,
   View,
@@ -183,7 +182,7 @@ export default function CircleCompleteScreen() {
   if (loading) {
     return (
       <SafeAreaView style={styles.container}>
-        <StatusBar barStyle="dark-content" />
+        <StatusBar />
         <View style={styles.centered}>
           <ActivityIndicator size="large" color={Colors.primary} />
         </View>
@@ -194,7 +193,7 @@ export default function CircleCompleteScreen() {
   if (!circle) {
     return (
       <SafeAreaView style={styles.container}>
-        <StatusBar barStyle="dark-content" />
+        <StatusBar />
         <View style={styles.centered}>
           <Text style={styles.title}>{tx("circle.CircleCompleteScreen.noActiveCircle")}</Text>
           <Text style={styles.subtitle}>
@@ -212,7 +211,7 @@ export default function CircleCompleteScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" />
+      <StatusBar />
 
       <ScrollView
         style={styles.content}
@@ -300,7 +299,7 @@ export default function CircleCompleteScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createThemedStyles((Colors) => ({
   container: {
     flex: 1,
     backgroundColor: Colors.background,
@@ -369,7 +368,7 @@ const styles = StyleSheet.create({
   },
   countdownCard: {
     width: "100%",
-    backgroundColor: "#FFF8EA",
+    backgroundColor: Colors.primaryLight,
     borderRadius: Radius.lg,
     padding: Spacing.lg,
     gap: Spacing.lg,
@@ -421,4 +420,4 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginTop: 2,
   },
-});
+}));

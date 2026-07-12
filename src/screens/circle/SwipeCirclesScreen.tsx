@@ -3,7 +3,7 @@ import AlertModal from "@/src/components/ui/AlertModal";
 import Button from "@/src/components/ui/Button";
 import Chip from "@/src/components/ui/Chip";
 import Toast from "@/src/components/ui/Toast";
-import {
+import { createThemedStyles,
   Colors,
   Radius,
   Spacing,
@@ -345,7 +345,7 @@ export default function SwipeCirclesScreen({
   if (loading) {
     return (
       <SafeAreaView style={styles.container}>
-        <StatusBar barStyle="dark-content" />
+        <StatusBar />
         <View style={styles.centerContent}>
           <ActivityIndicator size="large" color={Colors.primaryDark} />
           <Text style={styles.emptySubtitle}>{tx("circle.SwipeCirclesScreen.findingCirclesNearYou")}</Text>
@@ -357,7 +357,7 @@ export default function SwipeCirclesScreen({
   if (!user) {
     return (
       <SafeAreaView style={styles.container}>
-        <StatusBar barStyle="dark-content" />
+        <StatusBar />
         <View style={styles.centerContent}>
           <Text style={styles.emptyTitle}>{tx("circle.SwipeCirclesScreen.signInRequired")}</Text>
           <Text style={styles.emptySubtitle}>
@@ -371,7 +371,7 @@ export default function SwipeCirclesScreen({
   if (!currentCircle) {
     return (
       <SafeAreaView style={styles.container}>
-        <StatusBar barStyle="dark-content" />
+        <StatusBar />
 
         <View style={styles.caughtUpCard}>
           <View style={styles.caughtUpIconWrap}>
@@ -403,7 +403,7 @@ export default function SwipeCirclesScreen({
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" />
+      <StatusBar />
 
       {/* Onboarding Guide Overlay */}
       {/* {showGuide && (
@@ -645,7 +645,7 @@ export default function SwipeCirclesScreen({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createThemedStyles((Colors) => ({
   container: {
     flex: 1,
     backgroundColor: Colors.background,
@@ -701,7 +701,7 @@ const styles = StyleSheet.create({
   //   flex: 1,
   //   borderRadius: 24,
   //   overflow: "hidden",
-  //   backgroundColor: Colors.white,
+  //   backgroundColor: Colors.surface,
   // },
   photoPlaceholder: {
     height: "55%",
@@ -835,7 +835,7 @@ const styles = StyleSheet.create({
     zIndex: 200,
   },
   matchCard: {
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.surface,
     padding: Spacing.xl,
     borderRadius: Radius.xl,
     alignItems: "center",
@@ -939,7 +939,7 @@ const styles = StyleSheet.create({
   //   height: 24,
   //   borderRadius: Radius.full,
   //   borderWidth: 2,
-  //   borderColor: Colors.white,
+  //   borderColor: Colors.surface,
   // },
   moreMembers: {
     ...Typography.bodySmall,
@@ -954,7 +954,7 @@ const styles = StyleSheet.create({
     flex: 1,
     borderRadius: 24,
     overflow: "hidden",
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.surface,
     position: "relative",
   },
   cardImage: {
@@ -1005,7 +1005,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     backgroundColor: Colors.primaryLight,
     borderWidth: 2,
-    borderColor: Colors.white,
+    borderColor: Colors.surface,
     marginLeft: -6,
   },
   spotsBadge: {
@@ -1055,4 +1055,4 @@ const styles = StyleSheet.create({
     color: Colors.textSecondary,
     fontWeight: "700",
   },
-});
+}));

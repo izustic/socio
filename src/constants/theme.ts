@@ -1,85 +1,93 @@
-export const Colors = {
-  // Core
-  primary: '#FFB60C',
-  primaryDark: '#D98F00',
-  primaryLight: '#FFF4DD',
-  orange: '#FFB60C',
+import { StyleSheet } from "react-native";
+import {
+  Colors,
+  getActiveThemeColors,
+  type ThemeColors,
+} from "./ThemeColors";
 
-  // Backgrounds
-  background: '#FFFFFF',
-  surface: '#FFFFFF',
-  inputBg: '#F5F5F5',
+export {
+  Colors,
+  getActiveThemeColors,
+  semanticColors,
+  setActiveColorScheme,
+} from "./ThemeColors";
+export type { ThemeColorScheme, ThemeColors } from "./ThemeColors";
 
-  // Text
-  textPrimary: '#1A1A1A',
-  textSecondary: '#6B6B6B',
-  textDisabled: '#AAAAAA',
+export const createThemedStyles = <T extends StyleSheet.NamedStyles<T>>(
+  factory: (colors: ThemeColors) => T,
+): T => {
+  let cachedColors: ThemeColors | null = null;
+  let cachedStyles: T | null = null;
 
-  // Structure
-  divider: '#EFEFEF',
-  placeholder: '#D4D4D4',
-  border: '#E5E5E5',
+  const resolve = () => {
+    const colors = getActiveThemeColors();
+    if (cachedColors !== colors || !cachedStyles) {
+      cachedColors = colors;
+      cachedStyles = StyleSheet.create(factory(colors));
+    }
+    return cachedStyles;
+  };
 
-  // State
-  success: '#34C759',
-  warning: '#FF9500',
-  danger: '#FF3B30',
-  white: '#FFFFFF',
+  return new Proxy({} as T, {
+    get: (_target, property) => resolve()[property as keyof T],
+    ownKeys: () => Reflect.ownKeys(resolve()),
+    getOwnPropertyDescriptor: () => ({ enumerable: true, configurable: true }),
+  });
 };
 
 export const Typography = {
   // Display — for hero moments (Welcome screen, Circle complete)
-  display: {
+  get display() { return {
     fontSize: 40,
     fontWeight: '800' as const,
     color: Colors.textPrimary,
     letterSpacing: -1,
     lineHeight: 46,
-  },
+  }; },
   // Headings — screen titles
-  h1: {
+  get h1() { return {
     fontSize: 32,
     fontWeight: '800' as const,
     color: Colors.textPrimary,
     letterSpacing: -0.5,
-  },
-  h2: {
+  }; },
+  get h2() { return {
     fontSize: 24,
     fontWeight: '700' as const,
     color: Colors.textPrimary,
-  },
-  h3: {
+  }; },
+  get h3() { return {
     fontSize: 18,
     fontWeight: '600' as const,
     color: Colors.textPrimary,
-  },
+  }; },
   // Body
-  body: {
+  get body() { return {
     fontSize: 15,
     fontWeight: '400' as const,
     color: Colors.textPrimary,
     lineHeight: 22,
-  },
-  bodySmall: {
+  }; },
+  get bodySmall() { return {
     fontSize: 13,
     fontWeight: '400' as const,
     color: Colors.textSecondary,
     lineHeight: 18,
-  },
+  }; },
   // Labels
-  label: {
+  get label() { return {
     fontSize: 12,
     fontWeight: '600' as const,
     color: Colors.textSecondary,
     letterSpacing: 0.5,
     // textTransform: 'uppercase' as const,
-  },
+  }; },
   // Button text
-  button: {
+  get button() { return {
     fontSize: 16,
     fontWeight: '700' as const,
     letterSpacing: 0.2,
-  },
+  }; },
 };
 
 export const Spacing = {

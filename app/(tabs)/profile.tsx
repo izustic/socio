@@ -1,5 +1,5 @@
 import { SafeAreaView } from "react-native-safe-area-context";
-import {
+import { createThemedStyles,
   Colors,
   Radius,
   Spacing,
@@ -68,7 +68,7 @@ export default function ProfileScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" />
+      <StatusBar />
       <ScrollView
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
@@ -270,7 +270,7 @@ function SettingsRow({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createThemedStyles((Colors) => ({
   container: {
     flex: 1,
     backgroundColor: Colors.background,
@@ -428,7 +428,7 @@ const styles = StyleSheet.create({
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(255, 255, 255, 0.72)',
+    backgroundColor: Colors.surface,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: Spacing.screenPadding,
@@ -447,7 +447,7 @@ const styles = StyleSheet.create({
     width: 74,
     height: 74,
     borderRadius: 37,
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.surface,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: Spacing.lg,
@@ -482,7 +482,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   cancelButton: {
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.surface,
   },
   confirmButton: {
     backgroundColor: Colors.textPrimary,
@@ -495,4 +495,4 @@ const styles = StyleSheet.create({
     ...Typography.button,
     color: Colors.white,
   },
-});
+}));

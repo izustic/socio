@@ -2,14 +2,14 @@ import CircleChatRoute from "@/src/screens/circle/CircleChatScreen";
 import CircleCompleteScreen from "@/src/screens/circle/CircleCompleteScreen";
 import CircleProgressScreen from "@/src/screens/circle/CircleProgressScreen";
 import NoCircleScreen from "@/src/screens/circle/NoCircleScreen";
-import { Colors, Spacing } from "@/src/constants/theme";
+import { createThemedStyles, Colors, Spacing } from "@/src/constants/theme";
 import { useAuth } from "@/src/context/AuthContext";
 import { useSwipeTabVisibility } from "@/src/context/SwipeTabVisibilityContext";
 import { getLatestCircleForParticipant } from "@/src/services/circle";
 import { Circle } from "@/src/types";
 import { useFocusEffect, useLocalSearchParams, router } from "expo-router";
 import React, { useCallback, useState } from "react";
-import { ActivityIndicator, StatusBar, StyleSheet, View } from "react-native";
+import { ActivityIndicator, StatusBar, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 type CircleView = "progress" | "complete" | "chat";
@@ -76,7 +76,7 @@ export default function CircleTabScreen() {
   if (loading) {
     return (
       <SafeAreaView style={styles.container}>
-        <StatusBar barStyle="dark-content" />
+        <StatusBar />
         <View style={styles.centered}>
           <ActivityIndicator size="large" color={Colors.primary} />
         </View>
@@ -88,7 +88,7 @@ export default function CircleTabScreen() {
     if (joinBrowsingActive) {
       return (
         <SafeAreaView style={styles.container}>
-          <StatusBar barStyle="dark-content" />
+          <StatusBar />
           <View style={styles.centered}>
             <ActivityIndicator size="large" color={Colors.primary} />
           </View>
@@ -114,7 +114,7 @@ export default function CircleTabScreen() {
   return <CircleProgressScreen />;
 }
 
-const styles = StyleSheet.create({
+const styles = createThemedStyles((Colors) => ({
   container: {
     flex: 1,
     backgroundColor: Colors.background,
@@ -125,4 +125,4 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-});
+}));

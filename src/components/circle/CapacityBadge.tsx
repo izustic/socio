@@ -1,6 +1,6 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
-import { Colors, Radius, Spacing, Typography } from '@/src/constants/theme';
+import { View, Text } from 'react-native';
+import { createThemedStyles, Colors, Radius, Spacing, Typography } from '@/src/constants/theme';
 import { tx } from "@/src/utils/localization";
 
 interface CircleCapacityBadgeProps {
@@ -116,7 +116,7 @@ export default function CircleCapacityBadge({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createThemedStyles((Colors) => ({
   container: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -177,4 +177,4 @@ const styles = StyleSheet.create({
     ...Typography.bodySmall,
     color: Colors.textSecondary,
   },
-});
+}));

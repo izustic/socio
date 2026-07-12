@@ -1,7 +1,7 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity } from 'react-native';
 import { Image } from 'expo-image';
-import { Colors, Radius, Spacing, Typography } from '@/src/constants/theme';
+import { createThemedStyles, Radius, Spacing, Typography } from '@/src/constants/theme';
 import { tx } from "@/src/utils/localization";
 
 interface MediaItem {
@@ -81,7 +81,7 @@ export default function MediaGrid({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createThemedStyles((Colors) => ({
   container: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -167,4 +167,4 @@ const styles = StyleSheet.create({
     fontSize: 10,
     marginTop: 2,
   },
-});
+}));

@@ -1,4 +1,4 @@
-import { Colors, Spacing, Typography } from "@/src/constants/theme";
+import { createThemedStyles, Colors, Spacing, Typography } from "@/src/constants/theme";
 import { useAuth } from "@/src/context/AuthContext";
 import { CallParticipant, useCircleCall } from "@/src/hooks/useCircleCall";
 import { router, useLocalSearchParams } from "expo-router";
@@ -209,7 +209,7 @@ export default function CallScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createThemedStyles((Colors) => ({
   container: {
     flex: 1,
     backgroundColor: "#1A1A1A",
@@ -369,4 +369,4 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-});
+}));

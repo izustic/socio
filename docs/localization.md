@@ -37,7 +37,12 @@ Shared components that cannot use hooks can use `formatLocalizedDate`, `formatLo
 
 ## Theme
 
-Theme preference is managed by `ThemeProvider` and `ThemeService`. Screens should use semantic colors from `useTheme().colors` for new work and avoid hardcoded user-facing color decisions.
+Theme preference is managed by `ThemeProvider` and `ThemeService`. Light, dark, and system palettes live in `src/constants/ThemeColors.ts`.
+
+- Use semantic `Colors` tokens for render-time icon and inline colors.
+- Build component styles with `createThemedStyles((Colors) => ({ ... }))` so cached styles are rebuilt when the active scheme changes.
+- Use `useTheme()` when a component needs the current preference or resolved `colorScheme` for behavior rather than styling.
+- Do not introduce fixed light surfaces such as `#FFFFFF` or `#F7F7F7`; use `Colors.background`, `Colors.surface`, or `Colors.inputBg`.
 
 ## Accessibility
 

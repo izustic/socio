@@ -1,7 +1,7 @@
 import React from 'react';
 import { formatLocalizedTime, tx } from '@/src/utils/localization';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { Colors, Radius, Spacing, Typography } from '@/src/constants/theme';
+import { View, Text, TouchableOpacity } from 'react-native';
+import { createThemedStyles, Radius, Spacing, Typography } from '@/src/constants/theme';
 import Avatar from '../ui/Avatar';
 
 interface MessageBubbleProps {
@@ -122,7 +122,7 @@ export default function MessageBubble({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createThemedStyles((Colors) => ({
   container: {
     flexDirection: 'row',
     paddingHorizontal: Spacing.md,
@@ -139,14 +139,14 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255, 255, 255, 0.22)',
   },
   otherReplySnippet: {
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.surface,
   },
   replyAccent: {
     width: 3,
     borderRadius: Radius.full,
   },
   ownReplyAccent: {
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.surface,
   },
   otherReplyAccent: {
     backgroundColor: Colors.primary,
@@ -238,4 +238,4 @@ const styles = StyleSheet.create({
     color: Colors.textSecondary,
     marginLeft: Spacing.sm,
   },
-});
+}));

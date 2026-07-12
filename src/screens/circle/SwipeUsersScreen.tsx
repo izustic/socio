@@ -2,7 +2,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import AlertModal from "@/src/components/ui/AlertModal";
 import Button from "@/src/components/ui/Button";
 import Toast from "@/src/components/ui/Toast";
-import {
+import { createThemedStyles,
   Colors,
   Radius,
   Spacing,
@@ -288,7 +288,7 @@ export default function SwipeUsersScreen() {
   if (loading) {
     return (
       <SafeAreaView style={styles.container}>
-        <StatusBar barStyle="dark-content" />
+        <StatusBar />
         <View style={styles.centerContent}>
           <ActivityIndicator size="large" color={Colors.primaryDark} />
           <Text style={styles.emptySubtitle}>{tx("circle.SwipeUsersScreen.findingYourBestMatches")}</Text>
@@ -300,7 +300,7 @@ export default function SwipeUsersScreen() {
   if (!circle) {
     return (
       <SafeAreaView style={styles.container}>
-        <StatusBar barStyle="dark-content" />
+        <StatusBar />
         <View style={styles.centerContent}>
           <View style={styles.emptyArtwork} />
           <Text style={styles.emptyTitle}>{tx("circle.SwipeUsersScreen.noActiveCircleYet")}</Text>
@@ -320,7 +320,7 @@ export default function SwipeUsersScreen() {
   if (!currentCandidate) {
     return (
       <SafeAreaView style={styles.container}>
-        <StatusBar barStyle="dark-content" />
+        <StatusBar />
         {/* <View style={styles.topBar}>
           <Text style={styles.topTitle}>{circle.name}</Text>
           <View style={styles.badge}>
@@ -374,7 +374,7 @@ export default function SwipeUsersScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" />
+      <StatusBar />
 
       {/* Onboarding Guide Overlay */}
       {showGuide && (
@@ -540,7 +540,7 @@ export default function SwipeUsersScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createThemedStyles((Colors) => ({
   container: {
     flex: 1,
     backgroundColor: Colors.background,
@@ -623,7 +623,7 @@ const styles = StyleSheet.create({
     flex: 1,
     borderRadius: 24,
     overflow: "hidden",
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.surface,
     position: "relative",
     marginBottom: Spacing.lg,
   },
@@ -781,7 +781,7 @@ const styles = StyleSheet.create({
   /* Empty State */
   caughtUpCard: {
     flex: 1,
-    backgroundColor: "#F3F3F5",
+    backgroundColor: Colors.inputBg,
     borderRadius: Radius.lg,
     alignItems: "center",
     justifyContent: "center",
@@ -830,7 +830,7 @@ const styles = StyleSheet.create({
     zIndex: 200,
   },
   matchCard: {
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.surface,
     padding: Spacing.xl,
     borderRadius: Radius.xl,
     alignItems: "center",
@@ -863,7 +863,7 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(255,255,255,0.4)",
   },
   mediaDotActive: {
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.surface,
   },
 
   /* Guide Overlay */
@@ -894,4 +894,4 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginTop: Spacing.xs,
   },
-});
+}));

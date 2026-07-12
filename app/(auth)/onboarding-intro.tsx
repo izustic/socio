@@ -1,7 +1,7 @@
 import OnboardingLayout from '@/src/components/onboarding/OnboardingLayout';
-import { Typography } from '@/src/constants/theme';
+import { createThemedStyles, Typography } from '@/src/constants/theme';
 import { useOnboarding } from '@/src/context/OnboardingContext';
-import { StyleSheet, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 import { tx } from "@/src/utils/localization";
 
 export default function OnboardingIntroScreen() {
@@ -26,7 +26,7 @@ export default function OnboardingIntroScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createThemedStyles((Colors) => ({
   hero: {
     height: 156,
     borderBottomLeftRadius: 38,
@@ -38,4 +38,4 @@ const styles = StyleSheet.create({
   wordmark: {
     ...Typography.h2,
   },
-});
+}));

@@ -1,5 +1,5 @@
 import { SafeAreaView } from "react-native-safe-area-context";
-import {
+import { createThemedStyles,
   Colors,
   Radius,
   Spacing,
@@ -15,7 +15,6 @@ import { useState } from 'react';
 import {
   ScrollView,
   StatusBar,
-  StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
@@ -77,7 +76,7 @@ export default function CreateCircleBasicsScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" />
+      <StatusBar />
       <View style={styles.header}>
         <TouchableOpacity activeOpacity={0.82} style={styles.backButton} onPress={() => router.back()}>
           <ChevronLeft size={22} color={Colors.textPrimary} strokeWidth={2.4} />
@@ -258,7 +257,7 @@ export default function CreateCircleBasicsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createThemedStyles((Colors) => ({
   container: {
     flex: 1,
     backgroundColor: Colors.background,
@@ -274,7 +273,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: Radius.full,
-    backgroundColor: '#F7F7F7',
+    backgroundColor: Colors.inputBg,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -301,7 +300,7 @@ const styles = StyleSheet.create({
     flex: 1,
     height: 4,
     borderRadius: Radius.full,
-    backgroundColor: '#F5F5F5',
+    backgroundColor: Colors.inputBg,
   },
   content: {
     paddingHorizontal: Spacing.screenPadding,
@@ -330,7 +329,7 @@ const styles = StyleSheet.create({
   imagePicker: {
     height: 176,
     borderRadius: 16,
-    backgroundColor: "#F6F6F6",
+    backgroundColor: Colors.inputBg,
     overflow: "hidden",
   },
   circleImage: {
@@ -372,7 +371,7 @@ const styles = StyleSheet.create({
   input: {
     minHeight: 56,
     borderRadius: 12,
-    backgroundColor: '#F4F4F4',
+    backgroundColor: Colors.inputBg,
     paddingHorizontal: 20,
     fontSize: 16,
     color: Colors.textPrimary,
@@ -389,7 +388,7 @@ const styles = StyleSheet.create({
     flex: 1,
     minHeight: 48,
     borderRadius: 12,
-    backgroundColor: '#F6F6F6',
+    backgroundColor: Colors.inputBg,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -439,7 +438,7 @@ const styles = StyleSheet.create({
   },
   segment: {
     flexDirection: 'row',
-    backgroundColor: '#F5F5F5',
+    backgroundColor: Colors.inputBg,
     borderRadius: Radius.full,
     padding: 3,
   },
@@ -466,7 +465,7 @@ const styles = StyleSheet.create({
     minHeight: 36,
     paddingHorizontal: 17,
     borderRadius: Radius.full,
-    backgroundColor: '#F6F6F6',
+    backgroundColor: Colors.inputBg,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -491,9 +490,9 @@ const styles = StyleSheet.create({
     color: Colors.textPrimary,
   },
   disabledButton: {
-    backgroundColor: '#F0F0F0',
+    backgroundColor: Colors.inputBg,
   },
   disabledButtonText: {
     color: Colors.textDisabled,
   },
-});
+}));

@@ -1,4 +1,4 @@
-import { Colors, Radius, Spacing, Typography } from "@/src/constants/theme";
+import { createThemedStyles, Colors, Radius, Spacing, Typography } from "@/src/constants/theme";
 import { getSignedChatMediaUrls } from "@/src/services/supabase";
 import { Audio, ResizeMode, Video } from "expo-av";
 import { Image } from "expo-image";
@@ -378,7 +378,7 @@ export default function MediaMessage({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createThemedStyles((Colors) => ({
   container: {
     flexDirection: "row",
     paddingHorizontal: Spacing.md,
@@ -630,4 +630,4 @@ const styles = StyleSheet.create({
     ...Typography.bodySmall,
     color: Colors.textSecondary,
   },
-});
+}));

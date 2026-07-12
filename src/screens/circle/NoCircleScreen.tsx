@@ -1,5 +1,5 @@
 import { SafeAreaView } from "react-native-safe-area-context";
-import {
+import { createThemedStyles,
   Colors,
   Radius,
   Spacing,
@@ -9,7 +9,6 @@ import { Plus,
   Search } from 'lucide-react-native';
 import { Image,
   StatusBar,
-  StyleSheet,
   Text,
   TouchableOpacity,
   View,
@@ -19,7 +18,7 @@ import { tx } from "@/src/utils/localization";
 export default function NoCircleScreen() {
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" />
+      <StatusBar />
       <View style={styles.content}>
         <View style={styles.mark}>
           <Image
@@ -72,7 +71,7 @@ export default function NoCircleScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createThemedStyles((Colors) => ({
   container: {
     flex: 1,
     backgroundColor: Colors.background,
@@ -106,7 +105,7 @@ const styles = StyleSheet.create({
     fontSize: 28,
     lineHeight: 35,
     textAlign: 'center',
-    color: '#111111',
+    color: Colors.textPrimary,
   },
   description: {
     ...Typography.body,
@@ -136,7 +135,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.primary,
   },
   secondaryCard: {
-    backgroundColor: '#F7F7F7',
+    backgroundColor: Colors.inputBg,
   },
   iconBadge: {
     width: 44,
@@ -149,7 +148,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(217, 143, 0, 0.22)',
   },
   secondaryIconBadge: {
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.surface,
   },
   actionCopy: {
     flex: 1,
@@ -159,7 +158,7 @@ const styles = StyleSheet.create({
     ...Typography.h3,
     fontSize: 17,
     fontWeight: '700',
-    color: '#111111',
+    color: Colors.textPrimary,
   },
   primaryActionText: {
     ...Typography.bodySmall,
@@ -169,7 +168,7 @@ const styles = StyleSheet.create({
     ...Typography.h3,
     fontSize: 17,
     fontWeight: '700',
-    color: '#111111',
+    color: Colors.textPrimary,
   },
   secondaryActionText: {
     ...Typography.bodySmall,
@@ -181,4 +180,4 @@ const styles = StyleSheet.create({
     color: Colors.textSecondary,
     textAlign: 'center',
   },
-});
+}));

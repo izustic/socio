@@ -4,13 +4,13 @@ import {
     ONBOARDING_TRAITS,
     TRAIT_EMOJI,
 } from '@/src/constants/onboarding';
-import { Colors, Radius, Spacing, Typography } from '@/src/constants/theme';
+import { createThemedStyles, Radius, Spacing, Typography } from '@/src/constants/theme';
 import { useAuth } from '@/src/context/AuthContext';
 import { useOnboarding } from '@/src/context/OnboardingContext';
 import { createUserProfile } from '@/src/services/user';
 import { ProfileTrait } from '@/src/types';
 import { useState } from 'react';
-import { Alert, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, Text, TouchableOpacity, View } from 'react-native';
 import { optionLabel, tx } from "@/src/utils/localization";
 
 export default function ProfileTraitsScreen() {
@@ -116,7 +116,7 @@ export default function ProfileTraitsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createThemedStyles((Colors) => ({
   metaRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -135,7 +135,7 @@ const styles = StyleSheet.create({
     gap: Spacing.sm,
   },
   chip: {
-    backgroundColor: '#F7F4EB',
+    backgroundColor: Colors.inputBg,
     borderRadius: Radius.pill,
     paddingVertical: 10,
     paddingHorizontal: 14,
@@ -147,4 +147,4 @@ const styles = StyleSheet.create({
     ...Typography.bodySmall,
     fontWeight: '600',
   },
-});
+}));

@@ -5,7 +5,7 @@ import {
   ONBOARDING_TRAITS,
   TRAIT_EMOJI,
   } from "@/src/constants/onboarding";
-import { Colors,
+import { createThemedStyles, Colors,
   Radius,
   Spacing,
   Typography } from "@/src/constants/theme";
@@ -322,7 +322,7 @@ export default function EditProfileScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" />
+      <StatusBar />
       <KeyboardAvoidingView
         style={styles.container}
         behavior={Platform.OS === "ios" ? "padding" : undefined}
@@ -549,7 +549,7 @@ function PickerSection<T extends string>({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createThemedStyles((Colors) => ({
   container: {
     flex: 1,
     backgroundColor: Colors.background,
@@ -568,7 +568,7 @@ const styles = StyleSheet.create({
     borderRadius: 21,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#F7F7F7",
+    backgroundColor: Colors.inputBg,
   },
   headerTitle: {
     ...Typography.h3,
@@ -595,7 +595,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     paddingHorizontal: 14,
     paddingVertical: 12,
-    backgroundColor: "#FEF3F2",
+    backgroundColor: Colors.dangerSurface,
   },
   errorBannerText: {
     ...Typography.bodySmall,
@@ -643,7 +643,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     overflow: "hidden",
-    backgroundColor: "#F8F2E5",
+    backgroundColor: Colors.primaryLight,
   },
   sideMediaColumn: {
     width: 106,
@@ -655,7 +655,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     overflow: "hidden",
-    backgroundColor: "#F8F2E5",
+    backgroundColor: Colors.primaryLight,
   },
   bottomMediaRow: {
     flexDirection: "row",
@@ -666,7 +666,7 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     borderColor: Colors.primary,
     borderStyle: "dashed",
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.surface,
   },
   mediaImage: {
     width: "100%",
@@ -677,7 +677,7 @@ const styles = StyleSheet.create({
     width: 31,
     height: 31,
     borderRadius: 16,
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.surface,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -707,13 +707,13 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "rgba(255,255,255,0.92)",
+    backgroundColor: Colors.surface,
   },
   progressOverlay: {
     ...StyleSheet.absoluteFillObject,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "rgba(255,255,255,0.82)",
+    backgroundColor: Colors.surface,
     paddingHorizontal: 12,
   },
   progressText: {
@@ -767,13 +767,13 @@ const styles = StyleSheet.create({
     borderRadius: 23,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#F7F7F7",
+    backgroundColor: Colors.inputBg,
   },
   ageValue: {
     fontSize: 48,
     lineHeight: 58,
     fontWeight: "900",
-    color: "#111111",
+    color: Colors.textPrimary,
     minWidth: 70,
     textAlign: "center",
   },
@@ -869,4 +869,4 @@ const styles = StyleSheet.create({
     ...Typography.button,
     color: Colors.textPrimary,
   },
-});
+}));

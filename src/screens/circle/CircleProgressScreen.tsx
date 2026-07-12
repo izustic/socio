@@ -1,6 +1,6 @@
 import Avatar from "@/src/components/ui/Avatar";
 import Button from "@/src/components/ui/Button";
-import { Colors, Radius, Spacing, Typography } from "@/src/constants/theme";
+import { createThemedStyles, Colors, Radius, Spacing, Typography } from "@/src/constants/theme";
 import { useAuth } from "@/src/context/AuthContext";
 import { useSwipeTabVisibility } from "@/src/context/SwipeTabVisibilityContext";
 import {
@@ -22,7 +22,6 @@ import {
   Alert,
   ScrollView,
   StatusBar,
-  StyleSheet,
   Text,
   TouchableOpacity,
   View,
@@ -208,7 +207,7 @@ export default function CircleProgressScreen() {
   if (loading) {
     return (
       <SafeAreaView style={styles.container}>
-        <StatusBar barStyle="dark-content" />
+        <StatusBar />
         <View style={styles.centered}>
           <ActivityIndicator size="large" color={Colors.primary} />
         </View>
@@ -219,7 +218,7 @@ export default function CircleProgressScreen() {
   if (!circle) {
     return (
       <SafeAreaView style={styles.container}>
-        <StatusBar barStyle="dark-content" />
+        <StatusBar />
         <View style={styles.centered}>
           <Text style={styles.title}>{tx("circle.CircleProgressScreen.noActiveCircle")}</Text>
           <Text style={styles.subtitle}>{tx("circle.CircleProgressScreen.createOrJoinACircleToGetStarted")}</Text>
@@ -233,7 +232,7 @@ export default function CircleProgressScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" />
+      <StatusBar />
 
       <ScrollView
         style={styles.content}
@@ -324,7 +323,7 @@ export default function CircleProgressScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createThemedStyles((Colors) => ({
   container: {
     flex: 1,
     backgroundColor: Colors.background,
@@ -367,7 +366,7 @@ const styles = StyleSheet.create({
     maxWidth: 64,
   },
   progressCard: {
-    backgroundColor: "#FFF8EA",
+    backgroundColor: Colors.primaryLight,
     borderRadius: Radius.lg,
     padding: Spacing.md,
     gap: Spacing.md,
@@ -386,7 +385,7 @@ const styles = StyleSheet.create({
   },
   progressTrack: {
     height: 10,
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.surface,
     borderRadius: Radius.pill,
     overflow: "hidden",
   },
@@ -444,4 +443,4 @@ const styles = StyleSheet.create({
     width: "100%",
     marginTop: Spacing.lg,
   },
-});
+}));

@@ -1,8 +1,8 @@
-import { Colors, Typography } from '@/src/constants/theme';
+import { createThemedStyles, Typography } from '@/src/constants/theme';
 import { Image } from 'expo-image';
 import LottieView from 'lottie-react-native';
 import React, { useEffect, useRef } from 'react';
-import { StatusBar, StyleSheet, Text, View } from 'react-native';
+import { StatusBar, Text, View } from 'react-native';
 import animationData from '../../assets/animations/logo_coalescence_animation.json';
 import { tx } from "@/src/utils/localization";
 
@@ -82,12 +82,12 @@ export default function LottieSplashScreen({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createThemedStyles((Colors) => ({
   container: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.surface,
   },
   animation: {
     width: 160,
@@ -107,4 +107,4 @@ const styles = StyleSheet.create({
     color: 'rgba(26,26,26,0.6)',
     marginTop: 8,
   },
-});
+}));

@@ -1,7 +1,7 @@
 import { SafeAreaView } from "react-native-safe-area-context";
 import Avatar from "@/src/components/ui/Avatar";
 import Button from "@/src/components/ui/Button";
-import {
+import { createThemedStyles,
   Colors,
   Radius,
   Spacing,
@@ -37,7 +37,6 @@ import {
   RefreshControl,
   ScrollView,
   StatusBar,
-  StyleSheet,
   Text,
   TouchableOpacity,
   View,
@@ -46,11 +45,11 @@ import { formatLocalizedDateTime, optionLabel, tx } from "@/src/utils/localizati
 
 const formatTimestamp = formatLocalizedDateTime;
 
-const toneStyles: Record<string, { backgroundColor: string; color: string }> = {
-  pending: { backgroundColor: "#FFF4DD", color: Colors.primaryDark },
-  resolved: { backgroundColor: "#E9F8ED", color: Colors.success },
-  dismissed: { backgroundColor: "#F1F1F1", color: Colors.textSecondary },
-};
+const getToneStyles = (): Record<string, { backgroundColor: string; color: string }> => ({
+  pending: { backgroundColor: Colors.warningSurface, color: Colors.primaryDark },
+  resolved: { backgroundColor: Colors.successSurface, color: Colors.success },
+  dismissed: { backgroundColor: Colors.inputBg, color: Colors.textSecondary },
+});
 
 export default function ModeratorDashboard() {
   const { user, role } = useAuth();
@@ -96,7 +95,7 @@ export default function ModeratorDashboard() {
   if (!user || role?.role === "user") {
     return (
       <SafeAreaView style={styles.container}>
-        <StatusBar barStyle="dark-content" />
+        <StatusBar />
         <View style={styles.centerState}>
           <Shield size={36} color={Colors.primaryDark} strokeWidth={2} />
           <Text style={styles.centerTitle}>{tx("app.moderator.dashboard.moderationAccessOnly")}</Text>
@@ -109,7 +108,7 @@ export default function ModeratorDashboard() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" />
+      <StatusBar />
       <ScrollView
         contentContainerStyle={styles.content}
         refreshControl={
@@ -208,7 +207,7 @@ export default function ModeratorDashboard() {
             />
           ) : (
             reports.map((report) => {
-              const label = toneStyles[report.status] ? report.status : "pending";
+              const label = getToneStyles()[report.status] ? report.status : "pending";
               const reporterName = report.reporter?.displayName || tx("moderation.anonymousReporter");
               const reportedName =
                 report.reportedUser?.displayName || report.reportedUserId;
@@ -329,11 +328,11 @@ function SummaryCard({
 }) {
   const palette =
     tone === "warning"
-      ? { backgroundColor: "#FFF4DD", color: Colors.primaryDark }
+      ? { backgroundColor: Colors.warningSurface, color: Colors.primaryDark }
       : tone === "success"
-        ? { backgroundColor: "#E9F8ED", color: Colors.success }
+        ? { backgroundColor: Colors.successSurface, color: Colors.success }
         : tone === "danger"
-          ? { backgroundColor: "#FDEBEC", color: Colors.danger }
+          ? { backgroundColor: Colors.dangerSurface, color: Colors.danger }
           : { backgroundColor: Colors.inputBg, color: Colors.textPrimary };
 
   return (
@@ -349,7 +348,7 @@ function SummaryCard({
 
 function StatusBadge({ label, tone }: { label: string; tone: string }) {
   const palette =
-    toneStyles[tone] || toneStyles.pending;
+    getToneStyles()[tone] || getToneStyles().pending;
 
   return (
     <View style={[styles.statusBadge, { backgroundColor: palette.backgroundColor }]}>
@@ -390,8 +389,8 @@ function EmptyBlock({
 function InlineNotice({ tone, text }: { tone: "danger" | "warning"; text: string }) {
   const palette =
     tone === "danger"
-      ? { backgroundColor: "#FDEBEC", borderColor: "#F5C2C7", color: Colors.danger }
-      : { backgroundColor: "#FFF4DD", borderColor: "#F4D69A", color: Colors.primaryDark };
+      ? { backgroundColor: Colors.dangerSurface, borderColor: "#F5C2C7", color: Colors.danger }
+      : { backgroundColor: Colors.warningSurface, borderColor: "#F4D69A", color: Colors.primaryDark };
 
   return (
     <View style={[styles.inlineNotice, palette]}>
@@ -400,7 +399,7 @@ function InlineNotice({ tone, text }: { tone: "danger" | "warning"; text: string
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createThemedStyles((Colors) => ({
   container: {
     flex: 1,
     backgroundColor: Colors.background,
@@ -553,7 +552,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: Radius.pill,
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.surface,
   },
   footerChipText: {
     ...Typography.bodySmall,
@@ -588,7 +587,7 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: Radius.full,
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.surface,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -632,7 +631,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: Radius.full,
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.surface,
     alignItems: "center",
     justifyContent: "center",
     marginBottom: Spacing.sm,
@@ -671,4 +670,4 @@ const styles = StyleSheet.create({
     textAlign: "center",
     color: Colors.textSecondary,
   },
-});
+}));

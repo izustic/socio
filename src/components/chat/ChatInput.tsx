@@ -1,4 +1,4 @@
-import { Colors, Radius, Spacing, Typography } from "@/src/constants/theme";
+import { createThemedStyles, Colors, Radius, Spacing, Typography } from "@/src/constants/theme";
 import { Audio } from "expo-av";
 import { Image } from "expo-image";
 import {
@@ -13,7 +13,6 @@ import {
 } from "lucide-react-native";
 import React, { useEffect, useRef, useState } from "react";
 import {
-  StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
@@ -366,10 +365,10 @@ export default function ChatInput({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createThemedStyles((Colors) => ({
   container: {
     padding: Spacing.md,
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.surface,
     borderTopWidth: 1,
     borderTopColor: Colors.border,
     gap: Spacing.xs,
@@ -456,7 +455,7 @@ const styles = StyleSheet.create({
     borderRadius: Radius.full,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.surface,
   },
   audioPreviewBar: {
     flex: 1,
@@ -548,4 +547,4 @@ const styles = StyleSheet.create({
   characterCountWarning: {
     color: "#FF5252",
   },
-});
+}));

@@ -1,4 +1,4 @@
-import { Colors, Radius, Spacing, Typography } from "@/src/constants/theme";
+import { createThemedStyles, Colors, Radius, Spacing, Typography } from "@/src/constants/theme";
 import {
   BarChart2,
   Check,
@@ -12,7 +12,6 @@ import React, { useState } from "react";
 import {
   Modal,
   ScrollView,
-  StyleSheet,
   Switch,
   Text,
   TextInput,
@@ -550,10 +549,10 @@ function PollMessage({
 // PollCreator Styles
 // ─────────────────────────────────────────────
 
-const creator = StyleSheet.create({
+const creator = createThemedStyles((Colors) => ({
   container: {
     flex: 1,
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.surface,
   },
   header: {
     flexDirection: "row",
@@ -715,15 +714,15 @@ const creator = StyleSheet.create({
     color: Colors.primary,
     fontWeight: "700",
   },
-});
+}));
 
 // ─────────────────────────────────────────────
 // PollMessage Styles
 // ─────────────────────────────────────────────
 
-const poll_styles = StyleSheet.create({
+const poll_styles = createThemedStyles((Colors) => ({
   wrapper: {
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.surface,
     borderRadius: Radius.lg,
     borderWidth: 1,
     borderColor: Colors.border,
@@ -776,7 +775,7 @@ const poll_styles = StyleSheet.create({
     overflow: "hidden",
     borderWidth: 1,
     borderColor: Colors.border,
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.surface,
     minHeight: 44,
     justifyContent: "center",
   },
@@ -851,7 +850,7 @@ const poll_styles = StyleSheet.create({
     borderColor: Colors.border,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.surface,
   },
   checkboxSelected: {
     borderColor: Colors.primary,
@@ -865,7 +864,7 @@ const poll_styles = StyleSheet.create({
     borderColor: Colors.border,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.surface,
   },
   radioSelected: {
     borderColor: Colors.primary,
@@ -911,7 +910,7 @@ const poll_styles = StyleSheet.create({
     borderRadius: 1.5,
     backgroundColor: Colors.textDisabled,
   },
-});
+}));
 
 export { PollCreator, PollMessage };
 export type { PollData, PollOption };

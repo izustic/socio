@@ -1,11 +1,11 @@
 import OnboardingLayout from '@/src/components/onboarding/OnboardingLayout';
 import { EDUCATION_OPTIONS, GENDER_OPTIONS } from '@/src/constants/onboarding';
-import { Colors, Radius, Spacing, Typography } from '@/src/constants/theme';
+import { createThemedStyles, Colors, Radius, Spacing, Typography } from '@/src/constants/theme';
 import { useOnboarding } from '@/src/context/OnboardingContext';
 import { ChevronDown, Mars, Venus } from 'lucide-react-native';
 import type { LucideIcon } from 'lucide-react-native';
 import { useState } from 'react';
-import { Modal, Pressable, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Modal, Pressable, Text, TouchableOpacity, View } from 'react-native';
 import { optionLabel, tx } from "@/src/utils/localization";
 
 const GENDER_ICONS: Record<(typeof GENDER_OPTIONS)[number], LucideIcon> = {
@@ -121,7 +121,7 @@ export default function ProfileAgeGenderScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createThemedStyles((Colors) => ({
   section: {
     gap: Spacing.md,
   },
@@ -139,7 +139,7 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: Radius.full,
-    backgroundColor: '#F4F1E8',
+    backgroundColor: Colors.inputBg,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -158,7 +158,7 @@ const styles = StyleSheet.create({
   },
   genderTile: {
     flexBasis: '47%',
-    backgroundColor: '#F7F4EB',
+    backgroundColor: Colors.inputBg,
     borderRadius: 18,
     paddingVertical: 18,
     paddingHorizontal: 14,
@@ -178,7 +178,7 @@ const styles = StyleSheet.create({
   selectButton: {
     minHeight: 52,
     borderRadius: 16,
-    backgroundColor: '#F7F4EB',
+    backgroundColor: Colors.inputBg,
     paddingHorizontal: 16,
     flexDirection: 'row',
     alignItems: 'center',
@@ -198,7 +198,7 @@ const styles = StyleSheet.create({
     padding: Spacing.screenPadding,
   },
   menu: {
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.surface,
     borderRadius: 24,
     padding: Spacing.md,
     gap: 8,
@@ -213,7 +213,7 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     paddingHorizontal: 14,
     justifyContent: 'center',
-    backgroundColor: '#F7F4EB',
+    backgroundColor: Colors.inputBg,
   },
   menuItemSelected: {
     backgroundColor: Colors.primary,
@@ -225,4 +225,4 @@ const styles = StyleSheet.create({
   menuItemTextSelected: {
     color: Colors.textPrimary,
   },
-});
+}));

@@ -1,9 +1,9 @@
 import OnboardingLayout from '@/src/components/onboarding/OnboardingLayout';
-import { Colors, Radius, Spacing, Typography } from '@/src/constants/theme';
+import { createThemedStyles, Radius, Spacing, Typography } from '@/src/constants/theme';
 import { useOnboarding } from '@/src/context/OnboardingContext';
 import { getLocationWithCity, requestLocationPermissionStatus } from '@/src/services/location';
 import { useState } from 'react';
-import { Alert, Linking, StyleSheet, Text, View } from 'react-native';
+import { Alert, Linking, Text, View } from 'react-native';
 import { tx } from "@/src/utils/localization";
 
 export default function LocationPermissionScreen() {
@@ -97,7 +97,7 @@ export default function LocationPermissionScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createThemedStyles((Colors) => ({
   ringWrap: {
     alignItems: 'center',
     marginBottom: Spacing.lg,
@@ -106,7 +106,7 @@ const styles = StyleSheet.create({
     width: 132,
     height: 132,
     borderRadius: Radius.full,
-    backgroundColor: '#FBF4DD',
+    backgroundColor: Colors.primaryLight,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -122,11 +122,11 @@ const styles = StyleSheet.create({
     width: 24,
     height: 24,
     borderRadius: Radius.full,
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.surface,
   },
   note: {
     ...Typography.bodySmall,
     textAlign: 'center',
     color: Colors.textSecondary,
   },
-});
+}));

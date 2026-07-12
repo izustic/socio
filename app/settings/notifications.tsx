@@ -1,5 +1,5 @@
 import { SafeAreaView } from "react-native-safe-area-context";
-import {
+import { createThemedStyles,
   Colors,
   Radius,
   Spacing,
@@ -194,9 +194,9 @@ export default function NotificationSettingsScreen() {
                   value={Boolean(settings?.[row.key])}
                   disabled={!settings || savingKey === row.key}
                   onValueChange={(value) => void setToggle(row.key, value)}
-                  trackColor={{ false: Colors.white, true: Colors.primary }}
+                  trackColor={{ false: Colors.inputBg, true: Colors.primary }}
                   thumbColor={Colors.textPrimary}
-                  ios_backgroundColor={Colors.white}
+                  ios_backgroundColor={Colors.inputBg}
                   accessibilityLabel={t(row.titleKey)}
                 />
               </View>
@@ -208,7 +208,7 @@ export default function NotificationSettingsScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" />
+      <StatusBar />
       <View style={styles.header}>
         <TouchableOpacity
           activeOpacity={0.76}
@@ -240,7 +240,7 @@ export default function NotificationSettingsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createThemedStyles((Colors) => ({
   container: {
     flex: 1,
     backgroundColor: Colors.background,
@@ -309,7 +309,7 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: Radius.full,
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.surface,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -327,4 +327,4 @@ const styles = StyleSheet.create({
     color: Colors.textSecondary,
     marginTop: 2,
   },
-});
+}));

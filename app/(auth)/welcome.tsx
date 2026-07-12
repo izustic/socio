@@ -4,8 +4,7 @@ import Input from "@/src/components/ui/Input";
 import {
   env,
   getMissingRequiredEnvVars } from "@/src/config/env";
-import { Colors,
-  Radius,
+import { createThemedStyles, Radius,
   Spacing,
   Typography } from "@/src/constants/theme";
 import { useOnboarding } from "@/src/context/OnboardingContext";
@@ -32,7 +31,6 @@ import {
   Platform,
   ScrollView,
   StatusBar,
-  StyleSheet,
   Text,
   TouchableOpacity,
   View,
@@ -335,7 +333,7 @@ export default function SignUp() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" />
+      <StatusBar />
       <View style={styles.hero}>
         <View style={styles.logoBadge}>
           <Image
@@ -510,7 +508,7 @@ function LegalConsentText({ compact = false }: { compact?: boolean }) {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createThemedStyles((Colors) => ({
   container: {
     flex: 1,
     backgroundColor: Colors.background,
@@ -556,7 +554,7 @@ const styles = StyleSheet.create({
     gap: Spacing.md,
   },
   socialButton: {
-    backgroundColor: "#F6F3EC",
+    backgroundColor: Colors.inputBg,
     borderRadius: Radius.pill,
     paddingVertical: 16,
     paddingHorizontal: 18,
@@ -624,7 +622,7 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(17,17,17,0.24)",
   },
   modal: {
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.surface,
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
     maxHeight: "80%",
@@ -674,4 +672,4 @@ const styles = StyleSheet.create({
     color: "#DB4437",
     marginTop: 4,
   },
-});
+}));

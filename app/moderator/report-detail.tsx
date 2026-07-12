@@ -1,7 +1,7 @@
 import { SafeAreaView } from "react-native-safe-area-context";
 import Avatar from "@/src/components/ui/Avatar";
 import Input from "@/src/components/ui/Input";
-import {
+import { createThemedStyles,
   Colors,
   Radius,
   Spacing,
@@ -34,7 +34,6 @@ import {
   Modal,
   ScrollView,
   StatusBar,
-  StyleSheet,
   Text,
   TouchableOpacity,
   View,
@@ -159,7 +158,7 @@ export default function ReportDetail() {
   if (!user || (role?.role !== "moderator" && role?.role !== "admin")) {
     return (
       <SafeAreaView style={styles.container}>
-        <StatusBar barStyle="dark-content" />
+        <StatusBar />
         <View style={styles.centerState}>
           <ShieldAlert size={36} color={Colors.primaryDark} strokeWidth={2} />
           <Text style={styles.centerTitle}>{tx("app.moderator.reportDetail.moderatorAccessOnly")}</Text>
@@ -172,7 +171,7 @@ export default function ReportDetail() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" />
+      <StatusBar />
       <View style={styles.header}>
         <TouchableOpacity
           activeOpacity={0.82}
@@ -396,10 +395,10 @@ function SectionHeader({
 function StatusPill({ status }: { status: string }) {
   const palette =
     status === "pending"
-      ? { backgroundColor: "#FFF4DD", color: Colors.primaryDark }
+      ? { backgroundColor: Colors.warningSurface, color: Colors.primaryDark }
       : status === "resolved"
-        ? { backgroundColor: "#E9F8ED", color: Colors.success }
-        : { backgroundColor: "#F1F1F1", color: Colors.textSecondary };
+        ? { backgroundColor: Colors.successSurface, color: Colors.success }
+        : { backgroundColor: Colors.inputBg, color: Colors.textSecondary };
 
   return (
     <View style={[styles.statusPill, { backgroundColor: palette.backgroundColor }]}>
@@ -488,7 +487,7 @@ function Notice({ text }: { text: string }) {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createThemedStyles((Colors) => ({
   container: {
     flex: 1,
     backgroundColor: Colors.background,
@@ -548,7 +547,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: Radius.full,
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.surface,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -651,7 +650,7 @@ const styles = StyleSheet.create({
   actionButton: {
     minHeight: 54,
     borderRadius: Radius.pill,
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.surface,
     borderWidth: 1,
     borderColor: Colors.border,
     flexDirection: "row",
@@ -662,7 +661,7 @@ const styles = StyleSheet.create({
   },
   actionButtonDanger: {
     borderColor: "#F5C2C7",
-    backgroundColor: "#FDEBEC",
+    backgroundColor: Colors.dangerSurface,
   },
   actionButtonDisabled: {
     opacity: 0.5,
@@ -676,7 +675,7 @@ const styles = StyleSheet.create({
   },
   notice: {
     borderRadius: Radius.lg,
-    backgroundColor: "#FFF4DD",
+    backgroundColor: Colors.warningSurface,
     padding: Spacing.md,
   },
   noticeText: {
@@ -702,7 +701,7 @@ const styles = StyleSheet.create({
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: "rgba(255,255,255,0.72)",
+    backgroundColor: Colors.surface,
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: Spacing.screenPadding,
@@ -750,7 +749,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   secondaryButton: {
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.surface,
     borderWidth: 1,
     borderColor: Colors.border,
   },
@@ -771,4 +770,4 @@ const styles = StyleSheet.create({
     ...Typography.button,
     color: Colors.white,
   },
-});
+}));

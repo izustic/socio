@@ -1,16 +1,17 @@
 import { Text } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { tx } from "@/src/utils/localization";
+import { Colors } from "@/src/constants/theme";
 
 export default function SwipeEmptyScreen() {
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: '#fff', 
+    <SafeAreaView style={{ flex: 1, backgroundColor: Colors.background,
       justifyContent: 'center', alignItems: 'center' }}>
-      <Text style={{ fontSize: 18, fontWeight: '700' }}>
+      <Text style={{ fontSize: 18, fontWeight: '700', color: Colors.textPrimary }}>
         {tx("app.circle.swipeEmpty.swipeEmptyScreen")}</Text>
-      <Text style={{ color: '#6B6B6B', marginTop: 8 }}>
+      <Text style={{ color: Colors.textSecondary, marginTop: 8 }}>
         {tx("app.circle.swipeEmpty.noMoreProfilesCirclesToSwipe")}</Text>
-      <Text style={{ color: '#6B6B6B', marginTop: 8 }}>
+      <Text style={{ color: Colors.textSecondary, marginTop: 8 }}>
         {tx("app.circle.swipeEmpty.implementationComingInPhase5")}</Text>
     </SafeAreaView>
   );

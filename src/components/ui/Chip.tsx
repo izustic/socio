@@ -1,6 +1,6 @@
-import { Radius } from '@/src/constants/theme';
+import { createThemedStyles, Radius } from '@/src/constants/theme';
 import React from 'react';
-import { StyleSheet, Text, TouchableOpacity, TouchableOpacityProps } from 'react-native';
+import { Text, TouchableOpacity, TouchableOpacityProps } from 'react-native';
 import { BlurView } from 'expo-blur';
 
 interface ChipProps extends TouchableOpacityProps {
@@ -22,7 +22,7 @@ export default function Chip({ label, selected = false, style, ...props }: ChipP
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createThemedStyles((Colors) => ({
   // base: {
   //   borderRadius: Radius.pill,
   //   paddingVertical: 8,
@@ -58,4 +58,4 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     color: '#FFFFFF',
   },
-});
+}));

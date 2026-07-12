@@ -1,9 +1,9 @@
 import OnboardingLayout from '@/src/components/onboarding/OnboardingLayout';
-import { Colors, Spacing, Typography } from '@/src/constants/theme';
+import { createThemedStyles, Spacing, Typography } from '@/src/constants/theme';
 import { useOnboarding } from '@/src/context/OnboardingContext';
 import { requestNotificationPermissionStatus } from '@/src/services/notificationPermission';
 import { useState } from 'react';
-import { Alert, Linking, StyleSheet, Text, View } from 'react-native';
+import { Alert, Linking, Text, View } from 'react-native';
 import { tx } from "@/src/utils/localization";
 
 export default function NotificationsPermissionScreen() {
@@ -90,7 +90,7 @@ export default function NotificationsPermissionScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createThemedStyles((Colors) => ({
   card: {
     alignItems: 'center',
     justifyContent: 'center',
@@ -120,4 +120,4 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     color: Colors.textSecondary,
   },
-});
+}));

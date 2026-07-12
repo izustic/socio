@@ -1,6 +1,6 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
-import { Colors, Radius, Spacing, Typography } from '@/src/constants/theme';
+import { View, Text } from 'react-native';
+import { createThemedStyles, Radius, Spacing, Typography } from '@/src/constants/theme';
 import Avatar from '../ui/Avatar';
 import AvatarStack from '../ui/AvatarStack';
 import CapacityBadge from '../ui/CapacityBadge';
@@ -102,9 +102,9 @@ export default function CircleCard({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createThemedStyles((Colors) => ({
   card: {
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.surface,
     borderRadius: Radius.lg,
     padding: Spacing.md,
     gap: Spacing.sm,
@@ -208,4 +208,4 @@ const styles = StyleSheet.create({
     color: '#FF5252',
     fontWeight: '700',
   },
-});
+}));

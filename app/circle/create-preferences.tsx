@@ -8,7 +8,7 @@ import {
   ONBOARDING_TRAITS,
   TRAIT_EMOJI,
   } from "@/src/constants/onboarding";
-import { Colors,
+import { createThemedStyles, Colors,
   Radius,
   Spacing,
   Typography } from "@/src/constants/theme";
@@ -40,7 +40,6 @@ import {
   Pressable,
   ScrollView,
   StatusBar,
-  StyleSheet,
   Text,
   TouchableOpacity,
   View,
@@ -335,7 +334,7 @@ export default function CreateCirclePreferencesScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" />
+      <StatusBar />
       <View style={styles.header}>
         <TouchableOpacity
           activeOpacity={0.82}
@@ -612,7 +611,7 @@ function ChipSection<T extends string>({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createThemedStyles((Colors) => ({
   container: {
     flex: 1,
     backgroundColor: Colors.background,
@@ -628,7 +627,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: Radius.full,
-    backgroundColor: "#F7F7F7",
+    backgroundColor: Colors.inputBg,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -683,7 +682,7 @@ const styles = StyleSheet.create({
   imagePicker: {
     height: 176,
     borderRadius: 16,
-    backgroundColor: "#F6F6F6",
+    backgroundColor: Colors.inputBg,
     overflow: "hidden",
   },
   circleImage: {
@@ -758,7 +757,7 @@ const styles = StyleSheet.create({
     flex: 1,
     minHeight: 68,
     borderRadius: 16,
-    backgroundColor: "#F6F6F6",
+    backgroundColor: Colors.inputBg,
     alignItems: "center",
     justifyContent: "center",
     gap: 4,
@@ -789,7 +788,7 @@ const styles = StyleSheet.create({
     minHeight: 36,
     paddingHorizontal: 14,
     borderRadius: Radius.full,
-    backgroundColor: "#F6F6F6",
+    backgroundColor: Colors.inputBg,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -814,7 +813,7 @@ const styles = StyleSheet.create({
     color: Colors.textPrimary,
   },
   disabledButton: {
-    backgroundColor: "#F0F0F0",
+    backgroundColor: Colors.inputBg,
   },
   disabledButtonText: {
     color: Colors.textDisabled,
@@ -822,7 +821,7 @@ const styles = StyleSheet.create({
   selectButton: {
     minHeight: 52,
     borderRadius: 16,
-    backgroundColor: "#F6F6F6",
+    backgroundColor: Colors.inputBg,
     paddingHorizontal: 16,
     flexDirection: "row",
     alignItems: "center",
@@ -839,7 +838,7 @@ const styles = StyleSheet.create({
     padding: Spacing.screenPadding,
   },
   menu: {
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.surface,
     borderRadius: 24,
     padding: Spacing.md,
     gap: 8,
@@ -854,7 +853,7 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     paddingHorizontal: 14,
     justifyContent: "center",
-    backgroundColor: "#F6F6F6",
+    backgroundColor: Colors.inputBg,
   },
   menuItemSelected: {
     backgroundColor: Colors.primary,
@@ -866,4 +865,4 @@ const styles = StyleSheet.create({
   menuItemTextSelected: {
     color: Colors.textPrimary,
   },
-});
+}));

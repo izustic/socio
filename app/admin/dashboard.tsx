@@ -1,7 +1,7 @@
 import { SafeAreaView } from "react-native-safe-area-context";
 import Avatar from "@/src/components/ui/Avatar";
 import Button from "@/src/components/ui/Button";
-import {
+import { createThemedStyles,
   Colors,
   Radius,
   Spacing,
@@ -36,20 +36,19 @@ import {
   RefreshControl,
   ScrollView,
   StatusBar,
-  StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from "react-native";
 import { formatLocalizedDateTime, optionLabel, tx } from "@/src/utils/localization";
 
-const toneStyles: Record<string, { backgroundColor: string; color: string }> = {
-  active: { backgroundColor: "#E9F8ED", color: Colors.success },
-  suspended: { backgroundColor: "#FFF4DD", color: Colors.primaryDark },
-  banned: { backgroundColor: "#FDEBEC", color: Colors.danger },
-  moderator: { backgroundColor: "#EEF2FF", color: "#4F46E5" },
-  admin: { backgroundColor: "#F4E8FF", color: "#7C3AED" },
-};
+const getToneStyles = (): Record<string, { backgroundColor: string; color: string }> => ({
+  active: { backgroundColor: Colors.successSurface, color: Colors.success },
+  suspended: { backgroundColor: Colors.warningSurface, color: Colors.primaryDark },
+  banned: { backgroundColor: Colors.dangerSurface, color: Colors.danger },
+  moderator: { backgroundColor: Colors.infoSurface, color: "#4F46E5" },
+  admin: { backgroundColor: Colors.infoSurface, color: "#7C3AED" },
+});
 
 const formatTimestamp = formatLocalizedDateTime;
 
@@ -97,7 +96,7 @@ export default function AdminDashboard() {
   if (!user || role?.role !== "admin") {
     return (
       <SafeAreaView style={styles.container}>
-        <StatusBar barStyle="dark-content" />
+        <StatusBar />
         <View style={styles.centerState}>
           <ShieldCheck size={36} color={Colors.primaryDark} strokeWidth={2} />
           <Text style={styles.centerTitle}>{tx("app.admin.dashboard.adminAccessOnly")}</Text>
@@ -110,7 +109,7 @@ export default function AdminDashboard() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" />
+      <StatusBar />
       <ScrollView
         contentContainerStyle={styles.content}
         refreshControl={
@@ -289,7 +288,7 @@ function SummaryCard({
 }) {
   const palette =
     tone === "warning"
-      ? { backgroundColor: "#FFF4DD", color: Colors.primaryDark }
+      ? { backgroundColor: Colors.warningSurface, color: Colors.primaryDark }
       : { backgroundColor: Colors.inputBg, color: Colors.textPrimary };
 
   return (
@@ -304,7 +303,7 @@ function SummaryCard({
 }
 
 function StatusBadge({ label, tone }: { label: string; tone: string }) {
-  const palette = toneStyles[tone] || {
+  const palette = getToneStyles()[tone] || {
     backgroundColor: Colors.inputBg,
     color: Colors.textSecondary,
   };
@@ -368,7 +367,7 @@ function Notice({ text }: { text: string }) {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createThemedStyles((Colors) => ({
   container: {
     flex: 1,
     backgroundColor: Colors.background,
@@ -559,7 +558,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: Radius.full,
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.surface,
     alignItems: "center",
     justifyContent: "center",
     marginBottom: Spacing.sm,
@@ -574,7 +573,7 @@ const styles = StyleSheet.create({
   },
   notice: {
     borderRadius: Radius.lg,
-    backgroundColor: "#FFF4DD",
+    backgroundColor: Colors.warningSurface,
     padding: Spacing.md,
     marginBottom: Spacing.lg,
   },
@@ -599,4 +598,4 @@ const styles = StyleSheet.create({
     color: Colors.textSecondary,
     textAlign: "center",
   },
-});
+}));

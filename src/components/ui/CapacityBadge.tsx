@@ -1,6 +1,6 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
-import { Colors, Radius, Typography } from '@/src/constants/theme';
+import { View, Text } from 'react-native';
+import { createThemedStyles, Colors, Radius, Typography } from '@/src/constants/theme';
 
 interface CapacityBadgeProps {
   current: number;
@@ -59,7 +59,7 @@ export default function CapacityBadge({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createThemedStyles((Colors) => ({
   container: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -87,4 +87,4 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255, 255, 255, 0.8)',
     borderRadius: Radius.pill,
   },
-});
+}));

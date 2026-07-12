@@ -27,7 +27,7 @@ function TabLayoutInner() {
         tabBarInactiveTintColor: '#AAAAAA',
         headerShown: false,
         tabBarStyle: {
-          backgroundColor: Colors.white,
+          backgroundColor: Colors.surface,
           borderTopWidth: 0,
           elevation: 0,
           height: 60 + insets.bottom,

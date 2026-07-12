@@ -1,5 +1,5 @@
 import { SafeAreaView } from "react-native-safe-area-context";
-import {
+import { createThemedStyles,
   Colors,
   Spacing,
   Typography } from "@/src/constants/theme";
@@ -31,7 +31,6 @@ import {
   FlatList,
   RefreshControl,
   StatusBar,
-  StyleSheet,
   Text,
   TouchableOpacity,
   View,
@@ -104,27 +103,27 @@ const getNotificationStyle = (type: AppNotification["type"]) => {
       return {
         icon: Users,
         iconColor: Colors.textPrimary,
-        backgroundColor: "#F7F7F7",
+        backgroundColor: Colors.inputBg,
       };
     case "circle_accepted":
     case "circle_invite":
       return {
         icon: Heart,
         iconColor: "#FF6B2C",
-        backgroundColor: "#FFF1EA",
+        backgroundColor: Colors.warningSurface,
       };
     case "message":
       return {
         icon: MessageCircle,
         iconColor: Colors.textPrimary,
-        backgroundColor: "#F7F7F7",
+        backgroundColor: Colors.inputBg,
       };
     case "system":
     default:
       return {
         icon: Clock3,
         iconColor: Colors.textPrimary,
-        backgroundColor: "#F7F7F7",
+        backgroundColor: Colors.inputBg,
       };
   }
 };
@@ -312,7 +311,7 @@ export default function NotificationsScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" />
+      <StatusBar />
       <View style={styles.header}>
         <Text style={styles.title}>{t("notifications.settingsTitle")}</Text>
         <TouchableOpacity
@@ -370,7 +369,7 @@ export default function NotificationsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createThemedStyles((Colors) => ({
   container: {
     flex: 1,
     backgroundColor: Colors.background,
@@ -387,7 +386,7 @@ const styles = StyleSheet.create({
     ...Typography.h2,
     fontSize: 22,
     fontWeight: "800",
-    color: "#111111",
+    color: Colors.textPrimary,
   },
   markAllButton: {
     minHeight: 32,
@@ -425,7 +424,7 @@ const styles = StyleSheet.create({
     minWidth: 0,
   },
   notificationTitle: {
-    color: "#111111",
+    color: Colors.textPrimary,
     fontSize: 15,
     fontWeight: "800",
     lineHeight: 20,
@@ -470,7 +469,7 @@ const styles = StyleSheet.create({
   },
   emptyIcon: {
     alignItems: "center",
-    backgroundColor: "#F7F7F7",
+    backgroundColor: Colors.inputBg,
     borderRadius: 24,
     height: 48,
     justifyContent: "center",
@@ -488,4 +487,4 @@ const styles = StyleSheet.create({
     maxWidth: 260,
     textAlign: "center",
   },
-});
+}));

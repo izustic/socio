@@ -1,5 +1,5 @@
 import Avatar from "@/src/components/ui/Avatar";
-import { Colors, Radius, Spacing, Typography } from "@/src/constants/theme";
+import { createThemedStyles, Colors, Radius, Spacing, Typography } from "@/src/constants/theme";
 import { useAuth } from "@/src/context/AuthContext";
 import { useSwipeTabVisibility } from "@/src/context/SwipeTabVisibilityContext";
 import {
@@ -277,7 +277,7 @@ export default function CircleInfoScreen() {
   if (loading) {
     return (
       <SafeAreaView style={styles.container}>
-        <StatusBar barStyle="dark-content" />
+        <StatusBar />
         <View style={styles.centered}>
           <ActivityIndicator size="large" color={Colors.primary} />
         </View>
@@ -288,7 +288,7 @@ export default function CircleInfoScreen() {
   if (!circle) {
     return (
       <SafeAreaView style={styles.container}>
-        <StatusBar barStyle="dark-content" />
+        <StatusBar />
         <View style={styles.header}>
           <TouchableOpacity
             activeOpacity={0.76}
@@ -310,7 +310,7 @@ export default function CircleInfoScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" />
+      <StatusBar />
       <View style={styles.header}>
         <TouchableOpacity
           activeOpacity={0.76}
@@ -600,7 +600,7 @@ export default function CircleInfoScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createThemedStyles((Colors) => ({
   container: {
     flex: 1,
     backgroundColor: Colors.background,
@@ -649,7 +649,7 @@ const styles = StyleSheet.create({
   },
   heroAvatar: {
     borderWidth: 3,
-    borderColor: Colors.white,
+    borderColor: Colors.surface,
   },
   heroAvatarOverlap: {
     marginLeft: -18,
@@ -779,7 +779,7 @@ const styles = StyleSheet.create({
     borderRadius: Radius.pill,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.surface,
     borderWidth: 1,
     borderColor: Colors.border,
   },
@@ -931,7 +931,7 @@ const styles = StyleSheet.create({
   },
   successOverlay: {
     flex: 1,
-    backgroundColor: "rgba(255,255,255,0.72)",
+    backgroundColor: Colors.surface,
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: Spacing.screenPadding,
@@ -977,4 +977,4 @@ const styles = StyleSheet.create({
     ...Typography.button,
     color: Colors.textPrimary,
   },
-});
+}));

@@ -1,6 +1,6 @@
-import { Colors, Radius } from '@/src/constants/theme';
+import { createThemedStyles, Radius } from '@/src/constants/theme';
 import React from 'react';
-import { Image, StyleProp, StyleSheet, View, ViewStyle } from 'react-native';
+import { Image, StyleProp, View, ViewStyle } from 'react-native';
 
 type AvatarSize = 'sm' | 'md' | 'lg' | 'xl' | number;
 
@@ -43,7 +43,7 @@ export default function Avatar({ uri, size = 'md', placeholder = false, style }:
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createThemedStyles((Colors) => ({
   image: {
     backgroundColor: Colors.placeholder,
   },
@@ -60,4 +60,4 @@ const styles = StyleSheet.create({
     borderStyle: 'dotted',
     borderColor: 'rgba(245, 197, 24, 0.4)',
   },
-});
+}));

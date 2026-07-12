@@ -1,7 +1,7 @@
 import OnboardingLayout from '@/src/components/onboarding/OnboardingLayout';
 import Input from '@/src/components/ui/Input';
 import { useAuth } from '@/src/context/AuthContext';
-import { Colors, Radius, Spacing, Typography } from '@/src/constants/theme';
+import { createThemedStyles, Radius, Spacing, Typography } from '@/src/constants/theme';
 import { useOnboarding } from '@/src/context/OnboardingContext';
 import {
   pickProfileMedia,
@@ -197,7 +197,7 @@ export default function ProfilePhotoNameScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createThemedStyles((Colors) => ({
   mediaGrid: {
     flexDirection: 'row',
     gap: Spacing.sm,
@@ -206,7 +206,7 @@ const styles = StyleSheet.create({
     flex: 1,
     height: 220,
     borderRadius: 24,
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.surface,
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
@@ -236,7 +236,7 @@ const styles = StyleSheet.create({
   smallTile: {
     flex: 1,
     borderRadius: 20,
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.surface,
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
@@ -249,7 +249,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: Colors.primary,
     borderStyle: 'dashed',
-    backgroundColor: '#FFFDF7',
+    backgroundColor: Colors.inputBg,
   },
   emptyContent: {
     flex: 1,
@@ -314,4 +314,4 @@ const styles = StyleSheet.create({
     borderRadius: Radius.pill,
     backgroundColor: Colors.primary,
   },
-});
+}));

@@ -1,5 +1,5 @@
 import { SafeAreaView } from "react-native-safe-area-context";
-import {
+import { createThemedStyles,
   Colors,
   Radius,
   Spacing,
@@ -31,7 +31,6 @@ import {
   Platform,
   ScrollView,
   StatusBar,
-  StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
@@ -166,7 +165,7 @@ export default function DeleteAccountScreen() {
   if (stage === "farewell") {
     return (
       <SafeAreaView style={styles.container}>
-        <StatusBar barStyle="dark-content" />
+        <StatusBar />
         <View style={styles.farewellWrap}>
           <View style={styles.farewellCard}>
             <View style={styles.farewellIcon}>
@@ -191,7 +190,7 @@ export default function DeleteAccountScreen() {
   if (stage === "deleting") {
     return (
       <SafeAreaView style={styles.container}>
-        <StatusBar barStyle="dark-content" />
+        <StatusBar />
         <View style={styles.farewellWrap}>
           <View style={styles.deletingCard}>
             <Animated.View style={[styles.deletingIcon, spinStyle]}>
@@ -213,7 +212,7 @@ export default function DeleteAccountScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" />
+      <StatusBar />
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : undefined}
         style={styles.keyboard}
@@ -345,7 +344,7 @@ export default function DeleteAccountScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createThemedStyles((Colors) => ({
   container: {
     flex: 1,
     backgroundColor: Colors.background,
@@ -383,7 +382,7 @@ const styles = StyleSheet.create({
     width: 74,
     height: 74,
     borderRadius: 37,
-    backgroundColor: "#FFE8E8",
+    backgroundColor: Colors.dangerSurface,
     alignItems: "center",
     justifyContent: "center",
     marginTop: Spacing.lg,
@@ -429,7 +428,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     gap: Spacing.md,
     borderRadius: Radius.lg,
-    backgroundColor: "#FFF1EA",
+    backgroundColor: Colors.warningSurface,
     padding: Spacing.lg,
     marginTop: Spacing.lg,
   },
@@ -584,7 +583,7 @@ const styles = StyleSheet.create({
     width: "100%",
     height: 6,
     borderRadius: Radius.full,
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.surface,
     marginTop: Spacing.lg,
     overflow: "hidden",
   },
@@ -603,7 +602,7 @@ const styles = StyleSheet.create({
     width: 58,
     height: 58,
     borderRadius: 29,
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.surface,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -634,4 +633,4 @@ const styles = StyleSheet.create({
     ...Typography.button,
     color: Colors.white,
   },
-});
+}));

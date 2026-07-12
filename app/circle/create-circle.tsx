@@ -2,7 +2,7 @@ import AlertModal from "@/src/components/ui/AlertModal";
 import Button from "@/src/components/ui/Button";
 import Chip from "@/src/components/ui/Chip";
 import Input from "@/src/components/ui/Input";
-import { Colors, Radius, Spacing, Typography } from "@/src/constants/theme";
+import { createThemedStyles, Colors, Radius, Spacing, Typography } from "@/src/constants/theme";
 import { useAuth } from "@/src/context/AuthContext";
 import { useSwipeTabVisibility } from "@/src/context/SwipeTabVisibilityContext";
 import { createCircle } from "@/src/services/circle";
@@ -16,7 +16,6 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import {
   ScrollView,
   StatusBar,
-  StyleSheet,
   Text,
   TouchableOpacity,
   View,
@@ -184,7 +183,7 @@ export default function CreateCircleScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" />
+      <StatusBar />
       <View style={styles.header}>
         <Text style={styles.title}>{tx("app.circle.createCircle.createACircle")}</Text>
       </View>
@@ -352,7 +351,7 @@ export default function CreateCircleScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createThemedStyles((Colors) => ({
   container: {
     flex: 1,
     backgroundColor: Colors.background,
@@ -376,7 +375,7 @@ const styles = StyleSheet.create({
   imagePicker: {
     height: 176,
     borderRadius: 16,
-    backgroundColor: "#F6F6F6",
+    backgroundColor: Colors.inputBg,
     overflow: "hidden",
   },
   circleImage: {
@@ -469,7 +468,7 @@ const styles = StyleSheet.create({
     borderRadius: Radius.full,
     backgroundColor: Colors.primary,
     borderWidth: 3,
-    borderColor: Colors.white,
+    borderColor: Colors.surface,
   },
   dayMeta: {
     flexDirection: "row",
@@ -485,4 +484,4 @@ const styles = StyleSheet.create({
     paddingTop: Spacing.sm,
     backgroundColor: Colors.background,
   },
-});
+}));

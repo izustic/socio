@@ -15,7 +15,7 @@ import {
 import type { LucideIcon } from "lucide-react-native";
 import React from "react";
 import { ScrollView, StatusBar, StyleSheet, Text, View } from "react-native";
-import { Colors, Radius, Spacing, Typography } from "@/src/constants/theme";
+import { createThemedStyles, Colors, Radius, Spacing, Typography } from "@/src/constants/theme";
 import { tx } from "@/src/utils/localization";
 
 type PlanRow = {
@@ -92,7 +92,7 @@ const BENEFITS: Benefit[] = [
 export default function LikesScreen() {
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" />
+      <StatusBar />
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.content}
@@ -160,7 +160,7 @@ export default function LikesScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createThemedStyles((Colors) => ({
   container: {
     flex: 1,
     backgroundColor: Colors.background,
@@ -330,7 +330,7 @@ const styles = StyleSheet.create({
     width: 46,
     height: 46,
     borderRadius: 14,
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.surface,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -347,4 +347,4 @@ const styles = StyleSheet.create({
     color: Colors.textSecondary,
     marginTop: 2,
   },
-});
+}));

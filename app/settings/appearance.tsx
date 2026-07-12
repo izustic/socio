@@ -1,5 +1,5 @@
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Colors, Radius, Spacing, Typography } from "@/src/constants/theme";
+import { createThemedStyles, Colors, Radius, Spacing, Typography } from "@/src/constants/theme";
 import { useLocale } from "@/src/providers/LocaleProvider";
 import { useTheme } from "@/src/providers/ThemeProvider";
 import { LanguagePreference } from "@/src/services/LocalizationService";
@@ -7,7 +7,7 @@ import { ThemePreference } from "@/src/services/ThemeService";
 import { goBackOrReplace } from "@/src/utils/navigation";
 import { Check, ChevronLeft, Languages, Moon, Sun } from "lucide-react-native";
 import React from "react";
-import { ScrollView, StatusBar, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { ScrollView, StatusBar, Text, TouchableOpacity, View } from "react-native";
 
 const languageOptions: { value: LanguagePreference; labelKey: string }[] = [
   { value: "system", labelKey: "common.system" },
@@ -39,11 +39,11 @@ export default function AppearanceSettingsScreen() {
     formatNumber,
     formatCurrency,
   } = useLocale();
-  const { preference, setThemePreference } = useTheme();
+  const { preference, colorScheme, setThemePreference } = useTheme();
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" />
+      <StatusBar />
       <View style={styles.header}>
         <TouchableOpacity
           activeOpacity={0.76}
@@ -73,7 +73,7 @@ export default function AppearanceSettingsScreen() {
         </SettingsSection>
 
         <SettingsSection
-          icon={preference === "dark" ? <Moon size={18} color={Colors.textPrimary} /> : <Sun size={18} color={Colors.textPrimary} />}
+          icon={colorScheme === "dark" ? <Moon size={18} color={Colors.textPrimary} /> : <Sun size={18} color={Colors.textPrimary} />}
           title={t("settings.appearance")}
           description={t("settings.appearanceDescription")}
         >
@@ -155,7 +155,7 @@ function InfoRow({ label, value }: { label: string; value: string }) {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createThemedStyles((Colors) => ({
   container: {
     flex: 1,
     backgroundColor: Colors.background,
@@ -248,4 +248,4 @@ const styles = StyleSheet.create({
     textAlign: "right",
     color: Colors.textPrimary,
   },
-});
+}));

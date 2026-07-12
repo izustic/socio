@@ -1,8 +1,7 @@
-import { Colors, Radius, Typography } from '@/src/constants/theme';
+import { createThemedStyles, Colors, Radius, Typography } from '@/src/constants/theme';
 import React from 'react';
 import {
   ActivityIndicator,
-  StyleSheet,
   Text,
   TouchableOpacity,
   TouchableOpacityProps,
@@ -56,7 +55,7 @@ export default function Button({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createThemedStyles((Colors) => ({
   base: {
     borderRadius: Radius.pill,
     paddingVertical: 16,
@@ -71,7 +70,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.primary,
   },
   outline: {
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.surface,
   },
   ghost: {
     backgroundColor: 'transparent',
@@ -88,4 +87,4 @@ const styles = StyleSheet.create({
   disabled: {
     opacity: 0.5,
   },
-});
+}));

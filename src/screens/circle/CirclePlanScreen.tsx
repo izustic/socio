@@ -18,6 +18,7 @@ import {
   ArrowLeft,
   CalendarDays,
   Check,
+  ChevronLeft,
   ChevronRight,
   CircleDollarSign,
   Clock3,
@@ -82,6 +83,7 @@ export default function CirclePlanScreen() {
   const [query, setQuery] = useState("");
   const [detail, setDetail] = useState<MeetupExperience | null>(null);
   const [creating, setCreating] = useState(false);
+  const [addingTime, setAddingTime] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -148,6 +150,22 @@ export default function CirclePlanScreen() {
     })),
   }));
 
+  const addCustomTime = (label: string, detail: string, dateKey: string) => {
+    const id = `custom-${dateKey}-${Date.now()}`;
+    updatePlan((current) => ({
+      ...current,
+      selectedTimeId: id,
+      timeOptions: [
+        ...current.timeOptions.map((option) => ({
+          ...option,
+          votes: option.votes.filter((memberId) => memberId !== currentUserId),
+        })),
+        { id, label, detail, votes: [currentUserId] },
+      ],
+    }));
+    setAddingTime(false);
+  };
+
   const voteForExperience = (eventId: string) => updatePlan((current) => ({
     ...current,
     selectedExperienceId: eventId,
@@ -210,6 +228,7 @@ export default function CirclePlanScreen() {
           memberCount={circle.members.length}
           currentUserId={currentUserId}
           onVote={voteForTime}
+          onSuggest={() => setAddingTime(true)}
           onContinue={continueFromTime}
         />
       )}
@@ -268,6 +287,11 @@ export default function CirclePlanScreen() {
         onClose={() => setDetail(null)}
         onVote={(id) => { voteForExperience(id); setDetail(null); }}
       />
+      <CustomTimeModal
+        visible={addingTime}
+        onClose={() => setAddingTime(false)}
+        onCreate={addCustomTime}
+      />
       <CreateEventModal
         visible={creating}
         selectedTime={selectedTime ? `${selectedTime.label}, ${selectedTime.detail}` : ""}
@@ -287,9 +311,9 @@ export default function CirclePlanScreen() {
   );
 }
 
-function TimeStep({ plan, members, memberCount, currentUserId, onVote, onContinue }: {
+function TimeStep({ plan, members, memberCount, currentUserId, onVote, onSuggest, onContinue }: {
   plan: MeetupPlan; members: SwipeCandidate[]; memberCount: number; currentUserId: string;
-  onVote: (id: string) => void; onContinue: () => void;
+  onVote: (id: string) => void; onSuggest: () => void; onContinue: () => void;
 }) {
   const selected = plan.timeOptions.find((option) => option.id === plan.selectedTimeId);
   return (
@@ -312,7 +336,7 @@ function TimeStep({ plan, members, memberCount, currentUserId, onVote, onContinu
             );
           })}
         </View>
-        <TouchableOpacity style={styles.addOption}><Plus size={18} color={Colors.textPrimary} /><Text style={styles.addOptionText}>Suggest another time</Text></TouchableOpacity>
+        <TouchableOpacity style={styles.addOption} onPress={onSuggest}><Plus size={18} color={Colors.textPrimary} /><Text style={styles.addOptionText}>Suggest another time</Text></TouchableOpacity>
         <View style={styles.waitingCard}>
           <Clock3 size={20} color={Colors.primaryDark} />
           <View style={styles.optionCopy}>
@@ -323,6 +347,173 @@ function TimeStep({ plan, members, memberCount, currentUserId, onVote, onContinu
         </View>
       </ScrollView>
       <View style={styles.footer}><Button title="Choose an experience" disabled={!selected} onPress={onContinue} /></View>
+    </View>
+  );
+}
+
+function CustomTimeModal({ visible, onClose, onCreate }: {
+  visible: boolean;
+  onClose: () => void;
+  onCreate: (label: string, detail: string, dateKey: string) => void;
+}) {
+  const today = useMemo(() => {
+    const value = new Date();
+    return new Date(value.getFullYear(), value.getMonth(), value.getDate());
+  }, []);
+  const latest = useMemo(() => {
+    const value = new Date(today);
+    value.setDate(value.getDate() + 30);
+    return value;
+  }, [today]);
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [visibleMonth, setVisibleMonth] = useState(
+    () => new Date(today.getFullYear(), today.getMonth(), 1),
+  );
+  const [hour, setHour] = useState("6");
+  const [minute, setMinute] = useState("30");
+  const [period, setPeriod] = useState("PM");
+
+  const calendarDays = useMemo(() => {
+    const firstWeekday = visibleMonth.getDay();
+    const daysInMonth = new Date(
+      visibleMonth.getFullYear(),
+      visibleMonth.getMonth() + 1,
+      0,
+    ).getDate();
+    return [
+      ...Array.from({ length: firstWeekday }, () => null),
+      ...Array.from(
+        { length: daysInMonth },
+        (_, index) => new Date(visibleMonth.getFullYear(), visibleMonth.getMonth(), index + 1),
+      ),
+    ];
+  }, [visibleMonth]);
+
+  const shiftMonth = (amount: number) => {
+    setVisibleMonth((current) =>
+      new Date(current.getFullYear(), current.getMonth() + amount, 1),
+    );
+  };
+
+  const firstAllowedMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+  const lastAllowedMonth = new Date(latest.getFullYear(), latest.getMonth(), 1);
+  const canGoBack = visibleMonth.getTime() > firstAllowedMonth.getTime();
+  const canGoForward = visibleMonth.getTime() < lastAllowedMonth.getTime();
+
+  const submit = () => {
+    if (!selectedDate) {
+      Alert.alert("Choose a date", "Select a day from the calendar.");
+      return;
+    }
+
+    const label = selectedDate.toLocaleDateString(undefined, {
+      weekday: "long",
+      month: "short",
+      day: "numeric",
+    });
+    const dateKey = `${selectedDate.getFullYear()}-${String(selectedDate.getMonth() + 1).padStart(2, "0")}-${String(selectedDate.getDate()).padStart(2, "0")}`;
+    onCreate(label, `${hour}:${minute} ${period}`, dateKey);
+    setSelectedDate(null);
+  };
+
+  return (
+    <Modal
+      visible={visible}
+      animationType="slide"
+      presentationStyle="pageSheet"
+      onRequestClose={onClose}
+    >
+      <SafeAreaView style={styles.modalPage}>
+        <View style={styles.modalHeader}>
+          <TouchableOpacity style={styles.iconButton} onPress={onClose}>
+            <X size={21} color={Colors.textPrimary} />
+          </TouchableOpacity>
+          <View style={styles.headerCopy}>
+            <Text style={styles.headerTitle}>Suggest a time</Text>
+            <Text style={styles.headerSubtitle}>Everyone will vote on this option</Text>
+          </View>
+          <View style={styles.iconButton} />
+        </View>
+        <ScrollView contentContainerStyle={styles.modalContent}>
+          <View style={styles.customTimeHero}>
+            <CalendarDays size={34} color={Colors.primaryDark} />
+            <Text style={styles.optionTitle}>Add another date and time</Text>
+            <Text style={styles.optionMeta}>Suggestions must be within the next 30 days.</Text>
+          </View>
+          <View style={styles.calendarCard}>
+            <View style={styles.calendarHeader}>
+              <TouchableOpacity style={styles.calendarArrow} disabled={!canGoBack} onPress={() => shiftMonth(-1)}>
+                <ChevronLeft size={20} color={canGoBack ? Colors.textPrimary : Colors.textDisabled} />
+              </TouchableOpacity>
+              <Text style={styles.calendarMonth}>
+                {visibleMonth.toLocaleDateString(undefined, { month: "long", year: "numeric" })}
+              </Text>
+              <TouchableOpacity style={styles.calendarArrow} disabled={!canGoForward} onPress={() => shiftMonth(1)}>
+                <ChevronRight size={20} color={canGoForward ? Colors.textPrimary : Colors.textDisabled} />
+              </TouchableOpacity>
+            </View>
+            <View style={styles.weekRow}>
+              {["S", "M", "T", "W", "T", "F", "S"].map((day, index) => <Text key={`${day}-${index}`} style={styles.weekday}>{day}</Text>)}
+            </View>
+            <View style={styles.calendarGrid}>
+              {calendarDays.map((day, index) => {
+                if (!day) return <View key={`empty-${index}`} style={styles.dayCell} />;
+                const disabled = day < today || day > latest;
+                const selected = selectedDate?.toDateString() === day.toDateString();
+                const isToday = today.toDateString() === day.toDateString();
+                return (
+                  <TouchableOpacity key={day.toISOString()} style={styles.dayCell} disabled={disabled} onPress={() => setSelectedDate(day)}>
+                    <View style={[styles.dayCircle, selected && styles.dayCircleSelected, isToday && !selected && styles.dayCircleToday]}>
+                      <Text style={[styles.dayText, disabled && styles.dayTextDisabled, selected && styles.dayTextSelected]}>{day.getDate()}</Text>
+                    </View>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          </View>
+          <Text style={styles.timePickerLabel}>CHOOSE A TIME</Text>
+          <View style={styles.timePickerRow}>
+            <WheelPicker label="Hour" items={Array.from({ length: 12 }, (_, index) => String(index + 1))} value={hour} onChange={setHour} />
+            <Text style={styles.timeSeparator}>:</Text>
+            <WheelPicker label="Minute" items={Array.from({ length: 12 }, (_, index) => String(index * 5).padStart(2, "0"))} value={minute} onChange={setMinute} />
+            <WheelPicker label="" items={["AM", "PM"]} value={period} onChange={setPeriod} />
+          </View>
+        </ScrollView>
+        <View style={styles.footer}>
+          <Button title="Add time option" onPress={submit} />
+        </View>
+      </SafeAreaView>
+    </Modal>
+  );
+}
+
+function WheelPicker({ label, items, value, onChange }: {
+  label: string;
+  items: string[];
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  const rowHeight = 44;
+  const selectedIndex = Math.max(0, items.indexOf(value));
+  return (
+    <View style={styles.wheelColumn}>
+      <Text style={styles.wheelLabel}>{label}</Text>
+      <View style={styles.wheelWindow}>
+        <View pointerEvents="none" style={styles.wheelSelection} />
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          snapToInterval={rowHeight}
+          decelerationRate="fast"
+          contentOffset={{ x: 0, y: selectedIndex * rowHeight }}
+          contentContainerStyle={styles.wheelContent}
+          onMomentumScrollEnd={(event) => {
+            const index = Math.max(0, Math.min(items.length - 1, Math.round(event.nativeEvent.contentOffset.y / rowHeight)));
+            onChange(items[index]);
+          }}
+        >
+          {items.map((item) => <TouchableOpacity key={item} style={styles.wheelItem} onPress={() => onChange(item)}><Text style={[styles.wheelText, item === value && styles.wheelTextSelected]}>{item}</Text></TouchableOpacity>)}
+        </ScrollView>
+      </View>
     </View>
   );
 }
@@ -410,4 +601,30 @@ const styles = createThemedStyles((Colors) => ({
   reviewHero: { alignItems: "center", borderRadius: Radius.lg, backgroundColor: Colors.primaryLight, padding: Spacing.lg, marginBottom: Spacing.md }, reviewHeroIcon: { width: 76, height: 76, borderRadius: 38, backgroundColor: Colors.surface, alignItems: "center", justifyContent: "center", marginBottom: 12 }, reviewTitle: { ...Typography.h3, textAlign: "center" }, reviewSubtitle: { ...Typography.bodySmall, marginTop: 4 }, detailCard: { borderWidth: 1, borderColor: Colors.border, borderRadius: Radius.md, overflow: "hidden" }, detailRow: { minHeight: 58, flexDirection: "row", alignItems: "center", paddingHorizontal: 12, borderBottomWidth: 1, borderBottomColor: Colors.divider }, detailIcon: { width: 31 }, detailLabel: { ...Typography.label, width: 64 }, detailValue: { ...Typography.bodySmall, color: Colors.textPrimary, flex: 1, textAlign: "right", fontWeight: "600" }, confirmationRow: { flexDirection: "row", justifyContent: "center", gap: 17, marginVertical: 10 }, confirmationMember: { width: 54, alignItems: "center", gap: 5 }, confirmationName: { ...Typography.label, fontSize: 9, maxWidth: 54 }, readyDot: { position: "absolute", right: -2, bottom: -2, width: 18, height: 18, borderRadius: 9, backgroundColor: Colors.success, alignItems: "center", justifyContent: "center", borderWidth: 2, borderColor: Colors.surface }, bookingNotice: { flexDirection: "row", gap: 10, backgroundColor: Colors.warningSurface, borderRadius: Radius.md, padding: 14, marginTop: Spacing.md },
   scheduled: { flexGrow: 1, justifyContent: "center", padding: Spacing.lg, gap: 13 }, successIcon: { width: 104, height: 104, borderRadius: 52, backgroundColor: Colors.successSurface, alignItems: "center", justifyContent: "center", alignSelf: "center" }, successCheck: { position: "absolute", right: 11, bottom: 9, width: 26, height: 26, borderRadius: 13, backgroundColor: Colors.success, alignItems: "center", justifyContent: "center" }, scheduledTitle: { ...Typography.h1, fontSize: 29, textAlign: "center" }, scheduledSubtitle: { ...Typography.bodySmall, textAlign: "center", marginBottom: 10 }, scheduledCard: { borderRadius: Radius.lg, borderWidth: 1, borderColor: Colors.border, padding: Spacing.md }, expiryText: { ...Typography.bodySmall, textAlign: "center", fontSize: 11 },
   modalPage: { flex: 1, backgroundColor: Colors.background }, modalHeader: { flexDirection: "row", alignItems: "center", minHeight: 60, paddingHorizontal: 12, borderBottomWidth: 1, borderBottomColor: Colors.divider }, modalContent: { padding: Spacing.lg, paddingBottom: 40 }, detailArtwork: { height: 190, borderRadius: Radius.lg, alignItems: "center", justifyContent: "center", backgroundColor: Colors.primaryLight, marginBottom: Spacing.lg }, sponsoredLarge: { position: "absolute", top: 14, left: 14, flexDirection: "row", gap: 5, paddingHorizontal: 9, paddingVertical: 6, backgroundColor: Colors.surface, borderRadius: Radius.pill }, linkRow: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 7, paddingVertical: Spacing.lg }, linkText: { ...Typography.label, color: Colors.primaryDark }, field: { marginBottom: 15 }, fieldLabel: { ...Typography.label, fontSize: 10, marginBottom: 6 }, fieldInput: { minHeight: 48, borderRadius: Radius.md, backgroundColor: Colors.inputBg, paddingHorizontal: 13, color: Colors.textPrimary, fontSize: 14 }, multiline: { minHeight: 90, paddingTop: 13, textAlignVertical: "top" }, formReadOnly: { flexDirection: "row", alignItems: "center", gap: 11, backgroundColor: Colors.inputBg, borderRadius: Radius.md, padding: 13, marginBottom: 15 }, formValue: { ...Typography.body, fontWeight: "600" }, visibilityRow: { flexDirection: "row", gap: 10, marginBottom: 12 }, visibilityChoice: { flex: 1, gap: 3, borderWidth: 1, borderColor: Colors.border, borderRadius: Radius.md, padding: 13 }, visibilityChoiceActive: { borderColor: Colors.primary, backgroundColor: Colors.primaryLight }, ruleCard: { backgroundColor: Colors.warningSurface, borderRadius: Radius.md, padding: 13 },
+  customTimeHero: { alignItems: "center", gap: Spacing.sm, backgroundColor: Colors.primaryLight, borderRadius: Radius.lg, padding: Spacing.lg, marginBottom: Spacing.lg },
+  calendarCard: { borderWidth: 1, borderColor: Colors.border, borderRadius: Radius.lg, padding: Spacing.md, marginBottom: Spacing.lg },
+  calendarHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: Spacing.md },
+  calendarArrow: { width: 36, height: 36, alignItems: "center", justifyContent: "center", borderRadius: Radius.full, backgroundColor: Colors.inputBg },
+  calendarMonth: { ...Typography.h3, fontSize: 16 },
+  weekRow: { flexDirection: "row", marginBottom: Spacing.sm },
+  weekday: { ...Typography.label, color: Colors.textSecondary, textAlign: "center", width: "14.2857%" },
+  calendarGrid: { flexDirection: "row", flexWrap: "wrap" },
+  dayCell: { width: "14.2857%", aspectRatio: 1, alignItems: "center", justifyContent: "center" },
+  dayCircle: { width: 35, height: 35, borderRadius: Radius.full, alignItems: "center", justifyContent: "center" },
+  dayCircleSelected: { backgroundColor: Colors.primary },
+  dayCircleToday: { borderWidth: 1, borderColor: Colors.primary },
+  dayText: { ...Typography.bodySmall, color: Colors.textPrimary, fontWeight: "600" },
+  dayTextDisabled: { color: Colors.textDisabled },
+  dayTextSelected: { color: Colors.inverseText, fontWeight: "800" },
+  timePickerLabel: { ...Typography.label, color: Colors.textSecondary, marginBottom: Spacing.sm },
+  timePickerRow: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: Spacing.sm },
+  timeSeparator: { ...Typography.h2, marginTop: 18 },
+  wheelColumn: { flex: 1, alignItems: "center" },
+  wheelLabel: { ...Typography.label, height: 18, color: Colors.textSecondary },
+  wheelWindow: { height: 132, width: "100%", overflow: "hidden" },
+  wheelSelection: { position: "absolute", top: 44, left: 0, right: 0, height: 44, borderRadius: Radius.sm, backgroundColor: Colors.primaryLight },
+  wheelContent: { paddingVertical: 44 },
+  wheelItem: { height: 44, alignItems: "center", justifyContent: "center" },
+  wheelText: { ...Typography.body, color: Colors.textDisabled, fontWeight: "600" },
+  wheelTextSelected: { color: Colors.textPrimary, fontWeight: "800", fontSize: 17 },
 }));

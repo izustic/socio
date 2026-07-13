@@ -15,10 +15,12 @@ import { Circle } from "@/src/types";
 import { getCircleMeetupDeadline, getCountdownParts } from "@/src/utils/circleDeadline";
 import { getCircleExitState } from "@/src/utils/circleExit";
 import { router, useLocalSearchParams } from "expo-router";
+import { MoreHorizontal } from "lucide-react-native";
 import React, { useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  Pressable,
   ScrollView,
   StatusBar,
   Text,
@@ -46,6 +48,7 @@ export default function CircleCompleteScreen() {
   const [members, setMembers] = useState<SwipeCandidate[]>([]);
   const [loading, setLoading] = useState(true);
   const [exiting, setExiting] = useState(false);
+  const [moreMenuVisible, setMoreMenuVisible] = useState(false);
   const [now, setNow] = useState(Date.now());
 
   useEffect(() => {
@@ -179,6 +182,11 @@ export default function CircleCompleteScreen() {
     );
   };
 
+  const openMoreMenu = () => {
+    if (!circle) return;
+    setMoreMenuVisible(true);
+  };
+
   if (loading) {
     return (
       <SafeAreaView style={styles.container}>
@@ -218,8 +226,18 @@ export default function CircleCompleteScreen() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.badge}>
-          <Text style={styles.badgeText}>{tx("circle.CircleCompleteScreen.complete")}</Text>
+        <View style={styles.topRow}>
+          <View style={styles.badge}>
+            <Text style={styles.badgeText}>{tx("circle.CircleCompleteScreen.complete")}</Text>
+          </View>
+          <TouchableOpacity
+            accessibilityLabel="More Circle options"
+            activeOpacity={0.7}
+            style={styles.moreButton}
+            onPress={openMoreMenu}
+          >
+            <MoreHorizontal size={23} color={Colors.textPrimary} />
+          </TouchableOpacity>
         </View>
 
         <View>
@@ -270,31 +288,61 @@ export default function CircleCompleteScreen() {
 
       <View style={styles.footer}>
         <Button
-          title={tx("circle.CircleCompleteScreen.enterCircle")}
-          onPress={() => router.push("/(tabs)/home?circleView=chat")}
+          title="Plan a meetup"
+          onPress={() =>
+            router.push({
+              pathname: "/circle/plan",
+              params: circle?.id ? { circleId: circle.id } : undefined,
+            })
+          }
         />
         <Button
-          title={tx("circle.CircleCompleteScreen.viewDetails")}
-          variant="ghost"
-          onPress={() => router.push("/(tabs)/home?circleView=progress")}
+          title={tx("circle.CircleCompleteScreen.enterCircle")}
+          variant="outline"
+          onPress={() => router.push("/(tabs)/home?circleView=chat")}
         />
-        {exitState && (
-          <TouchableOpacity
-            activeOpacity={0.76}
-            style={[
-              styles.exitButton,
-              exitState.locked && styles.exitButtonDisabled,
-            ]}
-            disabled={exitState.locked || exiting}
-            onPress={confirmExitCircle}
-          >
-            <Text style={styles.exitButtonText}>
-              {exiting ? tx("circle.CircleCompleteScreen.working") : exitState.label}
-            </Text>
-            <Text style={styles.exitHelper}>{exitState.helperText}</Text>
-          </TouchableOpacity>
-        )}
       </View>
+
+      {moreMenuVisible && (
+        <View style={styles.menuLayer}>
+          <Pressable
+            accessibilityLabel="Close Circle options"
+            style={styles.menuBackdrop}
+            onPress={() => setMoreMenuVisible(false)}
+          />
+          <View style={styles.menuSheet}>
+            <Text style={styles.menuTitle}>{circle.name}</Text>
+            {exitState?.locked && (
+              <Text style={styles.menuHelper}>{exitState.helperText}</Text>
+            )}
+            <TouchableOpacity
+              style={styles.menuAction}
+              onPress={() => {
+                setMoreMenuVisible(false);
+                router.push("/(tabs)/home?circleView=progress");
+              }}
+            >
+              <Text style={styles.menuActionText}>
+                {tx("circle.CircleCompleteScreen.viewDetails")}
+              </Text>
+            </TouchableOpacity>
+            {exitState && !exitState.locked && (
+              <TouchableOpacity
+                style={styles.menuAction}
+                disabled={exiting}
+                onPress={() => {
+                  setMoreMenuVisible(false);
+                  confirmExitCircle();
+                }}
+              >
+                <Text style={styles.menuDangerText}>
+                  {exiting ? tx("circle.CircleCompleteScreen.working") : exitState.label}
+                </Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        </View>
+      )}
     </SafeAreaView>
   );
 }
@@ -323,8 +371,13 @@ const styles = createThemedStyles((Colors) => ({
     gap: Spacing.lg,
     paddingBottom: Spacing.lg,
   },
+  topRow: {
+    width: "100%",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
   badge: {
-    alignSelf: "flex-start",
     backgroundColor: Colors.primary,
     borderRadius: Radius.pill,
     paddingHorizontal: Spacing.md,
@@ -334,6 +387,14 @@ const styles = createThemedStyles((Colors) => ({
     ...Typography.label,
     color: Colors.textPrimary,
     fontWeight: "800",
+  },
+  moreButton: {
+    width: 40,
+    height: 40,
+    borderRadius: Radius.full,
+    backgroundColor: Colors.inputBg,
+    alignItems: "center",
+    justifyContent: "center",
   },
   title: {
     ...Typography.h2,
@@ -400,24 +461,60 @@ const styles = createThemedStyles((Colors) => ({
     gap: Spacing.sm,
     paddingTop: Spacing.md,
   },
-  exitButton: {
-    width: "100%",
+  menuLayer: {
+    position: "absolute",
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0,
+    zIndex: 100,
+  },
+  menuBackdrop: {
+    position: "absolute",
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0,
+  },
+  menuSheet: {
+    position: "absolute",
+    top: 54,
+    right: Spacing.screenPadding,
+    width: 250,
+    backgroundColor: Colors.surface,
+    borderRadius: Radius.md,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    padding: Spacing.sm,
+    elevation: 8,
+    shadowColor: "#000000",
+    shadowOpacity: 0.14,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 6 },
+  },
+  menuTitle: {
+    ...Typography.h3,
+    textAlign: "center",
+    marginBottom: Spacing.sm,
+  },
+  menuHelper: {
+    ...Typography.bodySmall,
+    textAlign: "center",
+    marginBottom: Spacing.sm,
+  },
+  menuAction: {
+    minHeight: 52,
     alignItems: "center",
     justifyContent: "center",
-    paddingVertical: Spacing.sm,
-    paddingHorizontal: Spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.divider,
   },
-  exitButtonDisabled: {
-    opacity: 0.55,
-  },
-  exitButtonText: {
+  menuActionText: {
     ...Typography.button,
-    color: Colors.textSecondary,
+    color: Colors.textPrimary,
   },
-  exitHelper: {
-    ...Typography.bodySmall,
-    color: Colors.textSecondary,
-    textAlign: "center",
-    marginTop: 2,
+  menuDangerText: {
+    ...Typography.button,
+    color: Colors.danger,
   },
 }));

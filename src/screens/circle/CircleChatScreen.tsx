@@ -1466,7 +1466,7 @@ const styles = createThemedStyles((Colors) => ({
   },
   menuOverlay: {
     flex: 1,
-    backgroundColor: Colors.surface,
+    backgroundColor: "rgba(0, 0, 0, 0.16)",
     alignItems: "flex-end",
     paddingTop: 84,
     paddingRight: Spacing.screenPadding,
@@ -1478,6 +1478,11 @@ const styles = createThemedStyles((Colors) => ({
     borderColor: Colors.divider,
     backgroundColor: Colors.surface,
     overflow: "hidden",
+    elevation: 8,
+    shadowColor: "#000000",
+    shadowOpacity: 0.14,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 6 },
   },
   menuItem: {
     minHeight: 56,

@@ -43,8 +43,10 @@ import {
 } from "@react-native-google-signin/google-signin";
 import type { OnboardingDraft } from "@/src/context/OnboardingContext";
 import { tx } from "@/src/utils/localization";
+import { useTheme } from "@/src/providers/ThemeProvider";
 
 export default function SignUp() {
+  const { colorScheme } = useTheme();
   const { beginOnboarding } = useOnboarding();
   const [showEmailModal, setShowEmailModal] = useState(false);
   const [isSignUp, setIsSignUp] = useState(true);
@@ -340,16 +342,16 @@ export default function SignUp() {
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar />
-      <View style={styles.hero}>
-        <View style={styles.logoBadge}>
+      <View style={[styles.hero, colorScheme === "dark" && styles.heroDark]}>
+        <View style={[styles.logoBadge, colorScheme === "dark" && styles.logoBadgeDark]}>
           <Image
             source={require("../../assets/images/logo-black.png")}
             contentFit="contain"
             style={styles.logo}
           />
         </View>
-        <Text style={styles.title}>{tx("app.auth.welcome.oneCircleRealFriendships")}</Text>
-        <Text style={styles.subtitle}>
+        <Text style={[styles.title, colorScheme === "dark" && styles.titleDark]}>{tx("app.auth.welcome.oneCircleRealFriendships")}</Text>
+        <Text style={[styles.subtitle, colorScheme === "dark" && styles.subtitleDark]}>
           {tx("app.auth.welcome.formOneMeaningfulFriendGroupThroughSharedInterestsAnd")}</Text>
       </View>
 
@@ -530,6 +532,11 @@ const styles = createThemedStyles((Colors) => ({
     minHeight: 320,
     justifyContent: "flex-end",
   },
+  heroDark: {
+    backgroundColor: Colors.primaryLight,
+    borderWidth: 1,
+    borderColor: "#5A4210",
+  },
   logoBadge: {
     width: 56,
     height: 56,
@@ -538,6 +545,9 @@ const styles = createThemedStyles((Colors) => ({
     alignItems: "center",
     justifyContent: "center",
     marginBottom: Spacing.xl,
+  },
+  logoBadgeDark: {
+    backgroundColor: Colors.primary,
   },
   logo: {
     width: 38,
@@ -549,10 +559,16 @@ const styles = createThemedStyles((Colors) => ({
     lineHeight: 42,
     maxWidth: 260,
   },
+  titleDark: {
+    color: Colors.textPrimary,
+  },
   subtitle: {
     ...Typography.body,
     marginTop: Spacing.md,
     maxWidth: 250,
+  },
+  subtitleDark: {
+    color: Colors.textSecondary,
   },
   actions: {
     flex: 1,
@@ -631,6 +647,8 @@ const styles = createThemedStyles((Colors) => ({
     backgroundColor: Colors.surface,
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
+    borderTopWidth: 1,
+    borderColor: Colors.border,
     maxHeight: "80%",
   },
   closeButton: {
@@ -675,7 +693,7 @@ const styles = createThemedStyles((Colors) => ({
   },
   errorText: {
     ...Typography.bodySmall,
-    color: "#DB4437",
+    color: Colors.danger,
     marginTop: 4,
   },
 }));

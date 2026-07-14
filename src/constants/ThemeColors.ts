@@ -1,6 +1,7 @@
 export const semanticColors = {
   light: {
     primary: "#FFB60C",
+    onPrimary: "#1A1A1A",
     primaryDark: "#D98F00",
     primaryLight: "#FFF4DD",
     orange: "#FFB60C",
@@ -25,6 +26,7 @@ export const semanticColors = {
   },
   dark: {
     primary: "#FFB60C",
+    onPrimary: "#1A1A1A",
     primaryDark: "#FFC94A",
     primaryLight: "#3A2A08",
     orange: "#FFB60C",

@@ -31,7 +31,11 @@ export default function Button({
     : variant === 'outline'
       ? styles.outline
       : styles.ghost;
-  const textStyle = variant === 'ghost' ? styles.ghostText : styles.mainText;
+  const textStyle = variant === 'primary'
+    ? styles.primaryText
+    : variant === 'ghost'
+      ? styles.ghostText
+      : styles.outlineText;
 
   return (
     <TouchableOpacity
@@ -47,7 +51,9 @@ export default function Button({
       {...props}
     >
       {loading ? (
-        <ActivityIndicator color={Colors.textPrimary} />
+        <ActivityIndicator
+          color={variant === 'primary' ? Colors.onPrimary : Colors.textPrimary}
+        />
       ) : (
         <Text style={textStyle}>{title}</Text>
       )}
@@ -76,7 +82,11 @@ const styles = createThemedStyles((Colors) => ({
     backgroundColor: 'transparent',
     paddingVertical: 10,
   },
-  mainText: {
+  primaryText: {
+    ...Typography.button,
+    color: Colors.onPrimary,
+  },
+  outlineText: {
     ...Typography.button,
     color: Colors.textPrimary,
   },

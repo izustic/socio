@@ -194,7 +194,7 @@ export default function ProfileScreen() {
         <View style={styles.modalOverlay}>
           <View style={styles.logoutDialog}>
             <View style={styles.logoutIconWrap}>
-              <LogOut size={31} color={Colors.textPrimary} strokeWidth={2.1} />
+              <LogOut size={31} color={Colors.danger} strokeWidth={2.1} />
             </View>
             <Text style={styles.logoutTitle}>{t('profile.logoutTitle')}</Text>
             <Text style={styles.logoutMessage}>
@@ -428,7 +428,7 @@ const styles = createThemedStyles((Colors) => ({
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: Colors.surface,
+    backgroundColor: 'rgba(0, 0, 0, 0.56)',
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: Spacing.screenPadding,
@@ -437,7 +437,9 @@ const styles = createThemedStyles((Colors) => ({
     width: '100%',
     maxWidth: 432,
     borderRadius: 30,
-    backgroundColor: Colors.inputBg,
+    backgroundColor: Colors.surface,
+    borderWidth: 1,
+    borderColor: Colors.border,
     alignItems: 'center',
     paddingHorizontal: Spacing.xl,
     paddingTop: Spacing.xl,
@@ -447,7 +449,7 @@ const styles = createThemedStyles((Colors) => ({
     width: 74,
     height: 74,
     borderRadius: 37,
-    backgroundColor: Colors.surface,
+    backgroundColor: Colors.dangerSurface,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: Spacing.lg,
@@ -482,10 +484,12 @@ const styles = createThemedStyles((Colors) => ({
     justifyContent: 'center',
   },
   cancelButton: {
-    backgroundColor: Colors.surface,
+    backgroundColor: Colors.inputBg,
+    borderWidth: 1,
+    borderColor: Colors.border,
   },
   confirmButton: {
-    backgroundColor: Colors.textPrimary,
+    backgroundColor: Colors.danger,
   },
   cancelText: {
     ...Typography.button,
@@ -493,6 +497,6 @@ const styles = createThemedStyles((Colors) => ({
   },
   confirmText: {
     ...Typography.button,
-    color: Colors.white,
+    color: Colors.onPrimary,
   },
 }));

@@ -1,11 +1,13 @@
 import { SafeAreaView } from "react-native-safe-area-context";
 import Avatar from "@/src/components/ui/Avatar";
 import Button from "@/src/components/ui/Button";
-import { createThemedStyles,
+import {
+  createThemedStyles,
   Colors,
   Radius,
   Spacing,
-  Typography } from "@/src/constants/theme";
+  Typography,
+} from "@/src/constants/theme";
 import { useAuth } from "@/src/context/AuthContext";
 import {
   getModerationLogs,
@@ -14,9 +16,8 @@ import {
   type ModerationLogEntry,
   type ModerationOverview,
   type ModerationReportWithProfiles,
-  } from "@/src/services/moderation";
-import { router,
-  useFocusEffect } from "expo-router";
+} from "@/src/services/moderation";
+import { router, useFocusEffect } from "expo-router";
 import {
   AlertTriangle,
   Ban,
@@ -28,10 +29,8 @@ import {
   RefreshCw,
   Shield,
   Users,
-  } from "lucide-react-native";
-import React,
-  { useCallback,
-  useState } from "react";
+} from "lucide-react-native";
+import React, { useCallback, useState } from "react";
 import {
   ActivityIndicator,
   RefreshControl,
@@ -41,12 +40,22 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { formatLocalizedDateTime, optionLabel, tx } from "@/src/utils/localization";
+import {
+  formatLocalizedDateTime,
+  optionLabel,
+  tx,
+} from "@/src/utils/localization";
 
 const formatTimestamp = formatLocalizedDateTime;
 
-const getToneStyles = (): Record<string, { backgroundColor: string; color: string }> => ({
-  pending: { backgroundColor: Colors.warningSurface, color: Colors.primaryDark },
+const getToneStyles = (): Record<
+  string,
+  { backgroundColor: string; color: string }
+> => ({
+  pending: {
+    backgroundColor: Colors.warningSurface,
+    color: Colors.primaryDark,
+  },
   resolved: { backgroundColor: Colors.successSurface, color: Colors.success },
   dismissed: { backgroundColor: Colors.inputBg, color: Colors.textSecondary },
 });
@@ -74,7 +83,9 @@ export default function ModeratorDashboard() {
       setLogs(nextLogs);
     } catch (nextError) {
       console.error("Error loading moderator dashboard:", nextError);
-      setError(tx("app.moderator.dashboard.weCouldNotLoadTheModerationQueueRightNow"));
+      setError(
+        tx("app.moderator.dashboard.weCouldNotLoadTheModerationQueueRightNow"),
+      );
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -98,9 +109,14 @@ export default function ModeratorDashboard() {
         <StatusBar />
         <View style={styles.centerState}>
           <Shield size={36} color={Colors.primaryDark} strokeWidth={2} />
-          <Text style={styles.centerTitle}>{tx("app.moderator.dashboard.moderationAccessOnly")}</Text>
+          <Text style={styles.centerTitle}>
+            {tx("app.moderator.dashboard.moderationAccessOnly")}
+          </Text>
           <Text style={styles.centerText}>
-            {tx("app.moderator.dashboard.thisAreaIsReservedForModeratorAccounts")}</Text>
+            {tx(
+              "app.moderator.dashboard.thisAreaIsReservedForModeratorAccounts",
+            )}
+          </Text>
         </View>
       </SafeAreaView>
     );
@@ -128,13 +144,24 @@ export default function ModeratorDashboard() {
             onPress={() => router.back()}
             accessibilityLabel={tx("app.moderator.dashboard.goBack")}
           >
-            <ChevronLeft size={20} color={Colors.textPrimary} strokeWidth={2.2} />
+            <ChevronLeft
+              size={20}
+              color={Colors.textPrimary}
+              strokeWidth={2.2}
+            />
           </TouchableOpacity>
           <View style={styles.headerText}>
-            <Text style={styles.kicker}>{tx("app.moderator.dashboard.moderator")}</Text>
-            <Text style={styles.title}>{tx("app.moderator.dashboard.reportsQueue")}</Text>
+            <Text style={styles.kicker}>
+              {tx("app.moderator.dashboard.moderator")}
+            </Text>
+            <Text style={styles.title}>
+              {tx("app.moderator.dashboard.reportsQueue")}
+            </Text>
             <Text style={styles.subtitle}>
-              {tx("app.moderator.dashboard.reviewUserReportsTakeActionAndKeepTheAudit")}</Text>
+              {tx(
+                "app.moderator.dashboard.reviewUserReportsTakeActionAndKeepTheAudit",
+              )}
+            </Text>
           </View>
           <View style={styles.headerActions}>
             <TouchableOpacity
@@ -149,7 +176,9 @@ export default function ModeratorDashboard() {
               activeOpacity={0.82}
               style={styles.refreshButton}
               onPress={onRefresh}
-              accessibilityLabel={tx("app.moderator.dashboard.refreshModerationQueue")}
+              accessibilityLabel={tx(
+                "app.moderator.dashboard.refreshModerationQueue",
+              )}
             >
               <RefreshCw size={18} color={Colors.textPrimary} strokeWidth={2} />
             </TouchableOpacity>
@@ -187,11 +216,15 @@ export default function ModeratorDashboard() {
 
         <View style={styles.sectionHeader}>
           <View>
-            <Text style={styles.sectionTitle}>{tx("app.moderator.dashboard.pendingReports")}</Text>
+            <Text style={styles.sectionTitle}>
+              {tx("app.moderator.dashboard.pendingReports")}
+            </Text>
             <Text style={styles.sectionSubtitle}>
               {reports.length === 0
                 ? tx("app.moderator.dashboard.nothingIsWaitingRightNow")
-                : tx("app.moderator.dashboard.openAReportToReviewTheCaseAndApply")}
+                : tx(
+                    "app.moderator.dashboard.openAReportToReviewTheCaseAndApply",
+                  )}
             </Text>
           </View>
         </View>
@@ -203,12 +236,18 @@ export default function ModeratorDashboard() {
             <EmptyBlock
               icon={FileText}
               title={tx("app.moderator.dashboard.noPendingReports")}
-              message={tx("app.moderator.dashboard.reportsThatComeInWillShowUpHereAutomatically")}
+              message={tx(
+                "app.moderator.dashboard.reportsThatComeInWillShowUpHereAutomatically",
+              )}
             />
           ) : (
             reports.map((report) => {
-              const label = getToneStyles()[report.status] ? report.status : "pending";
-              const reporterName = report.reporter?.displayName || tx("moderation.anonymousReporter");
+              const label = getToneStyles()[report.status]
+                ? report.status
+                : "pending";
+              const reporterName =
+                report.reporter?.displayName ||
+                tx("moderation.anonymousReporter");
               const reportedName =
                 report.reportedUser?.displayName || report.reportedUserId;
               return (
@@ -255,10 +294,20 @@ export default function ModeratorDashboard() {
 
                   <View style={styles.reportFooter}>
                     <View style={styles.footerChip}>
-                      <Clock3 size={14} color={Colors.textSecondary} strokeWidth={2} />
-                      <Text style={styles.footerChipText}>{tx("app.moderator.dashboard.openCase")}</Text>
+                      <Clock3
+                        size={14}
+                        color={Colors.textSecondary}
+                        strokeWidth={2}
+                      />
+                      <Text style={styles.footerChipText}>
+                        {tx("app.moderator.dashboard.openCase")}
+                      </Text>
                     </View>
-                    <ChevronRight size={18} color={Colors.textSecondary} strokeWidth={2} />
+                    <ChevronRight
+                      size={18}
+                      color={Colors.textSecondary}
+                      strokeWidth={2}
+                    />
                   </View>
                 </TouchableOpacity>
               );
@@ -266,11 +315,23 @@ export default function ModeratorDashboard() {
           )}
         </View>
 
+        <View style={styles.actionRow}>
+          <Button
+            title="Review Community events"
+            onPress={() => router.push("/moderator/community-events")}
+          />
+        </View>
+
         <View style={styles.sectionHeader}>
           <View>
-            <Text style={styles.sectionTitle}>{tx("app.moderator.dashboard.recentActions")}</Text>
+            <Text style={styles.sectionTitle}>
+              {tx("app.moderator.dashboard.recentActions")}
+            </Text>
             <Text style={styles.sectionSubtitle}>
-              {tx("app.moderator.dashboard.recentAuditLogEntriesWrittenByModerationActions")}</Text>
+              {tx(
+                "app.moderator.dashboard.recentAuditLogEntriesWrittenByModerationActions",
+              )}
+            </Text>
           </View>
         </View>
 
@@ -279,24 +340,33 @@ export default function ModeratorDashboard() {
             <EmptyBlock
               icon={Shield}
               title={tx("app.moderator.dashboard.noAuditEntriesYet")}
-              message={tx("app.moderator.dashboard.moderationActionsWillAppearHereOnceTheQueueIs")}
+              message={tx(
+                "app.moderator.dashboard.moderationActionsWillAppearHereOnceTheQueueIs",
+              )}
             />
           ) : (
             logs.map((log) => (
               <View key={log.id} style={styles.logCard}>
                 <View style={styles.logRow}>
                   <View style={styles.logIcon}>
-                    <Shield size={18} color={Colors.textPrimary} strokeWidth={2} />
+                    <Shield
+                      size={18}
+                      color={Colors.textPrimary}
+                      strokeWidth={2}
+                    />
                   </View>
                   <View style={styles.logText}>
                     <Text style={styles.logAction}>{log.action}</Text>
                     <Text style={styles.logMeta}>
-                      {log.moderator?.displayName || tx("app.moderator.dashboard.moderator")} →{" "}
-                      {log.targetUser?.displayName || log.targetUserId}
+                      {log.moderator?.displayName ||
+                        tx("app.moderator.dashboard.moderator")}{" "}
+                      → {log.targetUser?.displayName || log.targetUserId}
                     </Text>
                   </View>
                 </View>
-                <Text style={styles.logTime}>{formatTimestamp(log.createdAt)}</Text>
+                <Text style={styles.logTime}>
+                  {formatTimestamp(log.createdAt)}
+                </Text>
               </View>
             ))
           )}
@@ -321,7 +391,11 @@ function SummaryCard({
   value,
   tone,
 }: {
-  icon: React.ComponentType<{ size?: number; color?: string; strokeWidth?: number }>;
+  icon: React.ComponentType<{
+    size?: number;
+    color?: string;
+    strokeWidth?: number;
+  }>;
   label: string;
   value: number;
   tone: "warning" | "neutral" | "success" | "danger";
@@ -337,7 +411,12 @@ function SummaryCard({
 
   return (
     <View style={styles.summaryCard}>
-      <View style={[styles.summaryIcon, { backgroundColor: palette.backgroundColor }]}>
+      <View
+        style={[
+          styles.summaryIcon,
+          { backgroundColor: palette.backgroundColor },
+        ]}
+      >
         <Icon size={18} color={palette.color} strokeWidth={2} />
       </View>
       <Text style={styles.summaryValue}>{value}</Text>
@@ -347,12 +426,15 @@ function SummaryCard({
 }
 
 function StatusBadge({ label, tone }: { label: string; tone: string }) {
-  const palette =
-    getToneStyles()[tone] || getToneStyles().pending;
+  const palette = getToneStyles()[tone] || getToneStyles().pending;
 
   return (
-    <View style={[styles.statusBadge, { backgroundColor: palette.backgroundColor }]}>
-      <Text style={[styles.statusBadgeText, { color: palette.color }]}>{label}</Text>
+    <View
+      style={[styles.statusBadge, { backgroundColor: palette.backgroundColor }]}
+    >
+      <Text style={[styles.statusBadgeText, { color: palette.color }]}>
+        {label}
+      </Text>
     </View>
   );
 }
@@ -361,7 +443,9 @@ function LoadingBlock() {
   return (
     <View style={styles.loadingBlock}>
       <ActivityIndicator color={Colors.primary} />
-      <Text style={styles.loadingText}>{tx("app.moderator.dashboard.loadingModerationData")}</Text>
+      <Text style={styles.loadingText}>
+        {tx("app.moderator.dashboard.loadingModerationData")}
+      </Text>
     </View>
   );
 }
@@ -371,7 +455,11 @@ function EmptyBlock({
   title,
   message,
 }: {
-  icon: React.ComponentType<{ size?: number; color?: string; strokeWidth?: number }>;
+  icon: React.ComponentType<{
+    size?: number;
+    color?: string;
+    strokeWidth?: number;
+  }>;
   title: string;
   message: string;
 }) {
@@ -386,15 +474,31 @@ function EmptyBlock({
   );
 }
 
-function InlineNotice({ tone, text }: { tone: "danger" | "warning"; text: string }) {
+function InlineNotice({
+  tone,
+  text,
+}: {
+  tone: "danger" | "warning";
+  text: string;
+}) {
   const palette =
     tone === "danger"
-      ? { backgroundColor: Colors.dangerSurface, borderColor: "#F5C2C7", color: Colors.danger }
-      : { backgroundColor: Colors.warningSurface, borderColor: "#F4D69A", color: Colors.primaryDark };
+      ? {
+          backgroundColor: Colors.dangerSurface,
+          borderColor: "#F5C2C7",
+          color: Colors.danger,
+        }
+      : {
+          backgroundColor: Colors.warningSurface,
+          borderColor: "#F4D69A",
+          color: Colors.primaryDark,
+        };
 
   return (
     <View style={[styles.inlineNotice, palette]}>
-      <Text style={[styles.inlineNoticeText, { color: palette.color }]}>{text}</Text>
+      <Text style={[styles.inlineNoticeText, { color: palette.color }]}>
+        {text}
+      </Text>
     </View>
   );
 }

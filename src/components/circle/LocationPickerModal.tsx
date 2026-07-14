@@ -27,6 +27,19 @@ interface SearchResult {
   lon: string;
 }
 
+interface PhotonFeature {
+  geometry: { coordinates: [number, number] };
+  properties: {
+    name?: string;
+    housenumber?: string;
+    street?: string;
+    district?: string;
+    city?: string;
+    state?: string;
+    country?: string;
+  };
+}
+
 const DEFAULT_LOCATION = { lat: 6.5244, lng: 3.3792 };
 
 const mapHtml = (lat: number, lng: number) => `<!doctype html>
@@ -83,18 +96,54 @@ export default function LocationPickerModal({
   const [searching, setSearching] = useState(false);
   const [resolving, setResolving] = useState(false);
   const [selection, setSelection] = useState<PickedEventLocation | null>(initialLocation ?? null);
+  const [mapCenter, setMapCenter] = useState(initialPoint);
   const html = useMemo(() => mapHtml(initialPoint.lat, initialPoint.lng), [initialPoint.lat, initialPoint.lng]);
 
   const searchPlaces = async () => {
     if (!query.trim() || searching) return;
     setSearching(true);
     try {
-      const response = await fetch(
-        `https://nominatim.openstreetmap.org/search?format=jsonv2&limit=5&addressdetails=1&q=${encodeURIComponent(query.trim())}`,
+      // Photon adds typo tolerance and location-biased ranking on top of OSM data.
+      const photonResponse = await fetch(
+        `https://photon.komoot.io/api/?q=${encodeURIComponent(query.trim())}&limit=15&lang=en&lat=${mapCenter.lat}&lon=${mapCenter.lng}`,
         { headers: { Accept: "application/json" } },
       );
-      if (!response.ok) throw new Error("Location search failed");
-      setResults((await response.json()) as SearchResult[]);
+      if (!photonResponse.ok) throw new Error("Fuzzy location search failed");
+      const photonData = (await photonResponse.json()) as { features?: PhotonFeature[] };
+      const fuzzyResults = (photonData.features ?? []).map((feature) => {
+        const details = feature.properties;
+        const label = [
+          details.name,
+          [details.housenumber, details.street].filter(Boolean).join(" "),
+          details.district,
+          details.city,
+          details.state,
+          details.country,
+        ].filter(Boolean).filter((value, index, values) => values.indexOf(value) === index).join(", ");
+        return {
+          display_name: label,
+          lat: String(feature.geometry.coordinates[1]),
+          lon: String(feature.geometry.coordinates[0]),
+        };
+      });
+
+      if (fuzzyResults.length > 0) {
+        setResults(fuzzyResults);
+        return;
+      }
+
+      // Contextual fallback for places that Photon has not indexed yet.
+      const contextualQuery = /nigeria|lagos/i.test(query)
+        ? query.trim()
+        : `${query.trim()}, Lagos, Nigeria`;
+      const span = 1.4;
+      const viewbox = `${mapCenter.lng - span},${mapCenter.lat + span},${mapCenter.lng + span},${mapCenter.lat - span}`;
+      const nominatimResponse = await fetch(
+        `https://nominatim.openstreetmap.org/search?format=jsonv2&limit=15&addressdetails=1&namedetails=1&countrycodes=ng&viewbox=${encodeURIComponent(viewbox)}&bounded=0&q=${encodeURIComponent(contextualQuery)}`,
+        { headers: { Accept: "application/json", "Accept-Language": "en" } },
+      );
+      if (!nominatimResponse.ok) throw new Error("Location search failed");
+      setResults((await nominatimResponse.json()) as SearchResult[]);
     } catch (error) {
       console.error("Error searching OpenStreetMap:", error);
       Alert.alert("Search unavailable", "We couldn’t search for that location. Please try again.");
@@ -127,6 +176,7 @@ export default function LocationPickerModal({
     const lat = Number(result.lat);
     const lng = Number(result.lon);
     setSelection({ address: result.display_name, lat, lng });
+    setMapCenter({ lat, lng });
     setResults([]);
     setQuery(result.display_name.split(",")[0]);
     webViewRef.current?.injectJavaScript(`setLocation(${lat}, ${lng}); true;`);
@@ -136,6 +186,7 @@ export default function LocationPickerModal({
     try {
       const message = JSON.parse(event.nativeEvent.data) as { type: string; lat: number; lng: number };
       if (message.type === "location") void reverseGeocode(message.lat, message.lng);
+      if (message.type === "location") setMapCenter({ lat: message.lat, lng: message.lng });
     } catch (error) {
       console.error("Invalid OpenStreetMap message:", error);
     }

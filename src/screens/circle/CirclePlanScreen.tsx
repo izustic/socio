@@ -15,6 +15,10 @@ import {
 } from "@/src/services/meetupPlanning";
 import { SwipeCandidate, getUsersByIds } from "@/src/services/swipe";
 import { Circle } from "@/src/types";
+import { uploadChatMedia } from "@/src/services/supabase";
+import * as Crypto from "expo-crypto";
+import { Image } from "expo-image";
+import * as ImagePicker from "expo-image-picker";
 import { router, useLocalSearchParams } from "expo-router";
 import {
   ArrowLeft,
@@ -26,9 +30,11 @@ import {
   Clock3,
   ExternalLink,
   Gamepad2,
+  ImagePlus,
   MapPin,
   Music2,
   Plus,
+  Play,
   Search,
   SlidersHorizontal,
   Sparkles,
@@ -303,6 +309,7 @@ export default function CirclePlanScreen() {
       />
       <CreateEventModal
         visible={creating}
+        circleId={circle.id}
         selectedTime={selectedTime ? `${selectedTime.label}, ${selectedTime.detail}` : ""}
         selectedTimeId={selectedTime?.id}
         publicEventLimitReached={publicEventLimitReached}
@@ -587,15 +594,64 @@ function EventDetailModal({ event, selectedTime, onClose, onVote }: { event: Mee
   return <Modal visible animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}><SafeAreaView style={styles.modalPage}><View style={styles.modalHeader}><TouchableOpacity style={styles.iconButton} onPress={onClose}><X size={21} color={Colors.textPrimary} /></TouchableOpacity><Text style={styles.headerTitle}>Event details</Text><View style={styles.iconButton} /></View><ScrollView contentContainerStyle={styles.modalContent}><View style={styles.detailArtwork}><Icon size={54} color={Colors.primaryDark} />{event.sponsored && <View style={styles.sponsoredLarge}><Star size={13} color={Colors.primaryDark} /><Text style={styles.sponsoredText}>Sponsored listing</Text></View>}</View><Text style={styles.title}>{event.title}</Text><Text style={styles.subtitle}>{event.description}</Text><View style={styles.detailCard}><DetailRow icon={CalendarDays} label="When" value={selectedTime} /><DetailRow icon={MapPin} label="Where" value={event.location} /><DetailRow icon={Ticket} label="Price" value={event.price} /><DetailRow icon={Users} label="Access" value={event.isPublic ? "Public" : "Private Circle event"} /></View>{event.bookingUrl && <TouchableOpacity style={styles.linkRow} onPress={() => void Linking.openURL(event.bookingUrl!)}><Text style={styles.linkText}>View booking page</Text><ExternalLink size={18} color={Colors.primaryDark} /></TouchableOpacity>}</ScrollView><View style={styles.footer}><Button title="Vote for this event" onPress={() => onVote(event.id)} /></View></SafeAreaView></Modal>;
 }
 
-function CreateEventModal({ visible, selectedTime, selectedTimeId, publicEventLimitReached, onClose, onCreate }: { visible: boolean; selectedTime: string; selectedTimeId?: string; publicEventLimitReached: boolean; onClose: () => void; onCreate: (event: MeetupExperience) => void }) {
-  const [name, setName] = useState(""); const [location, setLocation] = useState<PickedEventLocation | null>(null); const [locationPickerVisible, setLocationPickerVisible] = useState(false); const [description, setDescription] = useState(""); const [bookingUrl, setBookingUrl] = useState(""); const [isPublic, setIsPublic] = useState(false); const [category, setCategory] = useState<Exclude<MeetupCategory, "All">>("Food");
-  const submit = () => {
+type PendingEventMedia = {
+  id: string;
+  uri: string;
+  type: "image" | "video";
+  durationMs?: number | null;
+};
+
+function CreateEventModal({ visible, circleId, selectedTime, selectedTimeId, publicEventLimitReached, onClose, onCreate }: { visible: boolean; circleId: string; selectedTime: string; selectedTimeId?: string; publicEventLimitReached: boolean; onClose: () => void; onCreate: (event: MeetupExperience) => void }) {
+  const [name, setName] = useState(""); const [location, setLocation] = useState<PickedEventLocation | null>(null); const [locationPickerVisible, setLocationPickerVisible] = useState(false); const [description, setDescription] = useState(""); const [bookingUrl, setBookingUrl] = useState(""); const [isPublic, setIsPublic] = useState(false); const [category, setCategory] = useState<Exclude<MeetupCategory, "All">>("Food"); const [media, setMedia] = useState<PendingEventMedia[]>([]); const [uploading, setUploading] = useState(false);
+
+  const pickMedia = async () => {
+    if (media.length >= 5) { Alert.alert("Media limit reached", "You can add up to five photos or short videos."); return; }
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permission.granted) { Alert.alert("Media access needed", "Allow photo access to add event photos or videos."); return; }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ["images", "videos"],
+      quality: 0.82,
+      videoMaxDuration: 30,
+      allowsEditing: false,
+      allowsMultipleSelection: true,
+      selectionLimit: Math.max(1, 5 - media.length),
+      orderedSelection: true,
+    });
+    if (result.canceled || !result.assets?.length) return;
+    const tooLong = result.assets.some((asset) => asset.type === "video" && (asset.duration ?? 0) > 30_000);
+    if (tooLong) { Alert.alert("Video is too long", "Event videos can be up to 30 seconds."); return; }
+    setMedia((current) => [
+      ...current,
+      ...result.assets.slice(0, 5 - current.length).map((asset) => ({
+        id: Crypto.randomUUID(),
+        uri: asset.uri,
+        type: asset.type === "video" ? "video" as const : "image" as const,
+        durationMs: asset.duration,
+      })),
+    ]);
+  };
+
+  const submit = async () => {
     if (!name.trim() || !location) { Alert.alert("Add event details", "Event name and location are required."); return; }
     if (isPublic && publicEventLimitReached) { Alert.alert("Monthly public event used", "Free members can publish one public event per month. Make this event private or upgrade to Socio Plus."); return; }
-    onCreate({ id: `circle-${Date.now()}`, title: name.trim(), location: location.address, coordinates: { lat: location.lat, lng: location.lng }, description: description.trim() || "Created by this Circle.", bookingUrl: bookingUrl.trim() || undefined, category, price: "Circle organised", isPublic, isCreatedByCircle: true, expiresAt: isPublic ? getExpiry() : undefined, availableTimeIds: selectedTimeId ? [selectedTimeId] : undefined, votes: [] });
-    setName(""); setLocation(null); setDescription(""); setBookingUrl(""); setIsPublic(false);
+    setUploading(true);
+    try {
+      const eventId = `circle-${Date.now()}`;
+      const uploadedMedia = await Promise.all(media.map(async (item, index) => ({
+        path: await uploadChatMedia(circleId, `${eventId}-${index}`, item.uri, item.type),
+        type: item.type,
+        durationMs: item.durationMs,
+      })));
+      onCreate({ id: eventId, title: name.trim(), location: location.address, coordinates: { lat: location.lat, lng: location.lng }, media: uploadedMedia, description: description.trim() || "Created by this Circle.", bookingUrl: bookingUrl.trim() || undefined, category, price: "Circle organised", isPublic, isCreatedByCircle: true, expiresAt: isPublic ? getExpiry() : undefined, availableTimeIds: selectedTimeId ? [selectedTimeId] : undefined, votes: [] });
+      setName(""); setLocation(null); setDescription(""); setBookingUrl(""); setIsPublic(false); setMedia([]);
+    } catch (error) {
+      console.error("Error uploading event media:", error);
+      Alert.alert("Couldn’t create event", "One or more attachments could not be uploaded. Please try again.");
+    } finally {
+      setUploading(false);
+    }
   };
-  return <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}><SafeAreaView style={styles.modalPage}><View style={styles.modalHeader}><TouchableOpacity style={styles.iconButton} onPress={onClose}><X size={21} color={Colors.textPrimary} /></TouchableOpacity><View style={styles.headerCopy}><Text style={styles.headerTitle}>Create your event</Text><Text style={styles.headerSubtitle}>Uses the Circle’s winning time</Text></View><View style={styles.stepBadge}><Text style={styles.stepBadgeText}>2 of 4</Text></View></View><ScrollView contentContainerStyle={styles.modalContent}><Field label="Event name" value={name} onChange={setName} placeholder="Morning chess" /><Text style={styles.fieldLabel}>CATEGORY</Text><ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.categories}>{CATEGORIES.slice(1).map((item) => <TouchableOpacity key={item} style={[styles.categoryChip, category === item && styles.categoryChipActive]} onPress={() => setCategory(item as Exclude<MeetupCategory, "All">)}><Text style={[styles.categoryText, category === item && styles.categoryTextActive]}>{item}</Text></TouchableOpacity>)}</ScrollView><View style={styles.formReadOnly}><Clock3 size={18} color={Colors.textSecondary} /><View><Text style={styles.fieldLabel}>DATE & TIME</Text><Text style={styles.formValue}>{selectedTime}</Text></View></View><Text style={styles.fieldLabel}>LOCATION</Text><TouchableOpacity style={[styles.locationPickerButton, location && styles.locationPickerButtonSelected]} onPress={() => setLocationPickerVisible(true)}><View style={styles.locationPickerIcon}><MapPin size={20} color={Colors.primaryDark} /></View><View style={styles.optionCopy}><Text style={styles.optionTitle}>{location ? "Selected location" : "Choose a location"}</Text><Text numberOfLines={2} style={styles.optionMeta}>{location?.address ?? "Search for a place or drop a pin on the map"}</Text></View><ChevronRight size={19} color={Colors.textSecondary} /></TouchableOpacity><Field label="Description" value={description} onChange={setDescription} placeholder="What should members expect?" multiline /><Field label="Booking link (optional)" value={bookingUrl} onChange={setBookingUrl} placeholder="https://..." /><Text style={styles.fieldLabel}>VISIBILITY</Text><View style={styles.visibilityRow}><TouchableOpacity style={[styles.visibilityChoice, !isPublic && styles.visibilityChoiceActive]} onPress={() => setIsPublic(false)}><Users size={18} color={!isPublic ? Colors.primaryDark : Colors.textSecondary} /><Text style={styles.optionTitle}>Private</Text><Text style={styles.optionMeta}>Only your Circle</Text></TouchableOpacity><TouchableOpacity style={[styles.visibilityChoice, isPublic && styles.visibilityChoiceActive]} onPress={() => setIsPublic(true)}><Sparkles size={18} color={isPublic ? Colors.primaryDark : Colors.textSecondary} /><Text style={styles.optionTitle}>Public</Text><Text style={styles.optionMeta}>{publicEventLimitReached ? "Monthly limit used" : "Listed for 30 days"}</Text></TouchableOpacity></View>{isPublic && <View style={styles.ruleCard}><Text style={styles.optionTitle}>{publicEventLimitReached ? "Public event limit reached" : "Public event allowance"}</Text><Text style={styles.optionMeta}>Free members can publish 1 public event per month. Additional public events require Socio Plus. Public listings are removed after 30 days.</Text></View>}</ScrollView><View style={styles.footer}><Button title="Create event" onPress={submit} /></View><LocationPickerModal visible={locationPickerVisible} initialLocation={location} onClose={() => setLocationPickerVisible(false)} onConfirm={(pickedLocation) => { setLocation(pickedLocation); setLocationPickerVisible(false); }} /></SafeAreaView></Modal>;
+  return <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}><SafeAreaView style={styles.modalPage}><View style={styles.modalHeader}><TouchableOpacity style={styles.iconButton} onPress={onClose}><X size={21} color={Colors.textPrimary} /></TouchableOpacity><View style={styles.headerCopy}><Text style={styles.headerTitle}>Create your event</Text><Text style={styles.headerSubtitle}>Uses the Circle’s winning time</Text></View><View style={styles.stepBadge}><Text style={styles.stepBadgeText}>2 of 4</Text></View></View><ScrollView contentContainerStyle={styles.modalContent}><Text style={styles.fieldLabel}>PHOTOS & SHORT VIDEOS (OPTIONAL)</Text><ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.mediaRow}><TouchableOpacity style={styles.addMediaButton} onPress={() => void pickMedia()}><ImagePlus size={24} color={Colors.primaryDark} /><Text style={styles.addMediaText}>Add media</Text><Text style={styles.mediaLimitText}>{media.length}/5</Text></TouchableOpacity>{media.map((item) => <View key={item.id} style={styles.mediaPreview}>{item.type === "image" ? <Image source={{ uri: item.uri }} style={styles.mediaImage} contentFit="cover" /> : <View style={styles.videoPreview}><Play size={25} color={Colors.inverseText} fill={Colors.inverseText} /><Text style={styles.videoDuration}>{Math.ceil((item.durationMs ?? 0) / 1000)}s</Text></View>}<TouchableOpacity style={styles.removeMediaButton} onPress={() => setMedia((current) => current.filter((candidate) => candidate.id !== item.id))}><X size={14} color={Colors.inverseText} /></TouchableOpacity></View>)}</ScrollView><Field label="Event name" value={name} onChange={setName} placeholder="Morning chess" /><Text style={styles.fieldLabel}>CATEGORY</Text><ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.categories}>{CATEGORIES.slice(1).map((item) => <TouchableOpacity key={item} style={[styles.categoryChip, category === item && styles.categoryChipActive]} onPress={() => setCategory(item as Exclude<MeetupCategory, "All">)}><Text style={[styles.categoryText, category === item && styles.categoryTextActive]}>{item}</Text></TouchableOpacity>)}</ScrollView><View style={styles.formReadOnly}><Clock3 size={18} color={Colors.textSecondary} /><View><Text style={styles.fieldLabel}>DATE & TIME</Text><Text style={styles.formValue}>{selectedTime}</Text></View></View><Text style={styles.fieldLabel}>LOCATION</Text><TouchableOpacity style={[styles.locationPickerButton, location && styles.locationPickerButtonSelected]} onPress={() => setLocationPickerVisible(true)}><View style={styles.locationPickerIcon}><MapPin size={20} color={Colors.primaryDark} /></View><View style={styles.optionCopy}><Text style={styles.optionTitle}>{location ? "Selected location" : "Choose a location"}</Text><Text numberOfLines={2} style={styles.optionMeta}>{location?.address ?? "Search for a place or drop a pin on the map"}</Text></View><ChevronRight size={19} color={Colors.textSecondary} /></TouchableOpacity><Field label="Description" value={description} onChange={setDescription} placeholder="What should members expect?" multiline /><Field label="Booking link (optional)" value={bookingUrl} onChange={setBookingUrl} placeholder="https://..." /><Text style={styles.fieldLabel}>VISIBILITY</Text><View style={styles.visibilityRow}><TouchableOpacity style={[styles.visibilityChoice, !isPublic && styles.visibilityChoiceActive]} onPress={() => setIsPublic(false)}><Users size={18} color={!isPublic ? Colors.primaryDark : Colors.textSecondary} /><Text style={styles.optionTitle}>Private</Text><Text style={styles.optionMeta}>Only your Circle</Text></TouchableOpacity><TouchableOpacity style={[styles.visibilityChoice, isPublic && styles.visibilityChoiceActive]} onPress={() => setIsPublic(true)}><Sparkles size={18} color={isPublic ? Colors.primaryDark : Colors.textSecondary} /><Text style={styles.optionTitle}>Public</Text><Text style={styles.optionMeta}>{publicEventLimitReached ? "Monthly limit used" : "Listed for 30 days"}</Text></TouchableOpacity></View>{isPublic && <View style={styles.ruleCard}><Text style={styles.optionTitle}>{publicEventLimitReached ? "Public event limit reached" : "Public event allowance"}</Text><Text style={styles.optionMeta}>Free members can publish 1 public event per month. Additional public events require Socio Plus. Public listings are removed after 30 days.</Text></View>}</ScrollView><View style={styles.footer}><Button title="Create event" loading={uploading} onPress={() => void submit()} /></View><LocationPickerModal visible={locationPickerVisible} initialLocation={location} onClose={() => setLocationPickerVisible(false)} onConfirm={(pickedLocation) => { setLocation(pickedLocation); setLocationPickerVisible(false); }} /></SafeAreaView></Modal>;
 }
 
 function Field({ label, value, onChange, placeholder, multiline = false }: { label: string; value: string; onChange: (value: string) => void; placeholder: string; multiline?: boolean }) {
@@ -614,6 +670,15 @@ const styles = createThemedStyles((Colors) => ({
   locationPickerButton: { minHeight: 72, flexDirection: "row", alignItems: "center", gap: 11, borderWidth: 1, borderColor: Colors.border, borderRadius: Radius.md, padding: 12, marginBottom: 15, backgroundColor: Colors.surface },
   locationPickerButtonSelected: { borderColor: Colors.primary, backgroundColor: Colors.primaryLight },
   locationPickerIcon: { width: 40, height: 40, alignItems: "center", justifyContent: "center", borderRadius: Radius.full, backgroundColor: Colors.warningSurface },
+  mediaRow: { gap: 10, paddingBottom: 16 },
+  addMediaButton: { width: 104, height: 104, alignItems: "center", justifyContent: "center", gap: 4, borderWidth: 1, borderStyle: "dashed", borderColor: Colors.primary, borderRadius: Radius.md, backgroundColor: Colors.primaryLight },
+  addMediaText: { ...Typography.label, color: Colors.primaryDark },
+  mediaLimitText: { ...Typography.bodySmall, fontSize: 10 },
+  mediaPreview: { width: 104, height: 104, borderRadius: Radius.md, overflow: "hidden", backgroundColor: Colors.textPrimary },
+  mediaImage: { width: "100%", height: "100%" },
+  videoPreview: { flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: Colors.textPrimary },
+  videoDuration: { ...Typography.label, color: Colors.inverseText, marginTop: 5 },
+  removeMediaButton: { position: "absolute", top: 5, right: 5, width: 24, height: 24, borderRadius: Radius.full, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(0,0,0,0.68)" },
   calendarCard: { borderWidth: 1, borderColor: Colors.border, borderRadius: Radius.lg, padding: Spacing.md, marginBottom: Spacing.lg },
   calendarHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: Spacing.md },
   calendarArrow: { width: 36, height: 36, alignItems: "center", justifyContent: "center", borderRadius: Radius.full, backgroundColor: Colors.inputBg },

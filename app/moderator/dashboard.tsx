@@ -317,7 +317,7 @@ export default function ModeratorDashboard() {
 
         <View style={styles.actionRow}>
           <Button
-            title="Review Community events"
+            title={tx("communityEvents.reviewButton")}
             onPress={() => router.push("/moderator/community-events")}
           />
         </View>

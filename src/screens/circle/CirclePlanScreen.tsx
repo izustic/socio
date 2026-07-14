@@ -77,6 +77,7 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { formatLocalizedDateTime, tx } from "@/src/utils/localization";
 
 const CATEGORIES: MeetupCategory[] = [
   "All",
@@ -997,7 +998,7 @@ function ExperienceCard({
         {event.isCommunityEvent && (
           <View style={styles.communityBadge}>
             <Sparkles size={10} color={Colors.primaryDark} />
-            <Text style={styles.communityBadgeText}>Community event</Text>
+            <Text style={styles.communityBadgeText}>{tx("communityEvents.badge")}</Text>
           </View>
         )}
         <Text style={styles.eventMeta}>{event.location}</Text>
@@ -1079,7 +1080,7 @@ function ReviewStep({
             icon={Users}
             label="Visibility"
             value={
-              experience.isPublic ? "Public event" : "Private to your Circle"
+              experience.isPublic ? tx("communityEvents.publicEvent") : tx("communityEvents.privateCircle")
             }
           />
         </View>
@@ -1202,7 +1203,7 @@ function ScheduledStep({
         onPress={() => router.replace("/(tabs)/home?circleView=chat")}
       />
       <Text style={styles.expiryText}>
-        Public event listings expire after 30 days.
+        {tx("communityEvents.expiryNote")}
       </Text>
     </ScrollView>
   );
@@ -1224,12 +1225,12 @@ function EventDetailModal({
   const Icon = categoryIcons[event.category];
   const report = () =>
     Alert.alert(
-      "Report this event?",
-      "Tell our safety team if this Community event is misleading, inappropriate or no longer happening.",
+      tx("communityEvents.reportTitle"),
+      tx("communityEvents.reportMessage"),
       [
-        { text: "Cancel", style: "cancel" },
+        { text: tx("common.cancel"), style: "cancel" },
         {
-          text: "Report event",
+          text: tx("communityEvents.reportAction"),
           style: "destructive",
           onPress: () =>
             void reportCommunityEvent(
@@ -1238,36 +1239,36 @@ function EventDetailModal({
             )
               .then(() =>
                 Alert.alert(
-                  "Report received",
-                  "Thanks. Our safety team will review this event.",
+                  tx("communityEvents.reportReceived"),
+                  tx("communityEvents.reportThanks"),
                 ),
               )
               .catch(() =>
-                Alert.alert("Couldn’t send report", "Please try again."),
+                Alert.alert(tx("communityEvents.reportError"), tx("common.tryAgain")),
               ),
         },
       ],
     );
   const cancel = () =>
     Alert.alert(
-      "Cancel this event?",
-      "It will disappear from Community discovery. This cannot be undone.",
+      tx("communityEvents.cancelTitle"),
+      tx("communityEvents.cancelMessage"),
       [
-        { text: "Keep event", style: "cancel" },
+        { text: tx("communityEvents.keepEvent"), style: "cancel" },
         {
-          text: "Cancel event",
+          text: tx("communityEvents.cancelAction"),
           style: "destructive",
           onPress: () =>
             void cancelCommunityEvent(event.id)
               .then(() => {
                 Alert.alert(
-                  "Event cancelled",
-                  "It has been removed from Community discovery.",
+                  tx("communityEvents.cancelledTitle"),
+                  tx("communityEvents.cancelledMessage"),
                 );
                 onClose();
               })
               .catch(() =>
-                Alert.alert("Couldn’t cancel event", "Please try again."),
+                Alert.alert(tx("communityEvents.cancelError"), tx("common.tryAgain")),
               ),
         },
       ],
@@ -1300,7 +1301,7 @@ function EventDetailModal({
           {event.isCommunityEvent && (
             <View style={styles.communityBadgeLarge}>
               <Sparkles size={14} color={Colors.primaryDark} />
-              <Text style={styles.communityBadgeText}>Community event</Text>
+              <Text style={styles.communityBadgeText}>{tx("communityEvents.badge")}</Text>
             </View>
           )}
           <Text style={styles.title}>{event.title}</Text>
@@ -1308,26 +1309,26 @@ function EventDetailModal({
           <View style={styles.detailCard}>
             <DetailRow
               icon={CalendarDays}
-              label="When"
+              label={tx("communityEvents.when")}
               value={
                 event.startsAt
-                  ? new Date(event.startsAt).toLocaleString()
+                  ? formatLocalizedDateTime(event.startsAt)
                   : selectedTime
               }
             />
-            <DetailRow icon={MapPin} label="Where" value={event.location} />
-            <DetailRow icon={Ticket} label="Price" value={event.price} />
+            <DetailRow icon={MapPin} label={tx("communityEvents.where")} value={event.location} />
+            <DetailRow icon={Ticket} label={tx("communityEvents.price")} value={event.price} />
             {event.capacity ? (
               <DetailRow
                 icon={Users}
-                label="Capacity"
-                value={`${event.capacity} people`}
+                label={tx("communityEvents.capacity")}
+                value={tx("communityEvents.peopleCount", { count: event.capacity })}
               />
             ) : null}
             <DetailRow
               icon={Users}
-              label="Access"
-              value={event.isPublic ? "Public" : "Private Circle event"}
+              label={tx("communityEvents.access")}
+              value={event.isPublic ? tx("communityEvents.public") : tx("communityEvents.privateEvent")}
             />
           </View>
           {event.bookingUrl && (
@@ -1335,24 +1336,24 @@ function EventDetailModal({
               style={styles.linkRow}
               onPress={() => void Linking.openURL(event.bookingUrl!)}
             >
-              <Text style={styles.linkText}>View booking page</Text>
+              <Text style={styles.linkText}>{tx("communityEvents.viewBooking")}</Text>
               <ExternalLink size={18} color={Colors.primaryDark} />
             </TouchableOpacity>
           )}
           {event.isCommunityEvent && (
             <TouchableOpacity style={styles.reportLink} onPress={report}>
-              <Text style={styles.reportLinkText}>Report this event</Text>
+              <Text style={styles.reportLinkText}>{tx("communityEvents.reportLink")}</Text>
             </TouchableOpacity>
           )}
           {event.isCommunityEvent && event.creatorId === user?.id && (
             <TouchableOpacity style={styles.reportLink} onPress={cancel}>
-              <Text style={styles.reportLinkText}>Cancel this event</Text>
+              <Text style={styles.reportLinkText}>{tx("communityEvents.cancelLink")}</Text>
             </TouchableOpacity>
           )}
         </ScrollView>
         <View style={styles.footer}>
           <Button
-            title="Vote for this event"
+            title={tx("communityEvents.voteAction")}
             onPress={() => onVote(event.id)}
           />
         </View>
@@ -1402,16 +1403,16 @@ function CreateEventModal({
   const pickMedia = async () => {
     if (media.length >= 5) {
       Alert.alert(
-        "Media limit reached",
-        "You can add up to five photos or short videos.",
+        tx("communityEvents.mediaLimitTitle"),
+        tx("communityEvents.mediaLimitMessage"),
       );
       return;
     }
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permission.granted) {
       Alert.alert(
-        "Media access needed",
-        "Allow photo access to add event photos or videos.",
+        tx("communityEvents.mediaPermissionTitle"),
+        tx("communityEvents.mediaPermissionMessage"),
       );
       return;
     }
@@ -1429,7 +1430,7 @@ function CreateEventModal({
       (asset) => asset.type === "video" && (asset.duration ?? 0) > 30_000,
     );
     if (tooLong) {
-      Alert.alert("Video is too long", "Event videos can be up to 30 seconds.");
+      Alert.alert(tx("communityEvents.videoLengthTitle"), tx("communityEvents.videoLengthMessage"));
       return;
     }
     setMedia((current) => [
@@ -1445,20 +1446,20 @@ function CreateEventModal({
 
   const submit = async () => {
     if (!name.trim() || !location) {
-      Alert.alert("Add event details", "Event name and location are required.");
+      Alert.alert(tx("communityEvents.detailsRequiredTitle"), tx("communityEvents.detailsRequiredMessage"));
       return;
     }
     if (isPublic && publicEventLimitReached) {
       Alert.alert(
-        "Monthly public event used",
-        "Free members can publish one public event per month. Make this event private or upgrade to Socio Plus.",
+        tx("communityEvents.monthlyLimitTitle"),
+        tx("communityEvents.monthlyLimitMessage"),
       );
       return;
     }
     if (isPublic && !selectedStartsAt) {
       Alert.alert(
-        "Choose a dated time",
-        "Public events need a specific calendar date. Suggest a custom time first, then publish your event.",
+        tx("communityEvents.datedTimeTitle"),
+        tx("communityEvents.datedTimeMessage"),
       );
       return;
     }
@@ -1468,8 +1469,8 @@ function CreateEventModal({
       (!Number.isInteger(parsedCapacity) || parsedCapacity < 1)
     ) {
       Alert.alert(
-        "Check capacity",
-        "Capacity must be a whole number greater than zero.",
+        tx("communityEvents.capacityErrorTitle"),
+        tx("communityEvents.capacityErrorMessage"),
       );
       return;
     }
@@ -1494,10 +1495,10 @@ function CreateEventModal({
         location: location.address,
         coordinates: { lat: location.lat, lng: location.lng },
         media: uploadedMedia,
-        description: description.trim() || "Created by this Circle.",
+        description: description.trim() || tx("communityEvents.defaultDescription"),
         bookingUrl: bookingUrl.trim() || undefined,
         category,
-        price: "Circle organised",
+        price: tx("communityEvents.circleOrganised"),
         capacity: parsedCapacity,
         isPublic,
         isCreatedByCircle: true,
@@ -1529,8 +1530,8 @@ function CreateEventModal({
       });
       if (isPublic)
         Alert.alert(
-          "Sent for review",
-          "Your Community event is available to your Circle now and will appear publicly after a quick safety review.",
+          tx("communityEvents.reviewSentTitle"),
+          tx("communityEvents.reviewSentMessage"),
         );
       setName("");
       setLocation(null);
@@ -1543,10 +1544,10 @@ function CreateEventModal({
       console.error("Error uploading event media:", error);
       const message = String((error as { message?: string })?.message ?? "");
       Alert.alert(
-        "Couldn’t create event",
+        tx("communityEvents.createErrorTitle"),
         message.includes("FREE_PUBLIC_EVENT_LIMIT")
-          ? "You have already used this month’s free public event."
-          : "Please check the details and try again.",
+          ? tx("communityEvents.monthlyLimitShort")
+          : tx("communityEvents.checkDetails"),
       );
     } finally {
       setUploading(false);
@@ -1565,9 +1566,9 @@ function CreateEventModal({
             <X size={21} color={Colors.textPrimary} />
           </TouchableOpacity>
           <View style={styles.headerCopy}>
-            <Text style={styles.headerTitle}>Create your event</Text>
+            <Text style={styles.headerTitle}>{tx("communityEvents.createTitle")}</Text>
             <Text style={styles.headerSubtitle}>
-              Uses the Circle’s winning time
+              {tx("communityEvents.usesWinningTime")}
             </Text>
           </View>
           <View style={styles.stepBadge}>
@@ -1576,7 +1577,7 @@ function CreateEventModal({
         </View>
         <ScrollView contentContainerStyle={styles.modalContent}>
           <Text style={styles.fieldLabel}>
-            PHOTOS & SHORT VIDEOS (OPTIONAL)
+            {tx("communityEvents.mediaOptional")}
           </Text>
           <ScrollView
             horizontal
@@ -1588,7 +1589,7 @@ function CreateEventModal({
               onPress={() => void pickMedia()}
             >
               <ImagePlus size={24} color={Colors.primaryDark} />
-              <Text style={styles.addMediaText}>Add media</Text>
+              <Text style={styles.addMediaText}>{tx("communityEvents.addMedia")}</Text>
               <Text style={styles.mediaLimitText}>{media.length}/5</Text>
             </TouchableOpacity>
             {media.map((item) => (
@@ -1625,12 +1626,12 @@ function CreateEventModal({
             ))}
           </ScrollView>
           <Field
-            label="Event name"
+            label={tx("communityEvents.eventName")}
             value={name}
             onChange={setName}
-            placeholder="Morning chess"
+            placeholder={tx("communityEvents.eventNamePlaceholder")}
           />
-          <Text style={styles.fieldLabel}>CATEGORY</Text>
+          <Text style={styles.fieldLabel}>{tx("communityEvents.category")}</Text>
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
@@ -1661,11 +1662,11 @@ function CreateEventModal({
           <View style={styles.formReadOnly}>
             <Clock3 size={18} color={Colors.textSecondary} />
             <View>
-              <Text style={styles.fieldLabel}>DATE & TIME</Text>
+              <Text style={styles.fieldLabel}>{tx("communityEvents.dateTime")}</Text>
               <Text style={styles.formValue}>{selectedTime}</Text>
             </View>
           </View>
-          <Text style={styles.fieldLabel}>LOCATION</Text>
+          <Text style={styles.fieldLabel}>{tx("communityEvents.location")}</Text>
           <TouchableOpacity
             style={[
               styles.locationPickerButton,
@@ -1678,7 +1679,7 @@ function CreateEventModal({
             </View>
             <View style={styles.optionCopy}>
               <Text style={styles.optionTitle}>
-                {location ? "Selected location" : "Choose a location"}
+                {location ? tx("communityEvents.selectedLocation") : tx("communityEvents.chooseLocation")}
               </Text>
               <Text numberOfLines={2} style={styles.optionMeta}>
                 {location?.address ??
@@ -1688,26 +1689,26 @@ function CreateEventModal({
             <ChevronRight size={19} color={Colors.textSecondary} />
           </TouchableOpacity>
           <Field
-            label="Description"
+            label={tx("communityEvents.description")}
             value={description}
             onChange={setDescription}
-            placeholder="What should members expect?"
+            placeholder={tx("communityEvents.descriptionPlaceholder")}
             multiline
           />
           <Field
-            label="Capacity (optional)"
+            label={tx("communityEvents.capacityOptional")}
             value={capacity}
             onChange={setCapacity}
-            placeholder="e.g. 20 people"
+            placeholder={tx("communityEvents.capacityPlaceholder")}
             keyboardType="number-pad"
           />
           <Field
-            label="Booking link (optional)"
+            label={tx("communityEvents.bookingOptional")}
             value={bookingUrl}
             onChange={setBookingUrl}
             placeholder="https://..."
           />
-          <Text style={styles.fieldLabel}>VISIBILITY</Text>
+          <Text style={styles.fieldLabel}>{tx("communityEvents.visibility")}</Text>
           <View style={styles.visibilityRow}>
             <TouchableOpacity
               style={[
@@ -1720,8 +1721,8 @@ function CreateEventModal({
                 size={18}
                 color={!isPublic ? Colors.primaryDark : Colors.textSecondary}
               />
-              <Text style={styles.optionTitle}>Private</Text>
-              <Text style={styles.optionMeta}>Only your Circle</Text>
+              <Text style={styles.optionTitle}>{tx("communityEvents.private")}</Text>
+              <Text style={styles.optionMeta}>{tx("communityEvents.onlyCircle")}</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[
@@ -1734,11 +1735,11 @@ function CreateEventModal({
                 size={18}
                 color={isPublic ? Colors.primaryDark : Colors.textSecondary}
               />
-              <Text style={styles.optionTitle}>Public</Text>
+              <Text style={styles.optionTitle}>{tx("communityEvents.public")}</Text>
               <Text style={styles.optionMeta}>
                 {publicEventLimitReached
-                  ? "Monthly limit used"
-                  : "Listed for 30 days"}
+                  ? tx("communityEvents.monthlyLimitUsed")
+                  : tx("communityEvents.listedForDays")}
               </Text>
             </TouchableOpacity>
           </View>
@@ -1746,20 +1747,18 @@ function CreateEventModal({
             <View style={styles.ruleCard}>
               <Text style={styles.optionTitle}>
                 {publicEventLimitReached
-                  ? "Public event limit reached"
-                  : "Public event allowance"}
+                  ? tx("communityEvents.limitReached")
+                  : tx("communityEvents.allowance")}
               </Text>
               <Text style={styles.optionMeta}>
-                Free members can publish 1 public event per month. Additional
-                public events require Socio Plus. Public listings are removed
-                after 30 days.
+                {tx("communityEvents.allowanceDetails")}
               </Text>
             </View>
           )}
         </ScrollView>
         <View style={styles.footer}>
           <Button
-            title="Create event"
+            title={tx("communityEvents.createAction")}
             loading={uploading}
             onPress={() => void submit()}
           />

@@ -30,6 +30,7 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { formatLocalizedDateTime, tx } from "@/src/utils/localization";
 
 export default function CommunityEventModerationScreen() {
   const { role } = useAuth();
@@ -39,7 +40,7 @@ export default function CommunityEventModerationScreen() {
     setLoading(true);
     void getPendingCommunityEvents()
       .then(setEvents)
-      .catch(() => Alert.alert("Couldn’t load events", "Please try again."))
+      .catch(() => Alert.alert(tx("communityEvents.loadErrorTitle"), tx("common.tryAgain")))
       .finally(() => setLoading(false));
   }, []);
   useFocusEffect(load);
@@ -51,14 +52,14 @@ export default function CommunityEventModerationScreen() {
       await reviewCommunityEvent(event.id, decision);
       setEvents((current) => current.filter((item) => item.id !== event.id));
     } catch {
-      Alert.alert("Review wasn’t saved", "Please try again.");
+      Alert.alert(tx("communityEvents.reviewSaveError"), tx("common.tryAgain"));
     }
   };
   if (role?.role === "user")
     return (
       <SafeAreaView style={styles.center}>
         <ShieldCheck size={38} color={Colors.primaryDark} />
-        <Text style={styles.title}>Moderation access only</Text>
+        <Text style={styles.title}>{tx("communityEvents.moderationOnly")}</Text>
       </SafeAreaView>
     );
   return (
@@ -68,8 +69,8 @@ export default function CommunityEventModerationScreen() {
           <ArrowLeft size={21} color={Colors.textPrimary} />
         </TouchableOpacity>
         <View>
-          <Text style={styles.kicker}>SAFETY REVIEW</Text>
-          <Text style={styles.title}>Community events</Text>
+          <Text style={styles.kicker}>{tx("communityEvents.safetyReview")}</Text>
+          <Text style={styles.title}>{tx("communityEvents.title")}</Text>
         </View>
       </View>
       <ScrollView contentContainerStyle={styles.content}>
@@ -78,9 +79,9 @@ export default function CommunityEventModerationScreen() {
         ) : events.length === 0 ? (
           <View style={styles.center}>
             <ShieldCheck size={42} color={Colors.success} />
-            <Text style={styles.title}>You’re all caught up</Text>
+            <Text style={styles.title}>{tx("communityEvents.caughtUp")}</Text>
             <Text style={styles.body}>
-              New public events will appear here before they enter discovery.
+              {tx("communityEvents.emptyQueue")}
             </Text>
           </View>
         ) : (
@@ -88,7 +89,7 @@ export default function CommunityEventModerationScreen() {
             <View key={event.id} style={styles.card}>
               <View style={styles.badge}>
                 <Sparkles size={12} color={Colors.primaryDark} />
-                <Text style={styles.badgeText}>Community event</Text>
+                <Text style={styles.badgeText}>{tx("communityEvents.badge")}</Text>
               </View>
               <Text style={styles.cardTitle}>{event.title}</Text>
               <Text style={styles.body}>{event.description}</Text>
@@ -96,8 +97,8 @@ export default function CommunityEventModerationScreen() {
                 <CalendarDays size={16} color={Colors.textSecondary} />
                 <Text style={styles.body}>
                   {event.startsAt
-                    ? new Date(event.startsAt).toLocaleString()
-                    : "Time unavailable"}
+                    ? formatLocalizedDateTime(event.startsAt)
+                    : tx("communityEvents.timeUnavailable")}
                 </Text>
               </View>
               <View style={styles.meta}>
@@ -107,14 +108,14 @@ export default function CommunityEventModerationScreen() {
               <View style={styles.actions}>
                 <View style={styles.action}>
                   <Button
-                    title="Reject"
+                    title={tx("communityEvents.reject")}
                     variant="outline"
                     onPress={() => void decide(event, "rejected")}
                   />
                 </View>
                 <View style={styles.action}>
                   <Button
-                    title="Approve"
+                    title={tx("communityEvents.approve")}
                     onPress={() => void decide(event, "approved")}
                   />
                 </View>

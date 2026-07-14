@@ -14,7 +14,7 @@ import {
   sendEmailVerificationCode,
   signInWithEmail,
   signInWithGoogleIdToken,
-  signUpWithEmail,
+  signUpOrSignInWithEmail,
   } from "@/src/services/auth";
 import { getUserProfile } from "@/src/services/user";
 import { showErrorAlert } from "@/src/utils/errorHandling";
@@ -294,18 +294,24 @@ export default function SignUp() {
 
     setLoading(true);
     try {
-      const user = isSignUp
-        ? await signUpWithEmail(email, password)
-        : await signInWithEmail(email, password);
+      const signupResult = isSignUp
+        ? await signUpOrSignInWithEmail(email, password)
+        : null;
+      const user = signupResult?.user ?? await signInWithEmail(email, password);
 
       if (!user) {
         throw new Error("Authentication failed");
       }
 
+      const authenticationMode = signupResult?.mode ?? "signed-in";
       const requiresEmailVerification =
-        isSignUp || requiresEmailOnboardingVerification(user);
+        authenticationMode !== "signed-in" ||
+        requiresEmailOnboardingVerification(user);
 
-      if (!isSignUp && requiresEmailVerification) {
+      if (
+        authenticationMode !== "signed-up" &&
+        requiresEmailVerification
+      ) {
         await sendEmailVerificationCode(email);
       }
 

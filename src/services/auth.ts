@@ -107,6 +107,88 @@ export const signUpWithEmail = async (email: string, password: string) => {
   }
 };
 
+export type SignupAuthenticationMode =
+  | "signed-up"
+  | "signed-in"
+  | "verification-required";
+
+export interface SignupAuthenticationResult {
+  user: User;
+  mode: SignupAuthenticationMode;
+}
+
+const throwMappedAuthError = (error: { code?: string; message?: string }): never => {
+  const authError = getAuthErrorMessage(error);
+  throw Object.assign(new Error(authError.userMessage), {
+    code: error.code ?? "unknown",
+    suggestion: authError.suggestion,
+  });
+};
+
+/**
+ * Signup entry point that treats valid credentials for an existing account as
+ * login. This avoids forcing users back after choosing the wrong auth tab.
+ */
+export const signUpOrSignInWithEmail = async (
+  email: string,
+  password: string,
+): Promise<SignupAuthenticationResult> => {
+  if (!email || !password) {
+    throw createAuthInputError(
+      "missing-fields",
+      "Email and password are required",
+    );
+  }
+  if (password.length < 6) {
+    throw createAuthInputError(
+      "password-too-short",
+      "Password must be at least 6 characters",
+    );
+  }
+
+  const normalizedEmail = email.trim().toLowerCase();
+  const { data: signInData, error: signInError } =
+    await supabase.auth.signInWithPassword({
+      email: normalizedEmail,
+      password,
+    });
+
+  if (!signInError && signInData.user) {
+    return { user: signInData.user, mode: "signed-in" };
+  }
+
+  const signInCode = signInError?.code ?? "unknown";
+  const canContinueToSignup =
+    signInCode === "invalid_credentials" ||
+    signInCode === "email_not_confirmed";
+  if (!canContinueToSignup && signInError) {
+    throwMappedAuthError(signInError);
+  }
+
+  const user = await signUpWithEmail(normalizedEmail, password);
+  if (!user) {
+    return throwMappedAuthError({ code: "unknown" });
+  }
+
+  // Supabase may intentionally return an obfuscated user with no identities
+  // when a confirmed address already exists. Do not treat that as a new user.
+  const isObfuscatedExistingUser =
+    signInCode === "invalid_credentials" &&
+    Array.isArray(user.identities) &&
+    user.identities.length === 0;
+  if (isObfuscatedExistingUser) {
+    throwMappedAuthError({ code: "invalid_credentials" });
+  }
+
+  return {
+    user,
+    mode:
+      signInCode === "email_not_confirmed"
+        ? "verification-required"
+        : "signed-up",
+  };
+};
+
 export const signInWithEmail = async (
   email: string,
   password: string,

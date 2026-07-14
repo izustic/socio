@@ -16,6 +16,7 @@ export interface MeetupExperience {
   title: string;
   category: Exclude<MeetupCategory, "All">;
   location: string;
+  coordinates?: { lat: number; lng: number };
   price: string;
   description: string;
   bookingUrl?: string;

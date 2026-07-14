@@ -1,6 +1,6 @@
 import Avatar from "@/src/components/ui/Avatar";
 import Button from "@/src/components/ui/Button";
-import { Colors, Radius, Spacing, Typography } from "@/src/constants/theme";
+import { createThemedStyles, Colors, Radius, Spacing, Typography } from "@/src/constants/theme";
 import { useAuth } from "@/src/context/AuthContext";
 import { useSwipeTabVisibility } from "@/src/context/SwipeTabVisibilityContext";
 import {
@@ -11,21 +11,29 @@ import {
   resetCircleFreeExitsIfExpired,
 } from "@/src/services/circle";
 import { getUsersByIds, SwipeCandidate } from "@/src/services/swipe";
+import {
+  hasMeetupPlanningStarted,
+  loadMeetupPlan,
+  type MeetupPlan,
+} from "@/src/services/meetupPlanning";
 import { Circle } from "@/src/types";
 import { getCircleMeetupDeadline, getCountdownParts } from "@/src/utils/circleDeadline";
 import { getCircleExitState } from "@/src/utils/circleExit";
-import { router, useLocalSearchParams } from "expo-router";
-import React, { useEffect, useMemo, useState } from "react";
+import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
+import { MoreHorizontal } from "lucide-react-native";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  Pressable,
+  ScrollView,
   StatusBar,
-  StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { tx } from "@/src/utils/localization";
 
 const arrangeMembers = (
   memberIds: string[],
@@ -45,6 +53,8 @@ export default function CircleCompleteScreen() {
   const [members, setMembers] = useState<SwipeCandidate[]>([]);
   const [loading, setLoading] = useState(true);
   const [exiting, setExiting] = useState(false);
+  const [moreMenuVisible, setMoreMenuVisible] = useState(false);
+  const [meetupPlan, setMeetupPlan] = useState<MeetupPlan | null>(null);
   const [now, setNow] = useState(Date.now());
 
   useEffect(() => {
@@ -92,6 +102,28 @@ export default function CircleCompleteScreen() {
     };
   }, [circle]);
 
+  useFocusEffect(
+    useCallback(() => {
+      let active = true;
+      if (!circle) {
+        setMeetupPlan(null);
+        return () => { active = false; };
+      }
+
+      void loadMeetupPlan(circle.id).then((storedPlan) => {
+        if (active) setMeetupPlan(storedPlan);
+      });
+
+      return () => { active = false; };
+    }, [circle]),
+  );
+
+  const meetupButtonTitle = meetupPlan?.step === "scheduled"
+    ? "View meetup"
+    : meetupPlan && hasMeetupPlanningStarted(meetupPlan)
+      ? "Continue meetup setup"
+      : "Plan a meetup";
+
   useEffect(() => {
     if (!circle) return;
 
@@ -108,7 +140,7 @@ export default function CircleCompleteScreen() {
     if (!user) return members.map((m) => m.name.split(" ")[0]).join(", ");
 
     return members
-      .map((m) => (m.uid === user.id ? "You" : m.name.split(" ")[0]))
+      .map((m) => (m.uid === user.id ? tx("common.you") : m.name.split(" ")[0]))
       .join(", ");
   }, [members, user]);
 
@@ -143,14 +175,14 @@ export default function CircleCompleteScreen() {
     if (!circle || !user || !exitState || exitState.locked || exiting) return;
 
     Alert.alert(
-      exitState.isHost ? "Close Circle?" : "Leave Circle?",
+      exitState.isHost ? tx("circle.CircleCompleteScreen.closeCircle") : tx("circle.CircleCompleteScreen.leaveCircle"),
       exitState.isHost
-        ? `${exitState.helperText}\n\nThis will delete ${circle.name} and remove everyone from the Circle. This cannot be undone.`
-        : `${exitState.helperText}\n\nYou will leave ${circle.name} and lose access to its chat.`,
+        ? tx("circle.CircleCompleteScreen.value1ThisWillDeleteValue2AndRemoveEveryoneFrom", { value1: exitState.helperText, value2: circle.name })
+        : tx("circle.CircleCompleteScreen.value1YouWillLeaveValue2AndLoseAccessTo", { value1: exitState.helperText, value2: circle.name }),
       [
-        { text: "Cancel", style: "cancel" },
+        { text: tx("circle.CircleCompleteScreen.cancel"), style: "cancel" },
         {
-          text: exitState.isHost ? "Close Circle" : "Leave",
+          text: exitState.isHost ? tx("circle.CircleCompleteScreen.closeCircle2") : tx("circle.CircleCompleteScreen.leave"),
           style: "destructive",
           onPress: async () => {
             setExiting(true);
@@ -168,7 +200,7 @@ export default function CircleCompleteScreen() {
               router.replace("/(tabs)/home");
             } catch (error) {
               console.error("Error exiting circle:", error);
-              Alert.alert("Could not update Circle", "Please try again.");
+              Alert.alert(tx("circle.CircleCompleteScreen.couldNotUpdateCircle"), tx("circle.CircleCompleteScreen.pleaseTryAgain"));
             } finally {
               setExiting(false);
             }
@@ -178,10 +210,15 @@ export default function CircleCompleteScreen() {
     );
   };
 
+  const openMoreMenu = () => {
+    if (!circle) return;
+    setMoreMenuVisible(true);
+  };
+
   if (loading) {
     return (
       <SafeAreaView style={styles.container}>
-        <StatusBar barStyle="dark-content" />
+        <StatusBar />
         <View style={styles.centered}>
           <ActivityIndicator size="large" color={Colors.primary} />
         </View>
@@ -192,15 +229,14 @@ export default function CircleCompleteScreen() {
   if (!circle) {
     return (
       <SafeAreaView style={styles.container}>
-        <StatusBar barStyle="dark-content" />
+        <StatusBar />
         <View style={styles.centered}>
-          <Text style={styles.title}>No active Circle</Text>
+          <Text style={styles.title}>{tx("circle.CircleCompleteScreen.noActiveCircle")}</Text>
           <Text style={styles.subtitle}>
-            Create or join a Circle to get started.
-          </Text>
+            {tx("circle.CircleCompleteScreen.createOrJoinACircleToGetStarted")}</Text>
           <View style={styles.emptyAction}>
             <Button
-              title="Back to Circle"
+              title={tx("circle.CircleCompleteScreen.backToCircle")}
               onPress={() => router.replace("/(tabs)/home")}
             />
           </View>
@@ -211,16 +247,30 @@ export default function CircleCompleteScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" />
+      <StatusBar />
 
-      <View style={styles.content}>
-        <View style={styles.badge}>
-          <Text style={styles.badgeText}>COMPLETE</Text>
+      <ScrollView
+        style={styles.content}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={styles.topRow}>
+          <View style={styles.badge}>
+            <Text style={styles.badgeText}>{tx("circle.CircleCompleteScreen.complete")}</Text>
+          </View>
+          <TouchableOpacity
+            accessibilityLabel="More Circle options"
+            activeOpacity={0.7}
+            style={styles.moreButton}
+            onPress={openMoreMenu}
+          >
+            <MoreHorizontal size={23} color={Colors.textPrimary} />
+          </TouchableOpacity>
         </View>
 
         <View>
           <Text style={styles.title}>{circle.name}</Text>
-          <Text style={styles.subtitle}>Your Circle is ready to meet</Text>
+          <Text style={styles.subtitle}>{tx("circle.CircleCompleteScreen.yourCircleIsReadyToMeet")}</Text>
         </View>
 
         <View style={styles.membersRow}>
@@ -232,7 +282,7 @@ export default function CircleCompleteScreen() {
                 placeholder={!member.photoURL}
               />
               <Text numberOfLines={1} style={styles.memberName}>
-                {member.uid === user?.id ? "You" : member.name.split(" ")[0]}
+                {member.uid === user?.id ? tx("circle.CircleCompleteScreen.you") : member.name.split(" ")[0]}
               </Text>
             </View>
           ))}
@@ -242,61 +292,90 @@ export default function CircleCompleteScreen() {
 
         <View style={styles.countdownCard}>
           <Text style={styles.countdownLabel}>
-            {(circle.meetupGoal || "Circle meetup").toUpperCase()} IN
-          </Text>
+            {(circle.meetupGoal || tx("circleComplete.meetup")).toUpperCase()} {tx("circle.CircleCompleteScreen.in")}</Text>
           <View style={styles.countdownColumns}>
             <View style={styles.countdownColumn}>
               <Text style={styles.countdownValue}>{countdown.days}</Text>
-              <Text style={styles.countdownUnit}>DAYS</Text>
+              <Text style={styles.countdownUnit}>{tx("circle.CircleCompleteScreen.days")}</Text>
             </View>
             <View style={styles.countdownColumn}>
               <Text style={styles.countdownValue}>{countdown.hours}</Text>
-              <Text style={styles.countdownUnit}>HRS</Text>
+              <Text style={styles.countdownUnit}>{tx("circle.CircleCompleteScreen.hrs")}</Text>
             </View>
             <View style={styles.countdownColumn}>
               <Text style={styles.countdownValue}>{countdown.minutes}</Text>
-              <Text style={styles.countdownUnit}>MIN</Text>
+              <Text style={styles.countdownUnit}>{tx("circle.CircleCompleteScreen.min")}</Text>
             </View>
             <View style={styles.countdownColumn}>
               <Text style={styles.countdownValue}>{countdown.seconds}</Text>
-              <Text style={styles.countdownUnit}>SEC</Text>
+              <Text style={styles.countdownUnit}>{tx("circle.CircleCompleteScreen.sec")}</Text>
             </View>
           </View>
         </View>
-      </View>
+      </ScrollView>
 
       <View style={styles.footer}>
         <Button
-          title="Enter Circle"
-          onPress={() => router.push("/(tabs)/home?circleView=chat")}
+          title={meetupButtonTitle}
+          onPress={() =>
+            router.push({
+              pathname: "/circle/plan",
+              params: circle?.id ? { circleId: circle.id } : undefined,
+            })
+          }
         />
         <Button
-          title="View details"
-          variant="ghost"
-          onPress={() => router.push("/(tabs)/home?circleView=progress")}
+          title={tx("circle.CircleCompleteScreen.enterCircle")}
+          variant="outline"
+          onPress={() => router.push("/(tabs)/home?circleView=chat")}
         />
-        {exitState && (
-          <TouchableOpacity
-            activeOpacity={0.76}
-            style={[
-              styles.exitButton,
-              exitState.locked && styles.exitButtonDisabled,
-            ]}
-            disabled={exitState.locked || exiting}
-            onPress={confirmExitCircle}
-          >
-            <Text style={styles.exitButtonText}>
-              {exiting ? "Working..." : exitState.label}
-            </Text>
-            <Text style={styles.exitHelper}>{exitState.helperText}</Text>
-          </TouchableOpacity>
-        )}
       </View>
+
+      {moreMenuVisible && (
+        <View style={styles.menuLayer}>
+          <Pressable
+            accessibilityLabel="Close Circle options"
+            style={styles.menuBackdrop}
+            onPress={() => setMoreMenuVisible(false)}
+          />
+          <View style={styles.menuSheet}>
+            <Text style={styles.menuTitle}>{circle.name}</Text>
+            {exitState?.locked && (
+              <Text style={styles.menuHelper}>{exitState.helperText}</Text>
+            )}
+            <TouchableOpacity
+              style={styles.menuAction}
+              onPress={() => {
+                setMoreMenuVisible(false);
+                router.push("/(tabs)/home?circleView=progress");
+              }}
+            >
+              <Text style={styles.menuActionText}>
+                {tx("circle.CircleCompleteScreen.viewDetails")}
+              </Text>
+            </TouchableOpacity>
+            {exitState && !exitState.locked && (
+              <TouchableOpacity
+                style={styles.menuAction}
+                disabled={exiting}
+                onPress={() => {
+                  setMoreMenuVisible(false);
+                  confirmExitCircle();
+                }}
+              >
+                <Text style={styles.menuDangerText}>
+                  {exiting ? tx("circle.CircleCompleteScreen.working") : exitState.label}
+                </Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        </View>
+      )}
     </SafeAreaView>
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createThemedStyles((Colors) => ({
   container: {
     flex: 1,
     backgroundColor: Colors.background,
@@ -314,11 +393,19 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
+  },
+  scrollContent: {
     alignItems: "center",
     gap: Spacing.lg,
+    paddingBottom: Spacing.lg,
+  },
+  topRow: {
+    width: "100%",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
   },
   badge: {
-    alignSelf: "flex-start",
     backgroundColor: Colors.primary,
     borderRadius: Radius.pill,
     paddingHorizontal: Spacing.md,
@@ -328,6 +415,14 @@ const styles = StyleSheet.create({
     ...Typography.label,
     color: Colors.textPrimary,
     fontWeight: "800",
+  },
+  moreButton: {
+    width: 40,
+    height: 40,
+    borderRadius: Radius.full,
+    backgroundColor: Colors.inputBg,
+    alignItems: "center",
+    justifyContent: "center",
   },
   title: {
     ...Typography.h2,
@@ -362,7 +457,7 @@ const styles = StyleSheet.create({
   },
   countdownCard: {
     width: "100%",
-    backgroundColor: "#FFF8EA",
+    backgroundColor: Colors.primaryLight,
     borderRadius: Radius.lg,
     padding: Spacing.lg,
     gap: Spacing.lg,
@@ -394,24 +489,60 @@ const styles = StyleSheet.create({
     gap: Spacing.sm,
     paddingTop: Spacing.md,
   },
-  exitButton: {
-    width: "100%",
+  menuLayer: {
+    position: "absolute",
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0,
+    zIndex: 100,
+  },
+  menuBackdrop: {
+    position: "absolute",
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0,
+  },
+  menuSheet: {
+    position: "absolute",
+    top: 54,
+    right: Spacing.screenPadding,
+    width: 250,
+    backgroundColor: Colors.surface,
+    borderRadius: Radius.md,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    padding: Spacing.sm,
+    elevation: 8,
+    shadowColor: "#000000",
+    shadowOpacity: 0.14,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 6 },
+  },
+  menuTitle: {
+    ...Typography.h3,
+    textAlign: "center",
+    marginBottom: Spacing.sm,
+  },
+  menuHelper: {
+    ...Typography.bodySmall,
+    textAlign: "center",
+    marginBottom: Spacing.sm,
+  },
+  menuAction: {
+    minHeight: 52,
     alignItems: "center",
     justifyContent: "center",
-    paddingVertical: Spacing.sm,
-    paddingHorizontal: Spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.divider,
   },
-  exitButtonDisabled: {
-    opacity: 0.55,
-  },
-  exitButtonText: {
+  menuActionText: {
     ...Typography.button,
-    color: Colors.textSecondary,
+    color: Colors.textPrimary,
   },
-  exitHelper: {
-    ...Typography.bodySmall,
-    color: Colors.textSecondary,
-    textAlign: "center",
-    marginTop: 2,
+  menuDangerText: {
+    ...Typography.button,
+    color: Colors.danger,
   },
-});
+}));

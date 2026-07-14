@@ -1,4 +1,4 @@
-import { Colors, Radius, Spacing, Typography } from "@/src/constants/theme";
+import { createThemedStyles, Colors, Radius, Spacing, Typography } from "@/src/constants/theme";
 import { Audio } from "expo-av";
 import { Image } from "expo-image";
 import {
@@ -13,12 +13,12 @@ import {
 } from "lucide-react-native";
 import React, { useEffect, useRef, useState } from "react";
 import {
-  StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
+import { tx } from "@/src/utils/localization";
 
 interface ChatAttachment {
   id: string;
@@ -67,7 +67,7 @@ export default function ChatInput({
   onStartRecording,
   onStopRecording,
   onDiscardAudio,
-  placeholder = "Type a message...",
+  placeholder = tx("chat.typeMessage"),
   disabled = false,
 }: ChatInputProps) {
   const [text, setText] = useState("");
@@ -182,7 +182,7 @@ export default function ChatInput({
             </Text>
             <Text numberOfLines={1} style={styles.replyText}>
               {replyTo.mediaType
-                ? `${replyTo.mediaType === "image" ? "Photo" : replyTo.mediaType === "video" ? "Video" : "Voice message"}${replyTo.text ? ` · ${replyTo.text}` : ""}`
+                ? tx("chat.ChatInput.value1Value2", { value1: replyTo.mediaType === "image" ? tx("chat.photo") : replyTo.mediaType === "video" ? tx("chat.video") : tx("chat.voiceMessage"), value2: replyTo.text ? ` · ${replyTo.text}` : "" })
                 : replyTo.text}
             </Text>
           </View>
@@ -190,7 +190,7 @@ export default function ChatInput({
             style={styles.cancelReplyButton}
             onPress={onCancelReply}
             disabled={disabled}
-            accessibilityLabel="Cancel reply"
+            accessibilityLabel={tx("chat.ChatInput.cancelReply")}
           >
             <X size={16} color={Colors.textSecondary} strokeWidth={2.5} />
           </TouchableOpacity>
@@ -209,7 +209,7 @@ export default function ChatInput({
                 style={styles.removeAttachmentButton}
                 onPress={() => onRemoveAttachment?.(attachment.id)}
                 disabled={disabled}
-                accessibilityLabel="Remove attachment"
+                accessibilityLabel={tx("chat.ChatInput.removeAttachment")}
               >
                 <X size={14} color={Colors.white} strokeWidth={2.6} />
               </TouchableOpacity>
@@ -220,7 +220,7 @@ export default function ChatInput({
       {isRecordingAudio && (
         <View style={styles.audioDraft}>
           <View style={styles.recordingDot} />
-          <Text style={styles.audioDraftText}>Recording</Text>
+          <Text style={styles.audioDraftText}>{tx("chat.ChatInput.recording")}</Text>
           <Text style={styles.audioDuration}>
             {formatDuration(recordingDurationMillis)}
           </Text>
@@ -234,8 +234,8 @@ export default function ChatInput({
             disabled={disabled}
             accessibilityLabel={
               previewPlaying
-                ? "Pause voice message preview"
-                : "Play voice message preview"
+                ? tx("chat.ChatInput.pauseVoiceMessagePreview")
+                : tx("chat.ChatInput.playVoiceMessagePreview")
             }
           >
             {previewPlaying ? (
@@ -266,7 +266,7 @@ export default function ChatInput({
             style={styles.discardAudioButton}
             onPress={onDiscardAudio}
             disabled={disabled}
-            accessibilityLabel="Discard voice message"
+            accessibilityLabel={tx("chat.ChatInput.discardVoiceMessage")}
           >
             <Trash2 size={17} color={Colors.danger} strokeWidth={2.2} />
           </TouchableOpacity>
@@ -365,10 +365,10 @@ export default function ChatInput({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createThemedStyles((Colors) => ({
   container: {
     padding: Spacing.md,
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.surface,
     borderTopWidth: 1,
     borderTopColor: Colors.border,
     gap: Spacing.xs,
@@ -455,7 +455,7 @@ const styles = StyleSheet.create({
     borderRadius: Radius.full,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.surface,
   },
   audioPreviewBar: {
     flex: 1,
@@ -547,4 +547,4 @@ const styles = StyleSheet.create({
   characterCountWarning: {
     color: "#FF5252",
   },
-});
+}));

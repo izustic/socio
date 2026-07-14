@@ -1,9 +1,8 @@
-import { Colors, Radius, Spacing, Typography } from "@/src/constants/theme";
+import { createThemedStyles, Radius, Spacing, Typography } from "@/src/constants/theme";
 import React from "react";
 import {
   Image,
   Modal,
-  StyleSheet,
   Text,
   TouchableOpacity,
   View,
@@ -76,10 +75,10 @@ export default function AlertModal({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createThemedStyles((Colors) => ({
   overlay: {
     flex: 1,
-    backgroundColor: "rgba(255, 255, 255, 0.72)",
+    backgroundColor: Colors.surface,
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: Spacing.screenPadding,
@@ -148,7 +147,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.primary,
   },
   secondaryButton: {
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.surface,
     borderWidth: 1,
     borderColor: Colors.border,
   },
@@ -162,4 +161,4 @@ const styles = StyleSheet.create({
   secondaryText: {
     color: Colors.textPrimary,
   },
-});
+}));

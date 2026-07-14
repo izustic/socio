@@ -2,6 +2,7 @@ import {
   getAuthErrorMessage as getSupabaseAuthErrorMessage,
   type AuthErrorInfo,
 } from "@/src/services/auth.helpers";
+import { translateActiveResource } from "@/src/services/TranslationService";
 
 export interface AuthError {
   code: string;
@@ -32,16 +33,16 @@ export const getAuthErrorMessage = (error: unknown): AuthError => {
   const code = errorLike?.code || "unknown";
   const message =
     (error instanceof Error ? error.message : errorLike?.message) ||
-    "An unknown error occurred";
+    translateActiveResource("errors.unknown");
 
   if (errorLike?.code) {
     const mapped = getSupabaseAuthErrorMessage(errorLike);
-    if (mapped.userMessage !== "Something went wrong") {
+    if (mapped.userMessage !== translateActiveResource("errors.somethingWentWrong")) {
       return toAuthError(code, message, mapped);
     }
   }
 
-  if (message && message !== "An unknown error occurred") {
+  if (message && message !== translateActiveResource("errors.unknown")) {
     return {
       code,
       message,
@@ -56,7 +57,7 @@ export const getAuthErrorMessage = (error: unknown): AuthError => {
 
 export const showErrorAlert = (
   error: unknown,
-  context: string = "Authentication",
+  context: string = translateActiveResource("errors.authentication"),
 ) => {
   const authError = getAuthErrorMessage(error);
 
@@ -68,7 +69,9 @@ export const showErrorAlert = (
 
   return {
     title: authError.userMessage,
-    message: authError.suggestion ? `Hint: ${authError.suggestion}` : undefined,
+    message: authError.suggestion
+      ? translateActiveResource("errors.hint", { suggestion: authError.suggestion })
+      : undefined,
     code: authError.code,
   };
 };

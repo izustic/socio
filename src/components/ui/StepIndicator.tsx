@@ -1,6 +1,6 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
-import { Colors, Spacing, Typography } from '@/src/constants/theme';
+import { View, Text } from 'react-native';
+import { createThemedStyles, Spacing, Typography } from '@/src/constants/theme';
 
 interface StepIndicatorProps {
   currentStep: number;
@@ -72,7 +72,7 @@ export default function StepIndicator({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createThemedStyles((Colors) => ({
   container: {
     alignItems: 'center',
   },
@@ -132,4 +132,4 @@ const styles = StyleSheet.create({
     color: Colors.textPrimary,
     fontWeight: '700',
   },
-});
+}));

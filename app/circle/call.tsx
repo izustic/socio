@@ -1,4 +1,4 @@
-import { Colors, Spacing, Typography } from "@/src/constants/theme";
+import { createThemedStyles, Colors, Spacing, Typography } from "@/src/constants/theme";
 import { useAuth } from "@/src/context/AuthContext";
 import { CallParticipant, useCircleCall } from "@/src/hooks/useCircleCall";
 import { router, useLocalSearchParams } from "expo-router";
@@ -14,6 +14,7 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { tx } from "@/src/utils/localization";
 
 export default function CallScreen() {
   const { user, profile } = useAuth();
@@ -24,7 +25,7 @@ export default function CallScreen() {
 
   const circleId = params.circleId ?? "";
   const userId = user?.id ?? "";
-  const userName = profile?.name ?? user?.email?.split("@")[0] ?? "Member";
+  const userName = profile?.name ?? user?.email?.split("@")[0] ?? tx("circleInfo.member");
 
   const {
     connect,
@@ -49,8 +50,8 @@ export default function CallScreen() {
   // Show error and go back
   useEffect(() => {
     if (error) {
-      Alert.alert("Call failed", error, [
-        { text: "OK", onPress: () => router.back() },
+      Alert.alert(tx("app.circle.call.callFailed"), error, [
+        { text: tx("app.circle.call.ok"), onPress: () => router.back() },
       ]);
     }
   }, [error]);
@@ -63,13 +64,13 @@ export default function CallScreen() {
   if (!circleId) {
     return (
       <SafeAreaView style={styles.loadingContainer}>
-        <Text style={styles.connectingText}>No Circle selected for this call.</Text>
+        <Text style={styles.connectingText}>{tx("app.circle.call.noCircleSelectedForThisCall")}</Text>
         <TouchableOpacity
           onPress={() => router.back()}
           style={styles.returnButton}
           activeOpacity={0.76}
         >
-          <Text style={styles.returnButtonText}>Back to chat</Text>
+          <Text style={styles.returnButtonText}>{tx("app.circle.call.backToChat")}</Text>
         </TouchableOpacity>
       </SafeAreaView>
     );
@@ -103,7 +104,7 @@ export default function CallScreen() {
           <MicOff size={12} color={Colors.white} strokeWidth={2} />
         )}
         <Text numberOfLines={1} style={styles.participantName}>
-          {participant.isLocal ? "You" : participant.name}
+          {participant.isLocal ? tx("app.circle.call.you") : participant.name}
         </Text>
       </View>
     </View>
@@ -114,7 +115,7 @@ export default function CallScreen() {
     return (
       <SafeAreaView style={styles.loadingContainer}>
         <ActivityIndicator size="large" color={Colors.primary} />
-        <Text style={styles.connectingText}>Joining call...</Text>
+        <Text style={styles.connectingText}>{tx("app.circle.call.joiningCall")}</Text>
       </SafeAreaView>
     );
   }
@@ -124,11 +125,11 @@ export default function CallScreen() {
       {/* Top bar */}
       <View style={styles.topBar}>
         <View style={styles.encryptedBadge}>
-          <Text style={styles.encryptedText}>Socio Call</Text>
+          <Text style={styles.encryptedText}>{tx("app.circle.call.sociolCall")}</Text>
         </View>
         <Text style={styles.memberCount}>
           {participants.length}{" "}
-          {participants.length === 1 ? "member" : "members"}
+          {participants.length === 1 ? tx("app.circle.call.member") : tx("app.circle.call.members")}
         </Text>
       </View>
 
@@ -137,8 +138,7 @@ export default function CallScreen() {
         {participants.length === 0 ? (
           <View style={styles.emptyCall}>
             <Text style={styles.emptyCallText}>
-              Waiting for others to join...
-            </Text>
+              {tx("app.circle.call.waitingForOthersToJoin")}</Text>
           </View>
         ) : (
           <View
@@ -166,7 +166,7 @@ export default function CallScreen() {
           ]}
           activeOpacity={0.76}
           accessibilityLabel={
-            isMicEnabled ? "Mute microphone" : "Unmute microphone"
+            isMicEnabled ? tx("app.circle.call.muteMicrophone") : tx("app.circle.call.unmuteMicrophone")
           }
         >
           {isMicEnabled ? (
@@ -185,7 +185,7 @@ export default function CallScreen() {
           ]}
           activeOpacity={0.76}
           accessibilityLabel={
-            isCameraEnabled ? "Turn off camera" : "Turn on camera"
+            isCameraEnabled ? tx("app.circle.call.turnOffCamera") : tx("app.circle.call.turnOnCamera")
           }
         >
           {isCameraEnabled ? (
@@ -200,7 +200,7 @@ export default function CallScreen() {
           onPress={handleEndCall}
           style={styles.endCallButton}
           activeOpacity={0.76}
-          accessibilityLabel="End call"
+          accessibilityLabel={tx("app.circle.call.endCall")}
         >
           <PhoneOff size={26} color={Colors.white} strokeWidth={2} />
         </TouchableOpacity>
@@ -209,7 +209,7 @@ export default function CallScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createThemedStyles((Colors) => ({
   container: {
     flex: 1,
     backgroundColor: "#1A1A1A",
@@ -369,4 +369,4 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-});
+}));

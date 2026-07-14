@@ -1,6 +1,7 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
-import { Colors, Radius, Spacing, Typography } from '@/src/constants/theme';
+import { View, Text } from 'react-native';
+import { createThemedStyles, Colors, Radius, Spacing, Typography } from '@/src/constants/theme';
+import { tx } from "@/src/utils/localization";
 
 interface CircleCapacityBadgeProps {
   current: number;
@@ -76,11 +77,10 @@ export default function CircleCapacityBadge({
         
         <View style={styles.details}>
           <Text style={styles.statusText}>
-            {isFull ? 'Full' : isAlmostFull ? 'Almost Full' : 'Open'}
+            {isFull ? tx("circle.CapacityBadge.full") : isAlmostFull ? tx("circle.CapacityBadge.almostFull") : tx("circle.CapacityBadge.open")}
           </Text>
           <Text style={styles.percentageText}>
-            {Math.round(percentage)}% filled
-          </Text>
+            {Math.round(percentage)}{tx("circle.CapacityBadge.filled")}</Text>
         </View>
       </View>
     );
@@ -116,7 +116,7 @@ export default function CircleCapacityBadge({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createThemedStyles((Colors) => ({
   container: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -177,4 +177,4 @@ const styles = StyleSheet.create({
     ...Typography.bodySmall,
     color: Colors.textSecondary,
   },
-});
+}));

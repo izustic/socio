@@ -8,6 +8,7 @@ import {
 } from "../types";
 import { supabase } from "./supabase";
 import { createNotification, createNotifications } from "./notifications";
+import { translateActiveResource, translateResource } from "./TranslationService";
 
 export interface SwipeCandidate extends User {
   uid: string;
@@ -110,11 +111,25 @@ const getUserDisplayName = async (userId: string): Promise<string> => {
 
   if (error) {
     console.error("Error getting notification actor:", error);
-    return "Someone";
+    return translateResource("en", "notification.someone");
   }
 
-  return data?.display_name || data?.email?.split("@")[0] || "Someone";
+  return data?.display_name || data?.email?.split("@")[0] || translateResource("en", "notification.someone");
 };
+
+const localizedNotificationData = (
+  titleKey: string,
+  bodyKey: string,
+  params: Record<string, string | number>,
+  data: Record<string, unknown>,
+) => ({
+  ...data,
+  i18n: {
+    titleKey,
+    bodyKey,
+    params,
+  },
+});
 
 const getNotificationCircle = async (
   circleId: string,
@@ -143,12 +158,17 @@ const notifyCircleProgress = async (
     await createNotifications(
       members,
       "circle_complete",
-      "Your Circle is complete!",
-      `${circle.name} is ready to meet.`,
-      {
+      translateResource("en", "notification.circleComplete.title"),
+      translateResource("en", "notification.circleComplete.body", { circleName: circle.name }),
+      localizedNotificationData(
+        "notification.circleComplete.title",
+        "notification.circleComplete.body",
+        { circleName: circle.name },
+        {
         action: "circle_complete",
         circleId: circle.id,
-      },
+        },
+      ),
     );
     return;
   }
@@ -157,12 +177,17 @@ const notifyCircleProgress = async (
     await createNotification(
       circle.creator_id,
       "circle_almost_full",
-      "Circle almost full",
-      "1 more person to fill your Circle.",
-      {
+      translateResource("en", "notification.circleAlmostFull.title"),
+      translateResource("en", "notification.circleAlmostFull.body"),
+      localizedNotificationData(
+        "notification.circleAlmostFull.title",
+        "notification.circleAlmostFull.body",
+        {},
+        {
         action: "circle_progress",
         circleId: circle.id,
-      },
+        },
+      ),
     );
   }
 };
@@ -201,25 +226,35 @@ const notifySwipeOutcome = async ({
         await createNotification(
           circle.creator_id,
           "circle_accepted",
-          `${actorName} accepted`,
-          `Welcome them to ${circle.name}.`,
-          {
+          translateResource("en", "notification.circleAccepted.title", { actorName }),
+          translateResource("en", "notification.circleAccepted.hostBody", { circleName: circle.name }),
+          localizedNotificationData(
+            "notification.circleAccepted.title",
+            "notification.circleAccepted.hostBody",
+            { actorName, circleName: circle.name },
+            {
             action: "circle_progress",
             actorId,
             circleId,
-          },
+            },
+          ),
         );
       } else {
         await createNotification(
           circle.creator_id,
           "circle_invite",
-          `${actorName} wants to join`,
-          `${actorName} liked ${circle.name}.`,
-          {
+          translateResource("en", "notification.circleInvite.title", { actorName }),
+          translateResource("en", "notification.circleInvite.body", { actorName, circleName: circle.name }),
+          localizedNotificationData(
+            "notification.circleInvite.title",
+            "notification.circleInvite.body",
+            { actorName, circleName: circle.name },
+            {
             action: "review_joiner",
             actorId,
             circleId,
-          },
+            },
+          ),
         );
       }
     }
@@ -228,13 +263,18 @@ const notifySwipeOutcome = async ({
       await createNotification(
         targetUserId,
         "circle_accepted",
-        `${actorName} accepted`,
-        `You both wanted to be in ${circle.name}.`,
-        {
+        translateResource("en", "notification.circleAccepted.title", { actorName }),
+        translateResource("en", "notification.circleAccepted.joinerBody", { circleName: circle.name }),
+        localizedNotificationData(
+          "notification.circleAccepted.title",
+          "notification.circleAccepted.joinerBody",
+          { actorName, circleName: circle.name },
+          {
           action: "circle_progress",
           actorId,
           circleId,
-        },
+          },
+        ),
       );
     }
 
@@ -247,24 +287,6 @@ const notifySwipeOutcome = async ({
   } catch (error) {
     console.error("Error creating swipe notifications:", error);
   }
-};
-
-const getDistanceKm = (
-  from: { lat: number; lng: number },
-  to: { lat: number; lng: number },
-): number => {
-  const toRad = (d: number) => (d * Math.PI) / 180;
-  const R = 6371;
-  const dLat = toRad(to.lat - from.lat);
-  const dLng = toRad(to.lng - from.lng);
-  const a =
-    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos(toRad(from.lat)) *
-      Math.cos(toRad(to.lat)) *
-      Math.sin(dLng / 2) *
-      Math.sin(dLng / 2);
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  return R * c;
 };
 
 export const getActiveCircleForUser = async (
@@ -437,7 +459,6 @@ export const getUsersByIds = async (
 export const getSwipeCandidates = async ({
   circle,
   currentUserId,
-  currentUserProfile,
 }: CandidateParams): Promise<SwipeCandidate[]> => {
   const [{ data: usersData, error }, activeCircleOccupantIds] =
     await Promise.all([
@@ -524,13 +545,8 @@ export const getSwipeCandidates = async ({
         if (!hasSharedTrait) return false;
       }
 
-      if (currentUserProfile?.location && candidate.location) {
-        const distance = getDistanceKm(
-          currentUserProfile.location,
-          candidate.location,
-        );
-        if (distance > (circle.filters.locationRadius || 10)) return false;
-      }
+      // Distance filtering is temporarily disabled while the user pool is small.
+      // Keep saving locationRadius on Circles so this can be restored later.
 
       return true;
     })
@@ -559,7 +575,7 @@ export const submitSwipe = async (
     data: { user },
   } = await supabase.auth.getUser();
   if (!user || user.id !== currentUserId) {
-    throw new Error("Not authenticated");
+    throw new Error(translateActiveResource("auth.sessionExpired"));
   }
 
   const { data, error } = await supabase.rpc("submit_host_swipe", {
@@ -640,8 +656,6 @@ export const getCircleCandidates = async (
     console.error("Error getting circle candidates:", error);
     return [];
   }
-
-  const userLocation = userProfile?.location;
 
   return (circlesData as CircleRow[])
     .filter((row) => {
@@ -725,19 +739,14 @@ export const getCircleCandidates = async (
         if (!hasSharedTrait) return false;
       }
 
-      // Check distance if user has location
-      if (userLocation && circle.creatorId) {
-        // We need to get creator's location - for now, skip distance check
-        // In production, you'd fetch creator's location from their profile
-        // const distance = getDistanceKm(userLocation, creatorLocation);
-        // if (distance > filters.locationRadius) return false;
-      }
+      // Distance filtering is temporarily disabled while the Circle pool is small.
+      // Keep accepting/saving locationRadius so this can be restored later.
 
       return true;
     })
     .map((circle) => ({
       ...circle,
-      distance: userLocation ? 0 : undefined, // Placeholder - would calculate actual distance
+      distance: undefined,
     }));
 };
 
@@ -754,7 +763,7 @@ export const submitCircleSwipe = async (
     data: { user },
   } = await supabase.auth.getUser();
   if (!user || user.id !== userId) {
-    throw new Error("Not authenticated");
+    throw new Error(translateActiveResource("auth.sessionExpired"));
   }
 
   const { data, error } = await supabase.rpc("submit_circle_swipe", {

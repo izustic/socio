@@ -1,9 +1,10 @@
 import OnboardingLayout from '@/src/components/onboarding/OnboardingLayout';
-import { Colors, Radius, Spacing, Typography } from '@/src/constants/theme';
+import { createThemedStyles, Radius, Spacing, Typography } from '@/src/constants/theme';
 import { useOnboarding } from '@/src/context/OnboardingContext';
 import { getLocationWithCity, requestLocationPermissionStatus } from '@/src/services/location';
 import { useState } from 'react';
-import { Alert, Linking, StyleSheet, Text, View } from 'react-native';
+import { Alert, Linking, Text, View } from 'react-native';
+import { tx } from "@/src/utils/localization";
 
 export default function LocationPermissionScreen() {
   const { mergeDraft, setStep } = useOnboarding();
@@ -22,11 +23,11 @@ export default function LocationPermissionScreen() {
       if (permission.status !== 'granted') {
         if (!permission.canAskAgain) {
           Alert.alert(
-            'Location is blocked',
-            'Location permission was already denied for Socio. Open your device settings to allow location access, or continue without it for now.',
+            tx("app.auth.locationPermission.locationIsBlocked"),
+            tx("app.auth.locationPermission.locationPermissionWasAlreadyDeniedForSociolOpenYour"),
             [
               {
-                text: 'Continue without it',
+                text: tx("app.auth.locationPermission.continueWithoutIt"),
                 style: 'cancel',
                 onPress: () => {
                   mergeDraft({ locationEnabled: false, locationPermissionResolved: true, location: null });
@@ -34,7 +35,7 @@ export default function LocationPermissionScreen() {
                 },
               },
               {
-                text: 'Open Settings',
+                text: tx("app.auth.locationPermission.openSettings"),
                 onPress: () => Linking.openSettings(),
               },
             ]
@@ -43,8 +44,8 @@ export default function LocationPermissionScreen() {
         }
 
         Alert.alert(
-          'Location turned off',
-          'You can keep going for now, but circles nearby work better when location is enabled.'
+          tx("app.auth.locationPermission.locationTurnedOff"),
+          tx("app.auth.locationPermission.youCanKeepGoingForNowButCirclesNearby")
         );
         mergeDraft({ locationEnabled: false, locationPermissionResolved: true, location: null });
         continueToNotifications();
@@ -65,14 +66,14 @@ export default function LocationPermissionScreen() {
 
   return (
     <OnboardingLayout
-      title="Can we find your people?"
-      subtitle="We use your location to show you people nearby. We never share it publicly."
-      stepNumber="03  LOCATION PERMISSION"
-      primaryLabel="Set Location Services"
+      title={tx("app.auth.locationPermission.canWeFindYourPeople")}
+      subtitle={tx("app.auth.locationPermission.weUseYourLocationToShowYouPeopleNearby")}
+      stepNumber={tx("onboarding.step.location")}
+      primaryLabel={tx("app.auth.locationPermission.setLocationServices")}
       onPrimaryPress={handleEnableLocation}
       primaryLoading={isSettingLocation}
       primaryDisabled={isSettingLocation}
-      secondaryLabel="Maybe later"
+      secondaryLabel={tx("app.auth.locationPermission.maybeLater")}
       onSecondaryPress={() => {
         if (isSettingLocation) return;
         mergeDraft({ locationEnabled: false, locationPermissionResolved: true, location: null });
@@ -91,12 +92,12 @@ export default function LocationPermissionScreen() {
           </View>
         </View>
       </View>
-      <Text style={styles.note}>You can update this anytime in settings.</Text>
+      <Text style={styles.note}>{tx("app.auth.locationPermission.youCanUpdateThisAnytimeInSettings")}</Text>
     </OnboardingLayout>
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createThemedStyles((Colors) => ({
   ringWrap: {
     alignItems: 'center',
     marginBottom: Spacing.lg,
@@ -105,7 +106,7 @@ const styles = StyleSheet.create({
     width: 132,
     height: 132,
     borderRadius: Radius.full,
-    backgroundColor: '#FBF4DD',
+    backgroundColor: Colors.primaryLight,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -121,11 +122,11 @@ const styles = StyleSheet.create({
     width: 24,
     height: 24,
     borderRadius: Radius.full,
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.surface,
   },
   note: {
     ...Typography.bodySmall,
     textAlign: 'center',
     color: Colors.textSecondary,
   },
-});
+}));

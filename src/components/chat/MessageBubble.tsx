@@ -1,6 +1,7 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { Colors, Radius, Spacing, Typography } from '@/src/constants/theme';
+import { formatLocalizedTime, tx } from '@/src/utils/localization';
+import { View, Text, TouchableOpacity } from 'react-native';
+import { createThemedStyles, Radius, Spacing, Typography } from '@/src/constants/theme';
 import Avatar from '../ui/Avatar';
 
 interface MessageBubbleProps {
@@ -35,7 +36,7 @@ export default function MessageBubble({
   highlighted = false
 }: MessageBubbleProps) {
   const formatTime = (date: Date) => {
-    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    return formatLocalizedTime(date);
   };
 
   return (
@@ -90,7 +91,7 @@ export default function MessageBubble({
                   message.isOwn ? styles.ownReplyText : styles.otherReplyText,
                 ]}>
                   {message.replyTo.mediaType
-                    ? `${message.replyTo.mediaType === 'image' ? 'Photo' : message.replyTo.mediaType === 'video' ? 'Video' : 'Voice message'}${message.replyTo.text ? ` · ${message.replyTo.text}` : ''}`
+                    ? tx("chat.MessageBubble.value1Value2", { value1: message.replyTo.mediaType === 'image' ? tx("chat.photo") : message.replyTo.mediaType === 'video' ? tx("chat.video") : tx("chat.voiceMessage"), value2: message.replyTo.text ? ` · ${message.replyTo.text}` : '' })
                     : message.replyTo.text}
                 </Text>
               </View>
@@ -121,7 +122,7 @@ export default function MessageBubble({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createThemedStyles((Colors) => ({
   container: {
     flexDirection: 'row',
     paddingHorizontal: Spacing.md,
@@ -138,14 +139,14 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255, 255, 255, 0.22)',
   },
   otherReplySnippet: {
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.surface,
   },
   replyAccent: {
     width: 3,
     borderRadius: Radius.full,
   },
   ownReplyAccent: {
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.surface,
   },
   otherReplyAccent: {
     backgroundColor: Colors.primary,
@@ -237,4 +238,4 @@ const styles = StyleSheet.create({
     color: Colors.textSecondary,
     marginLeft: Spacing.sm,
   },
-});
+}));

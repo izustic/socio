@@ -99,8 +99,8 @@ const normalizeProduct = (product: ProductSubscription): SocioPlusProduct => {
 
   return {
     productId: product.id,
-    title: product.displayName || product.title || "Socio+",
-    description: product.description || "Unlock Socio+",
+    title: product.displayName || product.title || "Sociol+",
+    description: product.description || "Unlock Sociol+",
     localizedPrice:
       androidPricingPhase?.formattedPrice ||
       product.displayPrice ||
@@ -300,7 +300,7 @@ export const restorePurchases = async (): Promise<SocioPlusEntitlement> => {
   if (!socioPurchase) {
     const entitlement = await refreshSubscriptionStatus();
     if (!entitlement.isSocioPlus) {
-      throw new Error("No active Socio+ subscription was found.");
+      throw new Error("No active Sociol+ subscription was found.");
     }
     return entitlement;
   }

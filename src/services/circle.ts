@@ -10,6 +10,7 @@ import {
   type CircleRow,
 } from "./circle.helpers";
 import { supabase, uploadCircleImage } from "./supabase";
+import { translateActiveResource } from "./TranslationService";
 
 const isMissingCircleImageColumnError = (error: unknown) =>
   Boolean(
@@ -60,7 +61,7 @@ export const createCircle = async (
 
     if (error) throw error;
 
-    if (!data) throw new Error("Circle was created without returning an id.");
+    if (!data) throw new Error(translateActiveResource("circleErrors.createFailed"));
 
     console.log("Circle created:", data.id);
     return data.id;
@@ -261,7 +262,7 @@ export const addMember = async (
 
     // Check if circle is full
     if (circle.members.length >= circle.size) {
-      throw new Error("Circle is full");
+      throw new Error(translateActiveResource("circleErrors.full"));
     }
 
     // Add member
@@ -331,23 +332,37 @@ export const closeCircle = async (circleId: string): Promise<void> => {
   }
 };
 
-export const resetCircleFreeExitsIfExpired = async (
+const completedFreeExitResets = new Set<string>();
+const pendingFreeExitResets = new Map<string, Promise<boolean>>();
+
+export const resetCircleFreeExitsIfExpired = (
   circleId: string,
 ): Promise<boolean> => {
-  try {
-    const { data, error } = await supabase.rpc(
-      "reset_circle_free_exits_if_expired",
-      {
-        p_circle_id: circleId,
-      },
-    );
+  if (completedFreeExitResets.has(circleId)) return Promise.resolve(false);
 
-    if (error) throw error;
-    return Boolean(data);
-  } catch (error) {
-    console.error("Error resetting Circle free exits:", error);
-    return false;
-  }
+  const pending = pendingFreeExitResets.get(circleId);
+  if (pending) return pending;
+
+  const request = (async () => {
+    try {
+      const { data, error } = await supabase.rpc(
+        "reset_circle_free_exits_if_expired",
+        { p_circle_id: circleId },
+      );
+
+      if (error) throw error;
+      completedFreeExitResets.add(circleId);
+      return Boolean(data);
+    } catch (error) {
+      console.error("Error resetting Circle free exits:", error);
+      return false;
+    } finally {
+      pendingFreeExitResets.delete(circleId);
+    }
+  })();
+
+  pendingFreeExitResets.set(circleId, request);
+  return request;
 };
 
 export const addPendingJoiner = async (

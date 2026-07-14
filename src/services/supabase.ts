@@ -3,6 +3,7 @@ import * as FileSystem from "expo-file-system";
 import * as SecureStore from "expo-secure-store";
 import "react-native-url-polyfill/auto";
 import { env } from "@/src/config/env";
+import { translateActiveResource as tx } from "./TranslationService";
 
 const supabaseUrl = env.supabaseUrl;
 const supabaseAnonKey = env.supabaseAnonKey;
@@ -150,7 +151,7 @@ const fetchStorageBlob = async (
 
   const response = await fetch(uri);
   if (!response.ok) {
-    throw new Error("We could not read that file. Please try another one.");
+    throw new Error(tx("upload.readError"));
   }
   const blob = await response.blob();
   const buffer = await blob.arrayBuffer();
@@ -165,7 +166,7 @@ export const uploadAvatar = async (
   const { buffer, size } = await fetchStorageBlob(imageUri);
 
   if (size > MAX_STORAGE_SIZES.avatar) {
-    throw new Error("Please choose an image under 5 MB.");
+    throw new Error(tx("upload.imageTooLarge"));
   }
 
   const filePath = `${userId}/profile.jpg`;
@@ -190,7 +191,7 @@ export const uploadCircleImage = async (
   const { buffer, size } = await fetchStorageBlob(imageUri);
 
   if (size > MAX_STORAGE_SIZES.image) {
-    throw new Error("Please choose an image under 5 MB.");
+    throw new Error(tx("upload.imageTooLarge"));
   }
 
   const filePath = `${userId}/circles/${circleId}.jpg`;
@@ -217,7 +218,7 @@ export const uploadChatMedia = async (
   const { buffer, size } = await fetchStorageBlob(mediaUri);
 
   if (size > MAX_STORAGE_SIZES[type]) {
-    throw new Error(`${type} file is too large.`);
+    throw new Error(tx("upload.mediaTooLarge", { type: tx(`mediaType.${type}`) }));
   }
 
   const extension = type === "image" ? "jpg" : type === "video" ? "mp4" : "m4a";

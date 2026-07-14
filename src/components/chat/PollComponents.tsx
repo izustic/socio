@@ -1,4 +1,4 @@
-import { Colors, Radius, Spacing, Typography } from "@/src/constants/theme";
+import { createThemedStyles, Colors, Radius, Spacing, Typography } from "@/src/constants/theme";
 import {
   BarChart2,
   Check,
@@ -12,7 +12,6 @@ import React, { useState } from "react";
 import {
   Modal,
   ScrollView,
-  StyleSheet,
   Switch,
   Text,
   TextInput,
@@ -20,6 +19,7 @@ import {
   View,
   type DimensionValue,
 } from "react-native";
+import { tx } from "@/src/utils/localization";
 
 // ─────────────────────────────────────────────
 // Types
@@ -53,12 +53,12 @@ interface PollCreatorProps {
 }
 
 const EXPIRY_OPTIONS = [
-  { label: "No expiry", value: null },
-  { label: "1 hour", value: 60 },
-  { label: "6 hours", value: 360 },
-  { label: "24 hours", value: 1440 },
-  { label: "3 days", value: 4320 },
-  { label: "7 days", value: 10080 },
+  { labelKey: "poll.expiry.none", value: null },
+  { labelKey: "poll.expiry.oneHour", value: 60 },
+  { labelKey: "poll.expiry.sixHours", value: 360 },
+  { labelKey: "poll.expiry.twentyFourHours", value: 1440 },
+  { labelKey: "poll.expiry.threeDays", value: 4320 },
+  { labelKey: "poll.expiry.sevenDays", value: 10080 },
 ];
 
 function PollCreator({
@@ -146,7 +146,7 @@ function PollCreator({
           <TouchableOpacity onPress={handleClose} style={creator.headerButton}>
             <X size={22} color={Colors.textSecondary} strokeWidth={2.2} />
           </TouchableOpacity>
-          <Text style={creator.headerTitle}>New poll</Text>
+          <Text style={creator.headerTitle}>{tx("chat.PollComponents.newPoll")}</Text>
           <TouchableOpacity
             onPress={handleCreate}
             disabled={!canSubmit}
@@ -161,8 +161,7 @@ function PollCreator({
                 !canSubmit && creator.createButtonTextDisabled,
               ]}
             >
-              Create
-            </Text>
+              {tx("chat.PollComponents.create")}</Text>
           </TouchableOpacity>
         </View>
 
@@ -174,12 +173,12 @@ function PollCreator({
         >
           {/* Question */}
           <View style={creator.section}>
-            <Text style={creator.sectionLabel}>Question</Text>
+            <Text style={creator.sectionLabel}>{tx("chat.PollComponents.question")}</Text>
             <TextInput
               style={creator.questionInput}
               value={question}
               onChangeText={setQuestion}
-              placeholder="Ask something..."
+              placeholder={tx("chat.PollComponents.askSomething")}
               placeholderTextColor={Colors.textDisabled}
               maxLength={200}
               multiline
@@ -188,7 +187,7 @@ function PollCreator({
 
           {/* Options */}
           <View style={creator.section}>
-            <Text style={creator.sectionLabel}>Options</Text>
+            <Text style={creator.sectionLabel}>{tx("chat.PollComponents.options")}</Text>
             <View style={creator.optionsList}>
               {options.map((opt, index) => (
                 <View key={index} style={creator.optionRow}>
@@ -199,7 +198,7 @@ function PollCreator({
                     style={creator.optionInput}
                     value={opt}
                     onChangeText={(text) => updateOption(index, text)}
-                    placeholder={`Option ${index + 1}`}
+                    placeholder={tx("chat.PollComponents.optionValue1", { value1: index + 1 })}
                     placeholderTextColor={Colors.textDisabled}
                     maxLength={100}
                   />
@@ -226,19 +225,19 @@ function PollCreator({
                 onPress={addOption}
               >
                 <Plus size={16} color={Colors.primary} strokeWidth={2.4} />
-                <Text style={creator.addOptionText}>Add option</Text>
+                <Text style={creator.addOptionText}>{tx("chat.PollComponents.addOption")}</Text>
               </TouchableOpacity>
             )}
           </View>
 
           {/* Settings */}
           <View style={creator.section}>
-            <Text style={creator.sectionLabel}>Settings</Text>
+            <Text style={creator.sectionLabel}>{tx("chat.PollComponents.settings")}</Text>
 
             <View style={creator.settingRow}>
               <View style={creator.settingLeft}>
                 <Users size={18} color={Colors.textSecondary} strokeWidth={2} />
-                <Text style={creator.settingLabel}>Multiple choice</Text>
+                <Text style={creator.settingLabel}>{tx("chat.PollComponents.multipleChoice")}</Text>
               </View>
               <Switch
                 value={allowMultiple}
@@ -251,14 +250,14 @@ function PollCreator({
             <View style={[creator.settingRow, { borderBottomWidth: 0 }]}>
               <View style={creator.settingLeft}>
                 <Clock size={18} color={Colors.textSecondary} strokeWidth={2} />
-                <Text style={creator.settingLabel}>Poll duration</Text>
+                <Text style={creator.settingLabel}>{tx("chat.PollComponents.pollDuration")}</Text>
               </View>
               <TouchableOpacity
                 style={creator.expirySelector}
                 onPress={() => setShowExpiryPicker(!showExpiryPicker)}
               >
                 <Text style={creator.expirySelectorText}>
-                  {selectedExpiry?.label ?? "No expiry"}
+                  {tx(selectedExpiry?.labelKey ?? "poll.expiry.none")}
                 </Text>
                 <ChevronDown
                   size={14}
@@ -286,7 +285,7 @@ function PollCreator({
                           creator.expiryOptionTextSelected,
                       ]}
                     >
-                      {opt.label}
+                      {tx(opt.labelKey)}
                     </Text>
                     {expiryMinutes === opt.value && (
                       <Check
@@ -362,12 +361,12 @@ function PollMessage({
 
   const formatExpiry = (date: Date) => {
     const diff = new Date(date).getTime() - Date.now();
-    if (diff <= 0) return "Ended";
+    if (diff <= 0) return tx("poll.ended");
     const hours = Math.floor(diff / (1000 * 60 * 60));
     const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-    if (hours >= 24) return `${Math.floor(hours / 24)}d left`;
-    if (hours > 0) return `${hours}h ${minutes}m left`;
-    return `${minutes}m left`;
+    if (hours >= 24) return tx("poll.daysLeft", { days: Math.floor(hours / 24) });
+    if (hours > 0) return tx("poll.hoursMinutesLeft", { hours, minutes });
+    return tx("poll.minutesLeft", { minutes });
   };
 
   const getBarWidth = (votes: number): DimensionValue => {
@@ -379,7 +378,7 @@ function PollMessage({
     if (option.votes.length === 0) return null;
     const names = option.votes
       .slice(0, 3)
-      .map((id) => (id === currentUserId ? "You" : id))
+      .map((id) => (id === currentUserId ? tx("common.you") : id))
       .join(", ");
     const extra = option.votes.length > 3 ? ` +${option.votes.length - 3}` : "";
     return names + extra;
@@ -390,10 +389,10 @@ function PollMessage({
       {/* Poll header */}
       <View style={poll_styles.header}>
         <BarChart2 size={16} color={Colors.primary} strokeWidth={2.2} />
-        <Text style={poll_styles.pollLabel}>Poll</Text>
+        <Text style={poll_styles.pollLabel}>{tx("chat.PollComponents.poll")}</Text>
         {isExpired && (
           <View style={poll_styles.endedBadge}>
-            <Text style={poll_styles.endedBadgeText}>Ended</Text>
+            <Text style={poll_styles.endedBadgeText}>{tx("chat.PollComponents.ended")}</Text>
           </View>
         )}
       </View>
@@ -516,15 +515,14 @@ function PollMessage({
               pendingVotes.length === 0 && poll_styles.voteButtonTextDisabled,
             ]}
           >
-            Vote
-          </Text>
+            {tx("chat.PollComponents.vote")}</Text>
         </TouchableOpacity>
       )}
 
       {/* Footer */}
       <View style={poll_styles.footer}>
         <Text style={poll_styles.footerText}>
-          {totalVotes} {totalVotes === 1 ? "vote" : "votes"}
+          {totalVotes} {totalVotes === 1 ? tx("chat.PollComponents.vote2") : tx("chat.PollComponents.votes")}
         </Text>
         {poll.expiresAt && !isExpired && (
           <>
@@ -538,7 +536,7 @@ function PollMessage({
         {poll.allowMultiple && (
           <>
             <View style={poll_styles.footerDot} />
-            <Text style={poll_styles.footerText}>Multiple choice</Text>
+            <Text style={poll_styles.footerText}>{tx("chat.PollComponents.multipleChoice")}</Text>
           </>
         )}
       </View>
@@ -551,10 +549,10 @@ function PollMessage({
 // PollCreator Styles
 // ─────────────────────────────────────────────
 
-const creator = StyleSheet.create({
+const creator = createThemedStyles((Colors) => ({
   container: {
     flex: 1,
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.surface,
   },
   header: {
     flexDirection: "row",
@@ -716,15 +714,15 @@ const creator = StyleSheet.create({
     color: Colors.primary,
     fontWeight: "700",
   },
-});
+}));
 
 // ─────────────────────────────────────────────
 // PollMessage Styles
 // ─────────────────────────────────────────────
 
-const poll_styles = StyleSheet.create({
+const poll_styles = createThemedStyles((Colors) => ({
   wrapper: {
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.surface,
     borderRadius: Radius.lg,
     borderWidth: 1,
     borderColor: Colors.border,
@@ -777,7 +775,7 @@ const poll_styles = StyleSheet.create({
     overflow: "hidden",
     borderWidth: 1,
     borderColor: Colors.border,
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.surface,
     minHeight: 44,
     justifyContent: "center",
   },
@@ -852,7 +850,7 @@ const poll_styles = StyleSheet.create({
     borderColor: Colors.border,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.surface,
   },
   checkboxSelected: {
     borderColor: Colors.primary,
@@ -866,7 +864,7 @@ const poll_styles = StyleSheet.create({
     borderColor: Colors.border,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.surface,
   },
   radioSelected: {
     borderColor: Colors.primary,
@@ -912,7 +910,7 @@ const poll_styles = StyleSheet.create({
     borderRadius: 1.5,
     backgroundColor: Colors.textDisabled,
   },
-});
+}));
 
 export { PollCreator, PollMessage };
 export type { PollData, PollOption };

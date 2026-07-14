@@ -1,5 +1,5 @@
 import Avatar from "@/src/components/ui/Avatar";
-import { Colors, Radius, Spacing, Typography } from "@/src/constants/theme";
+import { createThemedStyles, Colors, Radius, Spacing, Typography } from "@/src/constants/theme";
 import { useAuth } from "@/src/context/AuthContext";
 import { useSwipeTabVisibility } from "@/src/context/SwipeTabVisibilityContext";
 import {
@@ -43,9 +43,10 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { formatLocalizedDate, optionLabel, tx } from "@/src/utils/localization";
 
 const formatDate = (date: Date) =>
-  date.toLocaleDateString(undefined, {
+  formatLocalizedDate(date, {
     month: "short",
     day: "numeric",
   });
@@ -143,8 +144,8 @@ export default function CircleInfoScreen() {
   const locationText = host?.location?.city
     ? host.location.city
     : host?.location
-      ? "Host location shared"
-      : "Location not shared";
+      ? tx("circleInfo.hostLocationShared")
+      : tx("circleInfo.locationNotShared");
   const meetupDeadline = circle ? getCircleMeetupDeadline(circle) : null;
   const countdown = meetupDeadline ? getCountdownParts(meetupDeadline, now) : null;
   const deadlineElapsed = Boolean(
@@ -170,12 +171,12 @@ export default function CircleInfoScreen() {
     if (!circle || !user || leaving || !exitState || exitState.locked) return;
 
     Alert.alert(
-      "Leave Circle?",
-      `${exitState.helperText}\n\nYou will leave ${circle.name} and lose access to its chat.`,
+      tx("app.circle.info.leaveCircle"),
+      tx("app.circle.info.value1YouWillLeaveValue2AndLoseAccessTo", { value1: exitState.helperText, value2: circle.name }),
       [
-        { text: "Cancel", style: "cancel" },
+        { text: tx("app.circle.info.cancel"), style: "cancel" },
         {
-          text: "Leave",
+          text: tx("app.circle.info.leave"),
           style: "destructive",
           onPress: async () => {
             setLeaving(true);
@@ -187,7 +188,7 @@ export default function CircleInfoScreen() {
               router.replace("/(tabs)/home");
             } catch (error) {
               console.error("Error leaving circle:", error);
-              Alert.alert("Could not leave Circle", "Please try again.");
+              Alert.alert(tx("app.circle.info.couldNotLeaveCircle"), tx("app.circle.info.pleaseTryAgain"));
             } finally {
               setLeaving(false);
             }
@@ -201,12 +202,12 @@ export default function CircleInfoScreen() {
     if (!circle || !user || closing || !exitState || exitState.locked) return;
 
     Alert.alert(
-      "Close Circle?",
-      `${exitState.helperText}\n\nThis will delete ${circle.name} and remove everyone from the Circle. This cannot be undone.`,
+      tx("app.circle.info.closeCircle"),
+      tx("app.circle.info.value1ThisWillDeleteValue2AndRemoveEveryoneFrom", { value1: exitState.helperText, value2: circle.name }),
       [
-        { text: "Cancel", style: "cancel" },
+        { text: tx("app.circle.info.cancel"), style: "cancel" },
         {
-          text: "Close Circle",
+          text: tx("app.circle.info.closeCircle2"),
           style: "destructive",
           onPress: async () => {
             setClosing(true);
@@ -218,7 +219,7 @@ export default function CircleInfoScreen() {
               router.replace("/(tabs)/home");
             } catch (error) {
               console.error("Error closing circle:", error);
-              Alert.alert("Could not close Circle", "Please try again.");
+              Alert.alert(tx("app.circle.info.couldNotCloseCircle"), tx("app.circle.info.pleaseTryAgain"));
             } finally {
               setClosing(false);
             }
@@ -259,13 +260,15 @@ export default function CircleInfoScreen() {
         details: reportDetails,
         circleId: circle.id,
       });
-      setReportSuccess(`Thanks. ${reportTarget.name || "This member"} was reported to the moderation team.`);
+      setReportSuccess(tx("circleInfo.reportSuccess", {
+        name: reportTarget.name || tx("circleInfo.thisMember"),
+      }));
       setReportTarget(null);
       setReportDetails("");
       setReportError(null);
     } catch (error) {
       console.error("Error reporting member:", error);
-      setReportError("We could not submit that report. Please try again.");
+      setReportError(tx("circleInfo.reportError"));
     } finally {
       setReporting(false);
     }
@@ -274,7 +277,7 @@ export default function CircleInfoScreen() {
   if (loading) {
     return (
       <SafeAreaView style={styles.container}>
-        <StatusBar barStyle="dark-content" />
+        <StatusBar />
         <View style={styles.centered}>
           <ActivityIndicator size="large" color={Colors.primary} />
         </View>
@@ -285,7 +288,7 @@ export default function CircleInfoScreen() {
   if (!circle) {
     return (
       <SafeAreaView style={styles.container}>
-        <StatusBar barStyle="dark-content" />
+        <StatusBar />
         <View style={styles.header}>
           <TouchableOpacity
             activeOpacity={0.76}
@@ -294,12 +297,12 @@ export default function CircleInfoScreen() {
           >
             <ChevronLeft size={24} color={Colors.textPrimary} strokeWidth={2.2} />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Circle info</Text>
+          <Text style={styles.headerTitle}>{tx("app.circle.info.circleInfo")}</Text>
           <View style={styles.headerSpacer} />
         </View>
         <View style={styles.centered}>
-          <Text style={styles.emptyTitle}>Circle unavailable</Text>
-          <Text style={styles.emptyText}>This Circle could not be loaded.</Text>
+          <Text style={styles.emptyTitle}>{tx("app.circle.info.circleUnavailable")}</Text>
+          <Text style={styles.emptyText}>{tx("app.circle.info.thisCircleCouldNotBeLoaded")}</Text>
         </View>
       </SafeAreaView>
     );
@@ -307,17 +310,17 @@ export default function CircleInfoScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" />
+      <StatusBar />
       <View style={styles.header}>
         <TouchableOpacity
           activeOpacity={0.76}
           style={styles.iconButton}
           onPress={() => router.back()}
-          accessibilityLabel="Back to chat"
+          accessibilityLabel={tx("app.circle.info.backToChat")}
         >
           <ChevronLeft size={24} color={Colors.textPrimary} strokeWidth={2.2} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Circle info</Text>
+        <Text style={styles.headerTitle}>{tx("app.circle.info.circleInfo")}</Text>
         <View style={styles.headerSpacer} />
       </View>
 
@@ -342,8 +345,8 @@ export default function CircleInfoScreen() {
         <Text style={styles.circleName}>{circle.name}</Text>
         <Text style={styles.circleSummary}>
           {circle.meetupTimeframe
-            ? `${circle.meetupGoal || "A Circle"} · ${circle.meetupTimeframe}`
-            : circle.meetupGoal || "A Circle for meeting in person."}
+            ? tx("app.circle.info.value1Value2", { value1: circle.meetupGoal || "A Circle", value2: circle.meetupTimeframe })
+            : circle.meetupGoal || tx("app.circle.info.aCircleForMeetingInPerson")}
         </Text>
 
         {tags.length > 0 && (
@@ -365,8 +368,11 @@ export default function CircleInfoScreen() {
           <View style={styles.infoRow}>
             <Calendar size={18} color={Colors.textSecondary} strokeWidth={2.1} />
             <Text style={styles.infoText}>
-              Formed {formatDate(circle.createdAt)} · {circle.members.length} of{" "}
-              {circle.size} members
+              {tx("circleInfo.formedMembers", {
+                date: formatDate(circle.createdAt),
+                current: circle.members.length,
+                total: circle.size,
+              })}
             </Text>
           </View>
           {meetupDeadline && (
@@ -375,10 +381,10 @@ export default function CircleInfoScreen() {
               <View style={styles.infoRow}>
                 <Calendar size={18} color={Colors.textSecondary} strokeWidth={2.1} />
                 <Text style={styles.infoText}>
-                  Meet by {formatDate(meetupDeadline)}
+                  {tx("circleInfo.meetBy", { date: formatDate(meetupDeadline) })}
                   {!deadlineElapsed && countdown
-                    ? ` · ${countdown.days}d ${countdown.hours}h ${countdown.minutes}m`
-                    : " · window ended"}
+                    ? tx("app.circle.info.value1DValue2HValue3M", { value1: countdown.days, value2: countdown.hours, value3: countdown.minutes })
+                    : tx("app.circle.info.windowEnded")}
                 </Text>
               </View>
             </>
@@ -386,7 +392,7 @@ export default function CircleInfoScreen() {
         </View>
 
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionLabel}>Members</Text>
+          <Text style={styles.sectionLabel}>{tx("app.circle.info.members2")}</Text>
           <Text style={styles.sectionCount}>{circle.members.length}</Text>
         </View>
 
@@ -399,10 +405,10 @@ export default function CircleInfoScreen() {
                 <Avatar uri={member.photoURL} size={44} />
                 <View style={styles.memberCopy}>
                   <Text numberOfLines={1} style={styles.memberName}>
-                    {member.name || "Member"}
+                    {member.name || tx("app.circle.info.member")}
                   </Text>
                   <Text style={styles.memberRole}>
-                    {isHost ? "Host" : "Member"}
+                    {isHost ? tx("app.circle.info.host") : tx("app.circle.info.member")}
                   </Text>
                 </View>
                 <View style={styles.memberActions}>
@@ -413,7 +419,7 @@ export default function CircleInfoScreen() {
                         color={Colors.textPrimary}
                         strokeWidth={2.2}
                       />
-                      <Text style={styles.hostBadgeText}>Host</Text>
+                      <Text style={styles.hostBadgeText}>{tx("app.circle.info.host")}</Text>
                     </View>
                   )}
                   {!isCurrentUser && (
@@ -421,7 +427,7 @@ export default function CircleInfoScreen() {
                       activeOpacity={0.76}
                       style={styles.reportMemberButton}
                       onPress={() => openReportModal(member)}
-                      accessibilityLabel={`Report ${member.name || "member"}`}
+                      accessibilityLabel={tx("app.circle.info.reportValue1", { value1: member.name || tx("circleInfo.member") })}
                     >
                       <Flag
                         size={16}
@@ -484,16 +490,19 @@ export default function CircleInfoScreen() {
             <View style={styles.reportHandle} />
             <View style={styles.reportHeader}>
               <View>
-                <Text style={styles.reportTitle}>Report member</Text>
+                <Text style={styles.reportTitle}>{tx("app.circle.info.reportMember")}</Text>
                 <Text style={styles.reportSubtitle}>
-                  {reportTarget?.name || "This member"} in {circle.name}
+                  {tx("circleInfo.memberInCircle", {
+                    member: reportTarget?.name || tx("app.circle.info.thisMember"),
+                    circle: circle.name,
+                  })}
                 </Text>
               </View>
               <TouchableOpacity
                 activeOpacity={0.76}
                 style={styles.reportCloseButton}
                 onPress={closeReportModal}
-                accessibilityLabel="Close report form"
+                accessibilityLabel={tx("app.circle.info.closeReportForm")}
               >
                 <X size={20} color={Colors.textPrimary} strokeWidth={2.2} />
               </TouchableOpacity>
@@ -518,7 +527,7 @@ export default function CircleInfoScreen() {
                         selected && styles.reasonChipTextSelected,
                       ]}
                     >
-                      {reason}
+                      {optionLabel(reason)}
                     </Text>
                   </TouchableOpacity>
                 );
@@ -528,7 +537,7 @@ export default function CircleInfoScreen() {
             <TextInput
               value={reportDetails}
               onChangeText={setReportDetails}
-              placeholder="Add details for moderators"
+              placeholder={tx("app.circle.info.addDetailsForModerators")}
               placeholderTextColor={Colors.textDisabled}
               multiline
               maxLength={500}
@@ -539,8 +548,7 @@ export default function CircleInfoScreen() {
               <Text style={styles.reportError}>{reportError}</Text>
             ) : (
               <Text style={styles.reportFinePrint}>
-                Reports are private and reviewed by Socio moderators.
-              </Text>
+                {tx("app.circle.info.reportsArePrivateAndReviewedBySociolModerators")}</Text>
             )}
 
             <TouchableOpacity
@@ -557,7 +565,7 @@ export default function CircleInfoScreen() {
               ) : (
                 <>
                   <Flag size={18} color={Colors.textPrimary} strokeWidth={2.2} />
-                  <Text style={styles.submitReportText}>Submit report</Text>
+                  <Text style={styles.submitReportText}>{tx("app.circle.info.submitReport")}</Text>
                 </>
               )}
             </TouchableOpacity>
@@ -576,14 +584,14 @@ export default function CircleInfoScreen() {
             <View style={styles.successIcon}>
               <Flag size={22} color={Colors.textPrimary} strokeWidth={2.2} />
             </View>
-            <Text style={styles.successTitle}>Report submitted</Text>
+            <Text style={styles.successTitle}>{tx("app.circle.info.reportSubmitted")}</Text>
             <Text style={styles.successText}>{reportSuccess}</Text>
             <TouchableOpacity
               activeOpacity={0.82}
               style={styles.successButton}
               onPress={() => setReportSuccess(null)}
             >
-              <Text style={styles.successButtonText}>Done</Text>
+              <Text style={styles.successButtonText}>{tx("app.circle.info.done")}</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -592,7 +600,7 @@ export default function CircleInfoScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createThemedStyles((Colors) => ({
   container: {
     flex: 1,
     backgroundColor: Colors.background,
@@ -641,7 +649,7 @@ const styles = StyleSheet.create({
   },
   heroAvatar: {
     borderWidth: 3,
-    borderColor: Colors.white,
+    borderColor: Colors.surface,
   },
   heroAvatarOverlap: {
     marginLeft: -18,
@@ -771,7 +779,7 @@ const styles = StyleSheet.create({
     borderRadius: Radius.pill,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.surface,
     borderWidth: 1,
     borderColor: Colors.border,
   },
@@ -923,7 +931,7 @@ const styles = StyleSheet.create({
   },
   successOverlay: {
     flex: 1,
-    backgroundColor: "rgba(255,255,255,0.72)",
+    backgroundColor: Colors.surface,
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: Spacing.screenPadding,
@@ -969,4 +977,4 @@ const styles = StyleSheet.create({
     ...Typography.button,
     color: Colors.textPrimary,
   },
-});
+}));

@@ -1,7 +1,7 @@
 import OnboardingLayout from '@/src/components/onboarding/OnboardingLayout';
 import Input from '@/src/components/ui/Input';
 import { useAuth } from '@/src/context/AuthContext';
-import { Colors, Radius, Spacing, Typography } from '@/src/constants/theme';
+import { createThemedStyles, Radius, Spacing, Typography } from '@/src/constants/theme';
 import { useOnboarding } from '@/src/context/OnboardingContext';
 import {
   pickProfileMedia,
@@ -13,6 +13,7 @@ import { ProfileMedia } from '@/src/types';
 import { Image } from 'expo-image';
 import React, { useState } from 'react';
 import { Alert, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { tx } from "@/src/utils/localization";
 
 const SLOT_COUNT = 5;
 
@@ -53,13 +54,13 @@ export default function ProfilePhotoNameScreen() {
 
   const handlePickMedia = async (slot: number) => {
     if (!user) {
-      Alert.alert('Not signed in', 'Please sign in again before uploading media.');
+      Alert.alert(tx("app.auth.profilePhotoName.notSignedIn"), tx("app.auth.profilePhotoName.pleaseSignInAgainBeforeUploadingMedia"));
       return;
     }
 
     const hasPermission = await requestMediaLibraryPermission();
     if (!hasPermission) {
-      Alert.alert('Permission needed', 'Please allow photo library access to add media.');
+      Alert.alert(tx("app.auth.profilePhotoName.permissionNeeded"), tx("app.auth.profilePhotoName.pleaseAllowPhotoLibraryAccessToAddMedia"));
       return;
     }
 
@@ -82,8 +83,8 @@ export default function ProfilePhotoNameScreen() {
     } catch (error) {
       const message = error instanceof Error
         ? error.message
-        : 'We could not upload that file. Please try again.';
-      Alert.alert('Upload failed', message);
+        : tx("errors.uploadFile");
+      Alert.alert(tx("app.auth.profilePhotoName.uploadFailed"), message);
     } finally {
       setSlotProgress(slot, null);
     }
@@ -105,7 +106,7 @@ export default function ProfilePhotoNameScreen() {
             <Image source={{ uri: media.uri }} style={styles.mediaImage} contentFit="cover" />
             {media.type === 'video' ? (
               <View style={styles.videoBadge}>
-                <Text style={styles.videoBadgeText}>▶ VIDEO</Text>
+                <Text style={styles.videoBadgeText}>{tx("app.auth.profilePhotoName.video")}</Text>
               </View>
             ) : null}
           </>
@@ -117,7 +118,7 @@ export default function ProfilePhotoNameScreen() {
 
         {slot === 0 ? (
           <View style={styles.mainBadge}>
-            <Text style={styles.mainBadgeText}>★ MAIN</Text>
+            <Text style={styles.mainBadgeText}>{tx("app.auth.profilePhotoName.main")}</Text>
           </View>
         ) : null}
 
@@ -125,10 +126,10 @@ export default function ProfilePhotoNameScreen() {
           <View style={styles.progressOverlay}>
             <Text style={styles.progressLabel}>
               {slotState.stage === 'compressing'
-                ? 'Compressing...'
+                ? tx("app.auth.profilePhotoName.compressing")
                 : slotState.stage === 'uploading'
-                  ? 'Uploading...'
-                  : 'Preparing...'}
+                  ? tx("app.auth.profilePhotoName.uploading")
+                  : tx("app.auth.profilePhotoName.preparing")}
             </Text>
             <View style={styles.progressTrack}>
               <View
@@ -146,10 +147,10 @@ export default function ProfilePhotoNameScreen() {
 
   return (
     <OnboardingLayout
-      title="Show who you are."
-      subtitle="Add up to 5 photos or short videos. The first one is your main. Videos must be 15 seconds or less."
-      stepNumber="06  PROFILE  PHOTO & NAME"
-      primaryLabel="Continue"
+      title={tx("app.auth.profilePhotoName.showWhoYouAre")}
+      subtitle={tx("app.auth.profilePhotoName.addUpTo5PhotosOrShortVideosThe")}
+      stepNumber={tx("onboarding.step.photoName")}
+      primaryLabel={tx("app.auth.profilePhotoName.continue")}
       onPrimaryPress={() => {
         setStep('profile-age-gender');
       }}
@@ -174,18 +175,18 @@ export default function ProfilePhotoNameScreen() {
       </Text> */}
 
       <View style={styles.section}>
-        <Text style={styles.label}>WHAT DO PEOPLE CALL YOU?</Text>
+        <Text style={styles.label}>{tx("app.auth.profilePhotoName.whatDoPeopleCallYou")}</Text>
         <Input
-          placeholder="Alex"
+          placeholder={tx("app.auth.profilePhotoName.alex")}
           value={draft.name}
           onChangeText={(value) => mergeDraft({ name: value })}
         />
       </View>
 
       <View style={styles.section}>
-        <Text style={styles.label}>SHORT BIO</Text>
+        <Text style={styles.label}>{tx("app.auth.profilePhotoName.shortBio")}</Text>
         <Input
-          placeholder="Sunday coffee, bookstore dates, easy conversation."
+          placeholder={tx("app.auth.profilePhotoName.sundayCoffeeBookstoreDatesEasyConversation")}
           value={draft.bio}
           onChangeText={(value) => mergeDraft({ bio: value })}
           multiline
@@ -196,7 +197,7 @@ export default function ProfilePhotoNameScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createThemedStyles((Colors) => ({
   mediaGrid: {
     flexDirection: 'row',
     gap: Spacing.sm,
@@ -205,7 +206,7 @@ const styles = StyleSheet.create({
     flex: 1,
     height: 220,
     borderRadius: 24,
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.surface,
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
@@ -235,7 +236,7 @@ const styles = StyleSheet.create({
   smallTile: {
     flex: 1,
     borderRadius: 20,
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.surface,
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
@@ -248,7 +249,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: Colors.primary,
     borderStyle: 'dashed',
-    backgroundColor: '#FFFDF7',
+    backgroundColor: Colors.inputBg,
   },
   emptyContent: {
     flex: 1,
@@ -313,4 +314,4 @@ const styles = StyleSheet.create({
     borderRadius: Radius.pill,
     backgroundColor: Colors.primary,
   },
-});
+}));

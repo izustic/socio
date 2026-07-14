@@ -8,7 +8,7 @@ import {
   ONBOARDING_TRAITS,
   TRAIT_EMOJI,
   } from "@/src/constants/onboarding";
-import { Colors,
+import { createThemedStyles, Colors,
   Radius,
   Spacing,
   Typography } from "@/src/constants/theme";
@@ -40,11 +40,11 @@ import {
   Pressable,
   ScrollView,
   StatusBar,
-  StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from "react-native";
+import { optionLabel, tx } from "@/src/utils/localization";
 
 type GenderMix = "Male" | "Female" | "Both";
 
@@ -201,7 +201,7 @@ export default function CreateCirclePreferencesScreen() {
         });
       } catch (error: any) {
         if (!active) return;
-        setErrorText(error?.message || "We could not load this Circle.");
+        setErrorText(error?.message || tx("app.circle.createPreferences.weCouldNotLoadThisCircle"));
       } finally {
         if (active) setLoadingCircle(false);
       }
@@ -233,8 +233,8 @@ export default function CreateCirclePreferencesScreen() {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permission.granted) {
       showAlert(
-        "Photo access needed",
-        "Please allow photo access to add a Circle image.",
+        tx("app.circle.createPreferences.photoAccessNeeded"),
+        tx("app.circle.createPreferences.pleaseAllowPhotoAccessToAddACircleImage"),
       );
       return;
     }
@@ -254,26 +254,26 @@ export default function CreateCirclePreferencesScreen() {
 
   const handleSaveCircle = async () => {
     if (!user) {
-      setErrorText("Please sign in again before creating a Circle.");
+      setErrorText(tx("app.circle.createPreferences.pleaseSignInAgainBeforeCreatingACircle"));
       showAlert(
-        "You are signed out",
-        "Please sign in again to create a Circle.",
+        tx("app.circle.createPreferences.youAreSignedOut"),
+        tx("app.circle.createPreferences.pleaseSignInAgainToCreateACircle"),
       );
       return;
     }
     if (!isEditMode && !circleBasics.name) {
-      setErrorText("Please go back and name your Circle.");
+      setErrorText(tx("app.circle.createPreferences.pleaseGoBackAndNameYourCircle"));
       showAlert(
-        "Circle details missing",
-        "Please go back and name your Circle.",
+        tx("app.circle.createPreferences.circleDetailsMissing"),
+        tx("app.circle.createPreferences.pleaseGoBackAndNameYourCircle"),
       );
       return;
     }
     if (selectedInterests.length < 3) {
-      setErrorText("Pick at least 3 interests to continue.");
+      setErrorText(tx("app.circle.createPreferences.pickAtLeast3InterestsToContinue"));
       showAlert(
-        "Pick at least 3 interests",
-        "This helps us find people who fit your Circle.",
+        tx("app.circle.createPreferences.pickAtLeast3Interests"),
+        tx("app.circle.createPreferences.thisHelpsUsFindPeopleWhoFitYourCircle"),
       );
       return;
     }
@@ -322,10 +322,10 @@ export default function CreateCirclePreferencesScreen() {
       await refreshSwipeTabVisibility({ silent: true });
       router.replace(isEditMode ? "/(tabs)/swipe" : "/(tabs)/swipe");
     } catch (error: any) {
-      setErrorText(error?.message || "We could not save your Circle.");
+      setErrorText(error?.message || tx("app.circle.createPreferences.weCouldNotSaveYourCircle"));
       showAlert(
-        isEditMode ? "Unable to save Circle" : "Unable to create Circle",
-        error?.message || "Please try again.",
+        isEditMode ? tx("app.circle.createPreferences.unableToSaveCircle") : tx("app.circle.createPreferences.unableToCreateCircle"),
+        error?.message || tx("app.circle.createPreferences.pleaseTryAgain"),
       );
     } finally {
       setSaving(false);
@@ -334,7 +334,7 @@ export default function CreateCirclePreferencesScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" />
+      <StatusBar />
       <View style={styles.header}>
         <TouchableOpacity
           activeOpacity={0.82}
@@ -344,7 +344,7 @@ export default function CreateCirclePreferencesScreen() {
           <ChevronLeft size={22} color={Colors.textPrimary} strokeWidth={2.4} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>
-          {isEditMode ? "Edit Circle" : "New Circle"}
+          {isEditMode ? tx("app.circle.createPreferences.editCircle") : tx("app.circle.createPreferences.newCircle")}
         </Text>
         <View style={styles.headerSpacer} />
       </View>
@@ -368,19 +368,19 @@ export default function CreateCirclePreferencesScreen() {
         contentContainerStyle={styles.content}
       >
         <Text style={styles.stepLabel}>
-          {isEditMode ? "EDIT CIRCLE" : "STEP 2 OF 2 · WHO YOU'RE LOOKING FOR"}
+          {isEditMode ? tx("app.circle.createPreferences.editCircle2") : tx("app.circle.createPreferences.step2Of2WhoYouReLookingFor")}
         </Text>
         <Text style={styles.title}>
-          {isEditMode ? "Tune your Circle" : "Match preferences"}
+          {isEditMode ? tx("app.circle.createPreferences.tuneYourCircle") : tx("app.circle.createPreferences.matchPreferences")}
         </Text>
         <Text style={styles.subtitle}>
           {isEditMode
-            ? "Update your photo and filters to find more people."
-            : "We'll only show people who fit your Circle."}
+            ? tx("app.circle.createPreferences.updateYourPhotoAndFiltersToFindMorePeople")
+            : tx("app.circle.createPreferences.weLlOnlyShowPeopleWhoFitYourCircle")}
         </Text>
 
         <View style={styles.section}>
-          <Text style={styles.label}>PHOTO</Text>
+          <Text style={styles.label}>{tx("app.circle.createPreferences.photo")}</Text>
           <TouchableOpacity
             activeOpacity={0.86}
             style={styles.imagePicker}
@@ -391,8 +391,8 @@ export default function CreateCirclePreferencesScreen() {
             ) : (
               <View style={styles.imageEmpty}>
                 <ImagePlus size={28} color={Colors.textPrimary} strokeWidth={2.1} />
-                <Text style={styles.imageTitle}>Add a Circle photo</Text>
-                <Text style={styles.imageHint}>This appears on swipe cards.</Text>
+                <Text style={styles.imageTitle}>{tx("app.circle.createPreferences.addACirclePhoto")}</Text>
+                <Text style={styles.imageHint}>{tx("app.circle.createPreferences.thisAppearsOnSwipeCards")}</Text>
               </View>
             )}
           </TouchableOpacity>
@@ -400,7 +400,7 @@ export default function CreateCirclePreferencesScreen() {
 
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.label}>AGE RANGE</Text>
+            <Text style={styles.label}>{tx("app.circle.createPreferences.ageRange")}</Text>
             <Text style={styles.valueLabel}>
               {ageRange[0]}–{ageRange[1]}
             </Text>
@@ -420,7 +420,7 @@ export default function CreateCirclePreferencesScreen() {
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.label}>GENDER</Text>
+          <Text style={styles.label}>{tx("app.circle.createPreferences.gender")}</Text>
           <View style={styles.genderRow}>
             {GENDER_OPTIONS.map((option) => {
               const selected = genderMix === option.label;
@@ -439,7 +439,7 @@ export default function CreateCirclePreferencesScreen() {
                       selected && styles.selectedText,
                     ]}
                   >
-                    {option.label}
+                    {optionLabel(option.label)}
                   </Text>
                 </TouchableOpacity>
               );
@@ -448,13 +448,13 @@ export default function CreateCirclePreferencesScreen() {
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.label}>EDUCATION</Text>
+          <Text style={styles.label}>{tx("app.circle.createPreferences.education")}</Text>
           <TouchableOpacity
             activeOpacity={0.82}
             style={styles.selectButton}
             onPress={() => setEducationOpen(true)}
           >
-            <Text style={styles.selectText}>{educationLevel}</Text>
+            <Text style={styles.selectText}>{optionLabel(educationLevel)}</Text>
             <ChevronDown
               size={18}
               color={Colors.textPrimary}
@@ -464,8 +464,8 @@ export default function CreateCirclePreferencesScreen() {
         </View>
 
         <ChipSection
-          title="INTERESTS"
-          countLabel={`${selectedInterests.length} picked`}
+          title={tx("app.circle.createPreferences.interests")}
+          countLabel={tx("options.pickedCount", { count: selectedInterests.length })}
           items={ONBOARDING_INTERESTS}
           selectedItems={selectedInterests}
           emojiMap={INTEREST_EMOJI}
@@ -473,8 +473,8 @@ export default function CreateCirclePreferencesScreen() {
         />
 
         <ChipSection
-          title="PERSONALITY"
-          countLabel={`${selectedTraits.length} picked`}
+          title={tx("app.circle.createPreferences.personality")}
+          countLabel={tx("options.pickedCount", { count: selectedTraits.length })}
           items={ONBOARDING_TRAITS}
           selectedItems={selectedTraits}
           emojiMap={TRAIT_EMOJI}
@@ -503,11 +503,11 @@ export default function CreateCirclePreferencesScreen() {
           >
             {saving
               ? isEditMode
-                ? "Saving..."
-                : "Creating..."
+                ? tx("app.circle.createPreferences.saving")
+                : tx("app.circle.createPreferences.creating")
               : isEditMode
-                ? "Save changes"
-                : "Create Circle"}
+                ? tx("app.circle.createPreferences.saveChanges")
+                : tx("app.circle.createPreferences.createCircle")}
           </Text>
         </TouchableOpacity>
       </View>
@@ -528,7 +528,7 @@ export default function CreateCirclePreferencesScreen() {
             style={styles.menu}
             onPress={(event) => event.stopPropagation()}
           >
-            <Text style={styles.menuTitle}>Education</Text>
+            <Text style={styles.menuTitle}>{tx("app.circle.createPreferences.education2")}</Text>
             {["Any", ...EDUCATION_OPTIONS].map((option) => {
               const selected = educationLevel === option;
               return (
@@ -547,7 +547,7 @@ export default function CreateCirclePreferencesScreen() {
                       selected && styles.menuItemTextSelected,
                     ]}
                   >
-                    {option}
+                    {optionLabel(option)}
                   </Text>
                 </TouchableOpacity>
               );
@@ -601,7 +601,7 @@ function ChipSection<T extends string>({
               onPress={() => onToggle(item)}
             >
               <Text style={[styles.chipText, selected && styles.selectedText]}>
-                {emojiMap[item]} {item}
+                {emojiMap[item]} {optionLabel(item)}
               </Text>
             </TouchableOpacity>
           );
@@ -611,7 +611,7 @@ function ChipSection<T extends string>({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createThemedStyles((Colors) => ({
   container: {
     flex: 1,
     backgroundColor: Colors.background,
@@ -627,7 +627,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: Radius.full,
-    backgroundColor: "#F7F7F7",
+    backgroundColor: Colors.inputBg,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -682,7 +682,7 @@ const styles = StyleSheet.create({
   imagePicker: {
     height: 176,
     borderRadius: 16,
-    backgroundColor: "#F6F6F6",
+    backgroundColor: Colors.inputBg,
     overflow: "hidden",
   },
   circleImage: {
@@ -757,7 +757,7 @@ const styles = StyleSheet.create({
     flex: 1,
     minHeight: 68,
     borderRadius: 16,
-    backgroundColor: "#F6F6F6",
+    backgroundColor: Colors.inputBg,
     alignItems: "center",
     justifyContent: "center",
     gap: 4,
@@ -788,7 +788,7 @@ const styles = StyleSheet.create({
     minHeight: 36,
     paddingHorizontal: 14,
     borderRadius: Radius.full,
-    backgroundColor: "#F6F6F6",
+    backgroundColor: Colors.inputBg,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -813,7 +813,7 @@ const styles = StyleSheet.create({
     color: Colors.textPrimary,
   },
   disabledButton: {
-    backgroundColor: "#F0F0F0",
+    backgroundColor: Colors.inputBg,
   },
   disabledButtonText: {
     color: Colors.textDisabled,
@@ -821,7 +821,7 @@ const styles = StyleSheet.create({
   selectButton: {
     minHeight: 52,
     borderRadius: 16,
-    backgroundColor: "#F6F6F6",
+    backgroundColor: Colors.inputBg,
     paddingHorizontal: 16,
     flexDirection: "row",
     alignItems: "center",
@@ -838,7 +838,7 @@ const styles = StyleSheet.create({
     padding: Spacing.screenPadding,
   },
   menu: {
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.surface,
     borderRadius: 24,
     padding: Spacing.md,
     gap: 8,
@@ -853,7 +853,7 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     paddingHorizontal: 14,
     justifyContent: "center",
-    backgroundColor: "#F6F6F6",
+    backgroundColor: Colors.inputBg,
   },
   menuItemSelected: {
     backgroundColor: Colors.primary,
@@ -865,4 +865,4 @@ const styles = StyleSheet.create({
   menuItemTextSelected: {
     color: Colors.textPrimary,
   },
-});
+}));

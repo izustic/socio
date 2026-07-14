@@ -2,7 +2,7 @@ import AlertModal from "@/src/components/ui/AlertModal";
 import Button from "@/src/components/ui/Button";
 import Chip from "@/src/components/ui/Chip";
 import Input from "@/src/components/ui/Input";
-import { Colors, Radius, Spacing, Typography } from "@/src/constants/theme";
+import { createThemedStyles, Colors, Radius, Spacing, Typography } from "@/src/constants/theme";
 import { useAuth } from "@/src/context/AuthContext";
 import { useSwipeTabVisibility } from "@/src/context/SwipeTabVisibilityContext";
 import { createCircle } from "@/src/services/circle";
@@ -16,11 +16,11 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import {
   ScrollView,
   StatusBar,
-  StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from "react-native";
+import { optionLabel, tx } from "@/src/utils/localization";
 
 const educationOptions = [
   "Any",
@@ -116,8 +116,8 @@ export default function CreateCircleScreen() {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permission.granted) {
       showAlert(
-        "Photo access needed",
-        "Please allow photo access to add a Circle image.",
+        tx("app.circle.createCircle.photoAccessNeeded"),
+        tx("app.circle.createCircle.pleaseAllowPhotoAccessToAddACircleImage"),
       );
       return;
     }
@@ -137,15 +137,15 @@ export default function CreateCircleScreen() {
 
   const handleCreateCircle = async () => {
     if (!user) {
-      showAlert("Not signed in", "Please sign in again to create a circle.");
+      showAlert(tx("app.circle.createCircle.notSignedIn"), tx("app.circle.createCircle.pleaseSignInAgainToCreateACircle"));
       return;
     }
     if (!circleName.trim()) {
-      showAlert("Missing Circle Name", "Please enter a circle name.");
+      showAlert(tx("app.circle.createCircle.missingCircleName"), tx("app.circle.createCircle.pleaseEnterACircleName"));
       return;
     }
     if (selectedInterests.length === 0) {
-      showAlert("Add Interests", "Please choose at least one interest.");
+      showAlert(tx("app.circle.createCircle.addInterests"), tx("app.circle.createCircle.pleaseChooseAtLeastOneInterest"));
       return;
     }
 
@@ -173,8 +173,8 @@ export default function CreateCircleScreen() {
       router.replace("/(tabs)/swipe");
     } catch (error: any) {
       showAlert(
-        "Unable to create circle",
-        error?.message || "Please try again.",
+        tx("app.circle.createCircle.unableToCreateCircle"),
+        error?.message || tx("app.circle.createCircle.pleaseTryAgain"),
       );
     } finally {
       setLoading(false);
@@ -183,14 +183,14 @@ export default function CreateCircleScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" />
+      <StatusBar />
       <View style={styles.header}>
-        <Text style={styles.title}>Create a Circle</Text>
+        <Text style={styles.title}>{tx("app.circle.createCircle.createACircle")}</Text>
       </View>
 
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.section}>
-          <Text style={styles.label}>PHOTO</Text>
+          <Text style={styles.label}>{tx("app.circle.createCircle.photo")}</Text>
           <TouchableOpacity
             activeOpacity={0.86}
             style={styles.imagePicker}
@@ -208,26 +208,26 @@ export default function CreateCircleScreen() {
                   color={Colors.textPrimary}
                   strokeWidth={2.1}
                 />
-                <Text style={styles.imageTitle}>Add a Circle photo</Text>
-                <Text style={styles.imageHint}>This appears on swipe cards.</Text>
+                <Text style={styles.imageTitle}>{tx("app.circle.createCircle.addACirclePhoto")}</Text>
+                <Text style={styles.imageHint}>{tx("app.circle.createCircle.thisAppearsOnSwipeCards")}</Text>
               </View>
             )}
           </TouchableOpacity>
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.label}>CIRCLE NAME</Text>
+          <Text style={styles.label}>{tx("app.circle.createCircle.circleName")}</Text>
           <Input
-            placeholder="Circle Name"
+            placeholder={tx("app.circle.createCircle.circleName2")}
             value={circleName}
             onChangeText={setCircleName}
           />
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.label}>VIBE / DESCRIPTION</Text>
+          <Text style={styles.label}>{tx("app.circle.createCircle.vibeDescription")}</Text>
           <Input
-            placeholder="Tell people about your circle vibe"
+            placeholder={tx("app.circle.createCircle.tellPeopleAboutYourCircleVibe")}
             value={vibe}
             onChangeText={setVibe}
             multiline
@@ -236,7 +236,7 @@ export default function CreateCircleScreen() {
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.label}>CIRCLE SIZE</Text>
+          <Text style={styles.label}>{tx("app.circle.createCircle.circleSize")}</Text>
           <View style={styles.sizeRow}>
             <TouchableOpacity
               activeOpacity={0.7}
@@ -247,7 +247,7 @@ export default function CreateCircleScreen() {
             </TouchableOpacity>
             <View style={styles.sizeValueWrap}>
               <Text style={styles.sizeValue}>{size}</Text>
-              <Text style={styles.sizePeople}>people</Text>
+              <Text style={styles.sizePeople}>{tx("app.circle.createCircle.people")}</Text>
             </View>
             <TouchableOpacity
               activeOpacity={0.7}
@@ -260,7 +260,7 @@ export default function CreateCircleScreen() {
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.label}>EDUCATION LEVEL</Text>
+          <Text style={styles.label}>{tx("app.circle.createCircle.educationLevel")}</Text>
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
@@ -269,7 +269,7 @@ export default function CreateCircleScreen() {
             {educationOptions.map((option) => (
               <Chip
                 key={option}
-                label={option}
+                label={optionLabel(option)}
                 selected={education === option}
                 onPress={() => setEducation(option)}
               />
@@ -278,12 +278,12 @@ export default function CreateCircleScreen() {
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.label}>INTERESTS</Text>
+          <Text style={styles.label}>{tx("app.circle.createCircle.interests")}</Text>
           <View style={styles.grid}>
             {interests.map((interest) => (
               <Chip
                 key={interest}
-                label={interest}
+                label={optionLabel(interest)}
                 selected={selectedInterests.includes(interest)}
                 onPress={() => toggleInterest(interest)}
               />
@@ -292,7 +292,7 @@ export default function CreateCircleScreen() {
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.label}>MEETUP GOAL</Text>
+          <Text style={styles.label}>{tx("app.circle.createCircle.meetupGoal")}</Text>
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
@@ -301,7 +301,7 @@ export default function CreateCircleScreen() {
             {goals.map((goal) => (
               <Chip
                 key={goal}
-                label={goal}
+                label={optionLabel(goal)}
                 selected={selectedGoal === goal}
                 onPress={() => setSelectedGoal(goal)}
               />
@@ -311,8 +311,8 @@ export default function CreateCircleScreen() {
 
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.label}>DAY TO MEET</Text>
-            <Text style={styles.valueLabel}>Within {meetupDays} days</Text>
+            <Text style={styles.label}>{tx("app.circle.createCircle.dayToMeet")}</Text>
+            <Text style={styles.valueLabel}>{tx("circleCreate.withinDays", { count: meetupDays })}</Text>
           </View>
           <TouchableOpacity
             activeOpacity={0.95}
@@ -324,15 +324,15 @@ export default function CreateCircleScreen() {
             <View style={[styles.dayThumb, { left: `${((meetupDays - 3) / 7) * 100}%` }]} />
           </TouchableOpacity>
           <View style={styles.dayMeta}>
-            <Text style={styles.helperText}>3 days</Text>
-            <Text style={styles.helperText}>10 days</Text>
+            <Text style={styles.helperText}>{tx("app.circle.createCircle.3Days")}</Text>
+            <Text style={styles.helperText}>{tx("app.circle.createCircle.10Days")}</Text>
           </View>
         </View>
       </ScrollView>
 
       <View style={styles.footer}>
         <Button
-          title={loading ? "Creating..." : "Create Circle"}
+          title={loading ? tx("app.circle.createCircle.creating") : tx("app.circle.createCircle.createCircle")}
           onPress={handleCreateCircle}
           disabled={loading}
         />
@@ -351,7 +351,7 @@ export default function CreateCircleScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createThemedStyles((Colors) => ({
   container: {
     flex: 1,
     backgroundColor: Colors.background,
@@ -375,7 +375,7 @@ const styles = StyleSheet.create({
   imagePicker: {
     height: 176,
     borderRadius: 16,
-    backgroundColor: "#F6F6F6",
+    backgroundColor: Colors.inputBg,
     overflow: "hidden",
   },
   circleImage: {
@@ -468,7 +468,7 @@ const styles = StyleSheet.create({
     borderRadius: Radius.full,
     backgroundColor: Colors.primary,
     borderWidth: 3,
-    borderColor: Colors.white,
+    borderColor: Colors.surface,
   },
   dayMeta: {
     flexDirection: "row",
@@ -484,4 +484,4 @@ const styles = StyleSheet.create({
     paddingTop: Spacing.sm,
     backgroundColor: Colors.background,
   },
-});
+}));

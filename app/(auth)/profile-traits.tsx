@@ -4,13 +4,14 @@ import {
     ONBOARDING_TRAITS,
     TRAIT_EMOJI,
 } from '@/src/constants/onboarding';
-import { Colors, Radius, Spacing, Typography } from '@/src/constants/theme';
+import { createThemedStyles, Radius, Spacing, Typography } from '@/src/constants/theme';
 import { useAuth } from '@/src/context/AuthContext';
 import { useOnboarding } from '@/src/context/OnboardingContext';
 import { createUserProfile } from '@/src/services/user';
 import { ProfileTrait } from '@/src/types';
 import { useState } from 'react';
-import { Alert, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, Text, TouchableOpacity, View } from 'react-native';
+import { optionLabel, tx } from "@/src/utils/localization";
 
 export default function ProfileTraitsScreen() {
   const { user } = useAuth();
@@ -28,12 +29,12 @@ export default function ProfileTraitsScreen() {
 
   const handleSubmit = async () => {
     if (!user) {
-      Alert.alert('You are signed out', 'Please sign in again to continue.');
+      Alert.alert(tx("app.auth.profileTraits.youAreSignedOut"), tx("app.auth.profileTraits.pleaseSignInAgainToContinue"));
       return;
     }
     const nextRequiredStep = getFirstIncompleteOnboardingStep(draft);
     if (nextRequiredStep !== 'profile-traits') {
-      Alert.alert('A few things are missing', 'Please finish the previous steps first.');
+      Alert.alert(tx("app.auth.profileTraits.aFewThingsAreMissing"), tx("app.auth.profileTraits.pleaseFinishThePreviousStepsFirst"));
       setStep(nextRequiredStep);
       return;
     }
@@ -71,7 +72,7 @@ export default function ProfileTraitsScreen() {
       setStep('profile-complete');
     } catch (error) {
       console.error('Error creating user profile:', error);
-      Alert.alert('Could not save profile', 'Please try again.');
+      Alert.alert(tx("app.auth.profileTraits.couldNotSaveProfile"), tx("app.auth.profileTraits.pleaseTryAgain"));
     } finally {
       setSaving(false);
     }
@@ -79,19 +80,19 @@ export default function ProfileTraitsScreen() {
 
   return (
     <OnboardingLayout
-      title="Last one. Promise."
-      subtitle="Pick traits that describe you. Totally optional, but it helps a lot."
-      stepNumber="09  PROFILE  TRAITS"
-      primaryLabel={saving ? 'Saving...' : 'Complete Profile'}
+      title={tx("app.auth.profileTraits.lastOnePromise")}
+      subtitle={tx("app.auth.profileTraits.pickTraitsThatDescribeYouTotallyOptionalButIt")}
+      stepNumber={tx("onboarding.step.traits")}
+      primaryLabel={saving ? tx("app.auth.profileTraits.saving") : tx("app.auth.profileTraits.completeProfile")}
       onPrimaryPress={handleSubmit}
       primaryDisabled={saving}
-      secondaryLabel="Skip for now"
+      secondaryLabel={tx("app.auth.profileTraits.skipForNow")}
       onSecondaryPress={handleSubmit}
       onBackPress={() => setStep('profile-interests')}
     >
       <View style={styles.metaRow}>
-        <Text style={styles.optional}>Optional</Text>
-        <Text style={styles.count}>{draft.traits.length} picked</Text>
+        <Text style={styles.optional}>{tx("app.auth.profileTraits.optional")}</Text>
+        <Text style={styles.count}>{draft.traits.length} {tx("app.auth.profileTraits.picked")}</Text>
       </View>
 
       <View style={styles.grid}>
@@ -105,7 +106,7 @@ export default function ProfileTraitsScreen() {
               onPress={() => toggleTrait(trait)}
             >
               <Text style={styles.chipText}>
-                {TRAIT_EMOJI[trait]} {trait}
+                {TRAIT_EMOJI[trait]} {optionLabel(trait)}
               </Text>
             </TouchableOpacity>
           );
@@ -115,7 +116,7 @@ export default function ProfileTraitsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createThemedStyles((Colors) => ({
   metaRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -134,7 +135,7 @@ const styles = StyleSheet.create({
     gap: Spacing.sm,
   },
   chip: {
-    backgroundColor: '#F7F4EB',
+    backgroundColor: Colors.inputBg,
     borderRadius: Radius.pill,
     paddingVertical: 10,
     paddingHorizontal: 14,
@@ -146,4 +147,4 @@ const styles = StyleSheet.create({
     ...Typography.bodySmall,
     fontWeight: '600',
   },
-});
+}));

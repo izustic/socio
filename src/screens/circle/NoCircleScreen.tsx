@@ -1,5 +1,5 @@
 import { SafeAreaView } from "react-native-safe-area-context";
-import {
+import { createThemedStyles,
   Colors,
   Radius,
   Spacing,
@@ -9,16 +9,16 @@ import { Plus,
   Search } from 'lucide-react-native';
 import { Image,
   StatusBar,
-  StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from 'react-native';
+import { tx } from "@/src/utils/localization";
 
 export default function NoCircleScreen() {
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" />
+      <StatusBar />
       <View style={styles.content}>
         <View style={styles.mark}>
           <Image
@@ -29,10 +29,9 @@ export default function NoCircleScreen() {
         </View>
 
         <View style={styles.copy}>
-          <Text style={styles.title}>You don&apos;t have{'\n'}a Circle yet</Text>
+          <Text style={styles.title}>{tx("circle.NoCircleScreen.youDonTHave")}{'\n'}{tx("circle.NoCircleScreen.aCircleYet")}</Text>
           <Text style={styles.description}>
-            Start your own Circle, or join one created by someone who shares your vibe.
-          </Text>
+            {tx("circle.NoCircleScreen.startYourOwnCircleOrJoinOneCreatedBy")}</Text>
         </View>
 
         <View style={styles.actions}>
@@ -45,8 +44,8 @@ export default function NoCircleScreen() {
               <Plus size={23} color={Colors.textPrimary} strokeWidth={2.4} />
             </View>
             <View style={styles.actionCopy}>
-              <Text style={styles.primaryActionTitle}>Create a Circle</Text>
-              <Text style={styles.primaryActionText}>You set the vibe. Others swipe to join.</Text>
+              <Text style={styles.primaryActionTitle}>{tx("circle.NoCircleScreen.createACircle")}</Text>
+              <Text style={styles.primaryActionText}>{tx("circle.NoCircleScreen.youSetTheVibeOthersSwipeToJoin")}</Text>
             </View>
           </TouchableOpacity>
 
@@ -59,21 +58,20 @@ export default function NoCircleScreen() {
               <Search size={23} color={Colors.textPrimary} strokeWidth={2.4} />
             </View>
             <View style={styles.actionCopy}>
-              <Text style={styles.secondaryActionTitle}>Join a Circle</Text>
+              <Text style={styles.secondaryActionTitle}>{tx("circle.NoCircleScreen.joinACircle")}</Text>
               <Text style={styles.secondaryActionText}>
-                Tell us who you&apos;d vibe with. We&apos;ll show matching Circles.
-              </Text>
+                {tx("circle.NoCircleScreen.tellUsWhoYouDVibeWithWeLl")}</Text>
             </View>
           </TouchableOpacity>
         </View>
 
-        <Text style={styles.footer}>One active Circle at a time</Text>
+        <Text style={styles.footer}>{tx("circle.NoCircleScreen.oneActiveCircleAtATime")}</Text>
       </View>
     </SafeAreaView>
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createThemedStyles((Colors) => ({
   container: {
     flex: 1,
     backgroundColor: Colors.background,
@@ -107,7 +105,7 @@ const styles = StyleSheet.create({
     fontSize: 28,
     lineHeight: 35,
     textAlign: 'center',
-    color: '#111111',
+    color: Colors.textPrimary,
   },
   description: {
     ...Typography.body,
@@ -137,7 +135,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.primary,
   },
   secondaryCard: {
-    backgroundColor: '#F7F7F7',
+    backgroundColor: Colors.inputBg,
   },
   iconBadge: {
     width: 44,
@@ -150,7 +148,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(217, 143, 0, 0.22)',
   },
   secondaryIconBadge: {
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.surface,
   },
   actionCopy: {
     flex: 1,
@@ -160,7 +158,7 @@ const styles = StyleSheet.create({
     ...Typography.h3,
     fontSize: 17,
     fontWeight: '700',
-    color: '#111111',
+    color: Colors.textPrimary,
   },
   primaryActionText: {
     ...Typography.bodySmall,
@@ -170,7 +168,7 @@ const styles = StyleSheet.create({
     ...Typography.h3,
     fontSize: 17,
     fontWeight: '700',
-    color: '#111111',
+    color: Colors.textPrimary,
   },
   secondaryActionText: {
     ...Typography.bodySmall,
@@ -182,4 +180,4 @@ const styles = StyleSheet.create({
     color: Colors.textSecondary,
     textAlign: 'center',
   },
-});
+}));

@@ -16,6 +16,7 @@ export default function CircleLayout() {
       <Stack.Screen name="chat" />
       <Stack.Screen name="call" />
       <Stack.Screen name="info" />
+      <Stack.Screen name="plan" />
     </Stack>
   );
 }

@@ -1,5 +1,5 @@
 import { SafeAreaView } from "react-native-safe-area-context";
-import {
+import { createThemedStyles,
   Colors,
   Radius,
   Spacing,
@@ -15,12 +15,12 @@ import { useState } from 'react';
 import {
   ScrollView,
   StatusBar,
-  StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
+import { tx } from "@/src/utils/localization";
 
 const SIZE_OPTIONS = [3, 4, 5, 6, 7, 8];
 const MEETUP_GOALS = ['Coffee', 'Study', 'Gym', 'Walk', 'Dinner'];
@@ -55,7 +55,7 @@ export default function CreateCircleBasicsScreen() {
 
   const handleNext = () => {
     if (!name.trim()) {
-      setNameError("Please name your Circle to continue.");
+      setNameError(tx("circleCreate.nameRequired"));
       return;
     }
     setNameError(null);
@@ -76,12 +76,12 @@ export default function CreateCircleBasicsScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" />
+      <StatusBar />
       <View style={styles.header}>
         <TouchableOpacity activeOpacity={0.82} style={styles.backButton} onPress={() => router.back()}>
           <ChevronLeft size={22} color={Colors.textPrimary} strokeWidth={2.4} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>New Circle</Text>
+        <Text style={styles.headerTitle}>{tx("app.circle.create.newCircle")}</Text>
         <View style={styles.headerSpacer} />
       </View>
 
@@ -94,12 +94,12 @@ export default function CreateCircleBasicsScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.content}
       >
-        <Text style={styles.stepLabel}>STEP 1 OF 2 · BASICS</Text>
-        <Text style={styles.title}>Set up your Circle</Text>
-        <Text style={styles.subtitle}>Name it, size it, pick where and what.</Text>
+        <Text style={styles.stepLabel}>{tx("app.circle.create.step1Of2Basics")}</Text>
+        <Text style={styles.title}>{tx("app.circle.create.setUpYourCircle")}</Text>
+        <Text style={styles.subtitle}>{tx("app.circle.create.nameItSizeItPickWhereAndWhat")}</Text>
 
         <View style={styles.section}>
-          <Text style={styles.label}>PHOTO</Text>
+          <Text style={styles.label}>{tx("app.circle.create.photo")}</Text>
           <TouchableOpacity
             activeOpacity={0.86}
             style={styles.imagePicker}
@@ -110,22 +110,22 @@ export default function CreateCircleBasicsScreen() {
             ) : (
               <View style={styles.imageEmpty}>
                 <ImagePlus size={28} color={Colors.textPrimary} strokeWidth={2.1} />
-                <Text style={styles.imageTitle}>Add a Circle photo</Text>
-                <Text style={styles.imageHint}>This appears on swipe cards.</Text>
+                <Text style={styles.imageTitle}>{tx("app.circle.create.addACirclePhoto")}</Text>
+                <Text style={styles.imageHint}>{tx("app.circle.create.thisAppearsOnSwipeCards")}</Text>
               </View>
             )}
           </TouchableOpacity>
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.label}>NAME</Text>
+          <Text style={styles.label}>{tx("app.circle.create.name")}</Text>
           <TextInput
             value={name}
             onChangeText={(value) => {
               setName(value);
               if (nameError && value.trim()) setNameError(null);
             }}
-            placeholder="Sunday Coffee Crew"
+            placeholder={tx("app.circle.create.sundayCoffeeCrew")}
             placeholderTextColor={Colors.textDisabled}
             style={styles.input}
             autoCapitalize="words"
@@ -134,11 +134,11 @@ export default function CreateCircleBasicsScreen() {
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.label}>VIBE</Text>
+          <Text style={styles.label}>{tx("app.circle.create.vibe")}</Text>
           <TextInput
             value={vibe}
             onChangeText={setVibe}
-            placeholder="Easygoing brunches, late-night talks, and zero pressure."
+            placeholder={tx("app.circle.create.easygoingBrunchesLateNightTalksAndZeroPressure")}
             placeholderTextColor={Colors.textDisabled}
             style={[styles.input, styles.multilineInput]}
             multiline
@@ -147,7 +147,7 @@ export default function CreateCircleBasicsScreen() {
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.label}>SIZE</Text>
+          <Text style={styles.label}>{tx("app.circle.create.size")}</Text>
           <View style={styles.sizeRow}>
             {SIZE_OPTIONS.map((option) => {
               const selected = size === option;
@@ -169,7 +169,7 @@ export default function CreateCircleBasicsScreen() {
           <View style={styles.sectionHeader}>
             <View style={styles.inlineLabel}>
               <MapPin size={14} color={Colors.textSecondary} strokeWidth={2.2} />
-              <Text style={styles.label}>RADIUS</Text>
+              <Text style={styles.label}>{tx("app.circle.create.radius")}</Text>
             </View>
             <Text style={styles.valueLabel}>{radius} {radiusUnit}</Text>
           </View>
@@ -181,7 +181,7 @@ export default function CreateCircleBasicsScreen() {
             style={styles.sliderTrack}
           />
           <View style={styles.radiusMeta}>
-            <Text style={styles.helperText}>Only people in range will be shown</Text>
+            <Text style={styles.helperText}>{tx("app.circle.create.onlyPeopleInRangeWillBeShown")}</Text>
             <View style={styles.segment}>
               {(['km', 'mi'] as const).map((unit) => {
                 const selected = radiusUnit === unit;
@@ -201,7 +201,7 @@ export default function CreateCircleBasicsScreen() {
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.label}>MEETUP GOAL</Text>
+          <Text style={styles.label}>{tx("app.circle.create.meetupGoal")}</Text>
           <View style={styles.goalGrid}>
             {MEETUP_GOALS.map((goal) => {
               const selected = meetupGoal === goal;
@@ -221,9 +221,11 @@ export default function CreateCircleBasicsScreen() {
 
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.label}>DAY TO MEET</Text>
+            <Text style={styles.label}>{tx("app.circle.create.dayToMeet")}</Text>
             <Text style={styles.valueLabel}>
-              Within {meetupDays} {meetupDays === 1 ? 'day' : 'days'}
+              {meetupDays === 1
+                ? tx("circleCreate.withinOneDay")
+                : tx("circleCreate.withinDays", { count: meetupDays })}
             </Text>
           </View>
           <SingleSlider
@@ -234,8 +236,8 @@ export default function CreateCircleBasicsScreen() {
             style={styles.sliderTrack}
           />
           <View style={styles.radiusMeta}>
-            <Text style={styles.helperText}>3 days</Text>
-            <Text style={styles.helperText}>10 days</Text>
+            <Text style={styles.helperText}>{tx("app.circle.create.3Days")}</Text>
+            <Text style={styles.helperText}>{tx("app.circle.create.10Days")}</Text>
           </View>
         </View>
       </ScrollView>
@@ -248,15 +250,14 @@ export default function CreateCircleBasicsScreen() {
           onPress={handleNext}
         >
           <Text style={[styles.primaryButtonText, !name.trim() && styles.disabledButtonText]}>
-            Next: Who you&apos;re looking for
-          </Text>
+            {tx("app.circle.create.nextWhoYouReLookingFor")}</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createThemedStyles((Colors) => ({
   container: {
     flex: 1,
     backgroundColor: Colors.background,
@@ -272,7 +273,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: Radius.full,
-    backgroundColor: '#F7F7F7',
+    backgroundColor: Colors.inputBg,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -299,7 +300,7 @@ const styles = StyleSheet.create({
     flex: 1,
     height: 4,
     borderRadius: Radius.full,
-    backgroundColor: '#F5F5F5',
+    backgroundColor: Colors.inputBg,
   },
   content: {
     paddingHorizontal: Spacing.screenPadding,
@@ -328,7 +329,7 @@ const styles = StyleSheet.create({
   imagePicker: {
     height: 176,
     borderRadius: 16,
-    backgroundColor: "#F6F6F6",
+    backgroundColor: Colors.inputBg,
     overflow: "hidden",
   },
   circleImage: {
@@ -370,7 +371,7 @@ const styles = StyleSheet.create({
   input: {
     minHeight: 56,
     borderRadius: 12,
-    backgroundColor: '#F4F4F4',
+    backgroundColor: Colors.inputBg,
     paddingHorizontal: 20,
     fontSize: 16,
     color: Colors.textPrimary,
@@ -387,7 +388,7 @@ const styles = StyleSheet.create({
     flex: 1,
     minHeight: 48,
     borderRadius: 12,
-    backgroundColor: '#F6F6F6',
+    backgroundColor: Colors.inputBg,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -437,7 +438,7 @@ const styles = StyleSheet.create({
   },
   segment: {
     flexDirection: 'row',
-    backgroundColor: '#F5F5F5',
+    backgroundColor: Colors.inputBg,
     borderRadius: Radius.full,
     padding: 3,
   },
@@ -464,7 +465,7 @@ const styles = StyleSheet.create({
     minHeight: 36,
     paddingHorizontal: 17,
     borderRadius: Radius.full,
-    backgroundColor: '#F6F6F6',
+    backgroundColor: Colors.inputBg,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -489,9 +490,9 @@ const styles = StyleSheet.create({
     color: Colors.textPrimary,
   },
   disabledButton: {
-    backgroundColor: '#F0F0F0',
+    backgroundColor: Colors.inputBg,
   },
   disabledButtonText: {
     color: Colors.textDisabled,
   },
-});
+}));

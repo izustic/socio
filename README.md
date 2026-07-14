@@ -1,6 +1,6 @@
-# Socio
+# Sociol
 
-Socio is a mobile-first Expo React Native app for forming small in-person friend groups called Circles.
+Sociol is a mobile-first Expo React Native app for forming small in-person friend groups called Circles.
 
 Users can either create a Circle as a host and swipe on people who fit the group, or join as a participant by swiping on Circles. When a Circle fills, the app is designed to unlock group chat, media sharing, and LiveKit-powered group calls.
 

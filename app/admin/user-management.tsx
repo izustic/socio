@@ -1,7 +1,7 @@
 import { SafeAreaView } from "react-native-safe-area-context";
 import Avatar from "@/src/components/ui/Avatar";
 import Input from "@/src/components/ui/Input";
-import {
+import { createThemedStyles,
   Colors,
   Radius,
   Spacing,
@@ -41,33 +41,27 @@ import {
   ScrollView,
   RefreshControl,
   StatusBar,
-  StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from "react-native";
+import { formatLocalizedDate, formatLocalizedDateTime, optionLabel, tx } from "@/src/utils/localization";
 
 type StatusAction = "suspend" | "ban" | null;
 
-const formatTimestamp = (value: string) =>
-  new Date(value).toLocaleString(undefined, {
-    month: "short",
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-  });
+const formatTimestamp = formatLocalizedDateTime;
 
-const rolePalette: Record<string, { backgroundColor: string; color: string }> = {
-  admin: { backgroundColor: "#F4E8FF", color: "#7C3AED" },
-  moderator: { backgroundColor: "#EEF2FF", color: "#4F46E5" },
+const getRolePalette = (): Record<string, { backgroundColor: string; color: string }> => ({
+  admin: { backgroundColor: Colors.infoSurface, color: "#7C3AED" },
+  moderator: { backgroundColor: Colors.infoSurface, color: "#4F46E5" },
   user: { backgroundColor: Colors.inputBg, color: Colors.textSecondary },
-};
+});
 
-const statusPalette: Record<string, { backgroundColor: string; color: string }> = {
-  active: { backgroundColor: "#E9F8ED", color: Colors.success },
-  suspended: { backgroundColor: "#FFF4DD", color: Colors.primaryDark },
-  banned: { backgroundColor: "#FDEBEC", color: Colors.danger },
-};
+const getStatusPalette = (): Record<string, { backgroundColor: string; color: string }> => ({
+  active: { backgroundColor: Colors.successSurface, color: Colors.success },
+  suspended: { backgroundColor: Colors.warningSurface, color: Colors.primaryDark },
+  banned: { backgroundColor: Colors.dangerSurface, color: Colors.danger },
+});
 
 export default function UserManagement() {
   const { user, role } = useAuth();
@@ -94,7 +88,7 @@ export default function UserManagement() {
       setMessage(null);
     } catch (error) {
       console.error("Error loading user management:", error);
-      setMessage("We could not load the user list right now.");
+      setMessage(tx("admin.loadUsersError"));
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -179,15 +173,15 @@ export default function UserManagement() {
 
       setMessage(
         statusAction === "suspend"
-          ? `${selectedUser.displayName} was suspended.`
-          : `${selectedUser.displayName} was banned.`,
+          ? tx("admin.userSuspended", { name: selectedUser.displayName })
+          : tx("admin.userBanned", { name: selectedUser.displayName }),
       );
       setStatusAction(null);
       setSelectedUser(null);
       await load();
     } catch (error) {
       console.error("Error applying user status action:", error);
-      setMessage("That status change could not be completed.");
+      setMessage(tx("admin.statusChangeError"));
     } finally {
       setSaving(false);
     }
@@ -210,12 +204,15 @@ export default function UserManagement() {
           origin: "admin_user_management",
         },
       });
-      setMessage(`${account.displayName} is now a ${nextRole}.`);
+      setMessage(tx("admin.roleChanged", {
+        name: account.displayName,
+        role: optionLabel(nextRole),
+      }));
       setSelectedUser(null);
       await load();
     } catch (error) {
       console.error("Error updating user role:", error);
-      setMessage("That role change could not be completed.");
+      setMessage(tx("admin.roleChangeError"));
     } finally {
       setSaving(false);
     }
@@ -224,13 +221,12 @@ export default function UserManagement() {
   if (!user || role?.role !== "admin") {
     return (
       <SafeAreaView style={styles.container}>
-        <StatusBar barStyle="dark-content" />
+        <StatusBar />
         <View style={styles.centerState}>
           <ShieldAlert size={36} color={Colors.primaryDark} strokeWidth={2} />
-          <Text style={styles.centerTitle}>Admin access only</Text>
+          <Text style={styles.centerTitle}>{tx("app.admin.userManagement.adminAccessOnly")}</Text>
           <Text style={styles.centerText}>
-            User management is reserved for admin accounts.
-          </Text>
+            {tx("app.admin.userManagement.userManagementIsReservedForAdminAccounts")}</Text>
         </View>
       </SafeAreaView>
     );
@@ -238,7 +234,7 @@ export default function UserManagement() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" />
+      <StatusBar />
       <ScrollView
         contentContainerStyle={styles.content}
         refreshControl={
@@ -260,11 +256,10 @@ export default function UserManagement() {
             <ChevronLeft size={20} color={Colors.textPrimary} strokeWidth={2.2} />
           </TouchableOpacity>
           <View style={styles.headerText}>
-            <Text style={styles.kicker}>Admin</Text>
-            <Text style={styles.title}>User management</Text>
+            <Text style={styles.kicker}>{tx("app.admin.userManagement.admin")}</Text>
+            <Text style={styles.title}>{tx("app.admin.userManagement.userManagement")}</Text>
             <Text style={styles.subtitle}>
-              Review accounts, change roles, and correct problem users.
-            </Text>
+              {tx("app.admin.userManagement.reviewAccountsChangeRolesAndCorrectProblemUsers")}</Text>
           </View>
           <TouchableOpacity
             activeOpacity={0.82}
@@ -278,24 +273,24 @@ export default function UserManagement() {
         <View style={styles.summaryGrid}>
           <SummaryCard
             icon={UserCog}
-            label="Moderators"
+            label={tx("app.admin.userManagement.moderators")}
             value={overview?.moderators ?? 0}
           />
           <SummaryCard
             icon={UserPlus}
-            label="Active"
+            label={tx("app.admin.userManagement.active")}
             value={overview?.activeUsers ?? 0}
             tone="success"
           />
           <SummaryCard
             icon={UserX}
-            label="Suspended"
+            label={tx("app.admin.userManagement.suspended")}
             value={overview?.suspendedUsers ?? 0}
             tone="warning"
           />
           <SummaryCard
             icon={Ban}
-            label="Banned"
+            label={tx("app.admin.userManagement.banned")}
             value={overview?.bannedUsers ?? 0}
             tone="danger"
           />
@@ -304,15 +299,15 @@ export default function UserManagement() {
         {message ? <Notice text={message} /> : null}
 
         <Input
-          placeholder="Search users"
+          placeholder={tx("app.admin.userManagement.searchUsers")}
           value={search}
           onChangeText={setSearch}
           style={styles.searchInput}
         />
 
         <View style={styles.listHeader}>
-          <Text style={styles.sectionTitle}>Accounts</Text>
-          <Text style={styles.sectionSubtitle}>{filteredUsers.length} shown</Text>
+          <Text style={styles.sectionTitle}>{tx("app.admin.userManagement.accounts")}</Text>
+          <Text style={styles.sectionSubtitle}>{filteredUsers.length} {tx("app.admin.userManagement.shown")}</Text>
         </View>
 
         <View style={styles.list}>
@@ -321,8 +316,8 @@ export default function UserManagement() {
           ) : filteredUsers.length === 0 ? (
             <EmptyBlock
               icon={Shield}
-              title="No users match"
-              message="Try a different name, email, role, or status."
+              title={tx("app.admin.userManagement.noUsersMatch")}
+              message={tx("app.admin.userManagement.tryADifferentNameEmailRoleOrStatus")}
             />
           ) : (
             filteredUsers.map((account) => {
@@ -347,7 +342,7 @@ export default function UserManagement() {
                       <View style={styles.userText}>
                         <Text style={styles.userName}>{account.displayName}</Text>
                         <Text style={styles.userMeta}>
-                          {account.email || "No email"} • {formatTimestamp(account.createdAt)}
+                          {account.email || tx("app.admin.userManagement.noEmail")} • {formatTimestamp(account.createdAt)}
                         </Text>
                       </View>
                     </View>
@@ -355,8 +350,8 @@ export default function UserManagement() {
                   </View>
 
                   <View style={styles.badgeRow}>
-                    <StatusBadge label={account.role} tone={account.role} />
-                    <StatusBadge label={account.status} tone={account.status} />
+                    <StatusBadge label={optionLabel(account.role)} tone={account.role} />
+                    <StatusBadge label={optionLabel(account.status)} tone={account.status} />
                     <ReportBadge count={account.reportCount} />
                   </View>
 
@@ -369,19 +364,19 @@ export default function UserManagement() {
                   <View style={styles.actionRow}>
                     {canChangeRole ? (
                       <TinyAction
-                        label={account.role === "moderator" ? "Demote" : "Promote"}
+                        label={account.role === "moderator" ? tx("app.admin.userManagement.demote") : tx("app.admin.userManagement.promote")}
                         onPress={() =>
                           Alert.alert(
                             account.role === "moderator"
-                              ? "Demote moderator?"
-                              : "Promote to moderator?",
+                              ? tx("app.admin.userManagement.demoteModerator")
+                              : tx("app.admin.userManagement.promoteToModerator"),
                             account.role === "moderator"
-                              ? "This will remove moderator access from the account."
-                              : "This will grant moderator access to the account.",
+                              ? tx("app.admin.userManagement.thisWillRemoveModeratorAccessFromTheAccount")
+                              : tx("app.admin.userManagement.thisWillGrantModeratorAccessToTheAccount"),
                             [
-                              { text: "Cancel", style: "cancel" },
+                              { text: tx("app.admin.userManagement.cancel"), style: "cancel" },
                               {
-                                text: account.role === "moderator" ? "Demote" : "Promote",
+                                text: account.role === "moderator" ? tx("app.admin.userManagement.demote") : tx("app.admin.userManagement.promote"),
                                 style: "default",
                                 onPress: async () => {
                                   await handleRoleChange(
@@ -397,28 +392,28 @@ export default function UserManagement() {
                     ) : null}
                     {canSuspend ? (
                       <TinyAction
-                        label="Suspend"
+                        label={tx("app.admin.userManagement.suspend")}
                         onPress={() => openStatusAction(account, "suspend")}
                       />
                     ) : null}
                     {canBan ? (
                       <TinyAction
-                        label="Ban"
+                        label={tx("app.admin.userManagement.ban")}
                         danger
                         onPress={() => openStatusAction(account, "ban")}
                       />
                     ) : null}
                     {account.status === "suspended" && !isSelf ? (
                       <TinyAction
-                        label="Reactivate"
+                        label={tx("app.admin.userManagement.reactivate")}
                         onPress={() =>
                           Alert.alert(
-                            "Reactivate user?",
-                            "This will restore the account to active status.",
+                            tx("app.admin.userManagement.reactivateUser"),
+                            tx("app.admin.userManagement.thisWillRestoreTheAccountToActiveStatus"),
                             [
-                              { text: "Cancel", style: "cancel" },
+                              { text: tx("app.admin.userManagement.cancel"), style: "cancel" },
                               {
-                                text: "Reactivate",
+                                text: tx("app.admin.userManagement.reactivate"),
                                 onPress: async () => {
                                   try {
                                     setSaving(true);
@@ -429,12 +424,12 @@ export default function UserManagement() {
                                       reason: "Reactivated from admin tools",
                                       metadata: { origin: "admin_user_management" },
                                     });
-                                    setMessage(`${account.displayName} is active again.`);
+                                    setMessage(tx("admin.userReactivated", { name: account.displayName }));
                                     setSelectedUser(null);
                                     await load();
                                   } catch (error) {
                                     console.error("Error reactivating user:", error);
-                                    setMessage("That reactivation could not be completed.");
+                                    setMessage(tx("admin.reactivationError"));
                                   } finally {
                                     setSaving(false);
                                   }
@@ -462,13 +457,13 @@ export default function UserManagement() {
         <View style={styles.modalOverlay}>
           <View style={styles.modalCard}>
             <Text style={styles.modalTitle}>
-              {statusAction === "suspend" ? "Suspend user" : "Ban user"}
+              {statusAction === "suspend" ? tx("app.admin.userManagement.suspendUser") : tx("app.admin.userManagement.banUser")}
             </Text>
             <Text style={styles.modalMessage}>
               {selectedUser?.displayName}
             </Text>
             <Input
-              placeholder="Reason"
+              placeholder={tx("app.admin.userManagement.reason")}
               multiline
               numberOfLines={4}
               value={reason}
@@ -478,7 +473,7 @@ export default function UserManagement() {
 
             {statusAction === "suspend" ? (
               <>
-                <Text style={styles.modalLabel}>Suspension length in days</Text>
+                <Text style={styles.modalLabel}>{tx("app.admin.userManagement.suspensionLengthInDays")}</Text>
                 <Input
                   placeholder="7"
                   keyboardType="number-pad"
@@ -487,15 +482,15 @@ export default function UserManagement() {
                   style={styles.dayInput}
                 />
                 <Text style={styles.helperText}>
-                  This will expire on{" "}
-                  {new Date(
+                  {tx("app.admin.userManagement.thisWillExpireOn")}{" "}
+                  {formatLocalizedDate(new Date(
                     Date.now() +
                       (Number.parseInt(days, 10) > 0 ? Number.parseInt(days, 10) : 7) *
                         24 *
                         60 *
                         60 *
                         1000,
-                  ).toLocaleDateString(undefined, {
+                  ), {
                     month: "short",
                     day: "numeric",
                     year: "numeric",
@@ -512,7 +507,7 @@ export default function UserManagement() {
                 onPress={closeStatusAction}
                 disabled={saving}
               >
-                <Text style={styles.secondaryButtonText}>Cancel</Text>
+                <Text style={styles.secondaryButtonText}>{tx("app.admin.userManagement.cancel")}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 activeOpacity={0.82}
@@ -528,7 +523,7 @@ export default function UserManagement() {
                   <ActivityIndicator color={Colors.white} />
                 ) : (
                   <Text style={styles.primaryButtonText}>
-                    {statusAction === "suspend" ? "Suspend" : "Ban"}
+                    {statusAction === "suspend" ? tx("app.admin.userManagement.suspend") : tx("app.admin.userManagement.ban")}
                   </Text>
                 )}
               </TouchableOpacity>
@@ -553,11 +548,11 @@ function SummaryCard({
 }) {
   const palette =
     tone === "success"
-      ? { backgroundColor: "#E9F8ED", color: Colors.success }
+      ? { backgroundColor: Colors.successSurface, color: Colors.success }
       : tone === "warning"
-        ? { backgroundColor: "#FFF4DD", color: Colors.primaryDark }
+        ? { backgroundColor: Colors.warningSurface, color: Colors.primaryDark }
         : tone === "danger"
-          ? { backgroundColor: "#FDEBEC", color: Colors.danger }
+          ? { backgroundColor: Colors.dangerSurface, color: Colors.danger }
           : { backgroundColor: Colors.inputBg, color: Colors.textPrimary };
 
   return (
@@ -572,7 +567,7 @@ function SummaryCard({
 }
 
 function StatusBadge({ label, tone }: { label: string; tone: string }) {
-  const palette = rolePalette[tone] || statusPalette[tone] || {
+  const palette = getRolePalette()[tone] || getStatusPalette()[tone] || {
     backgroundColor: Colors.inputBg,
     color: Colors.textSecondary,
   };
@@ -589,7 +584,9 @@ function ReportBadge({ count }: { count: number }) {
     <View style={styles.reportBadge}>
       <Shield size={14} color={Colors.textSecondary} strokeWidth={2} />
       <Text style={styles.reportBadgeText}>
-        {count} open report{count === 1 ? "" : "s"}
+        {count === 1
+          ? tx("moderation.oneOpenReport")
+          : tx("moderation.openReportCount", { count })}
       </Text>
     </View>
   );
@@ -621,7 +618,7 @@ function LoadingBlock() {
   return (
     <View style={styles.loadingBlock}>
       <ActivityIndicator color={Colors.primary} />
-      <Text style={styles.loadingText}>Loading users...</Text>
+      <Text style={styles.loadingText}>{tx("app.admin.userManagement.loadingUsers")}</Text>
     </View>
   );
 }
@@ -654,7 +651,7 @@ function Notice({ text }: { text: string }) {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createThemedStyles((Colors) => ({
   container: {
     flex: 1,
     backgroundColor: Colors.background,
@@ -738,7 +735,7 @@ const styles = StyleSheet.create({
   },
   notice: {
     borderRadius: Radius.lg,
-    backgroundColor: "#FFF4DD",
+    backgroundColor: Colors.warningSurface,
     padding: Spacing.md,
     marginBottom: Spacing.lg,
   },
@@ -818,7 +815,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: Radius.pill,
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.surface,
   },
   reportBadgeText: {
     ...Typography.bodySmall,
@@ -838,12 +835,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: Radius.pill,
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.surface,
     borderWidth: 1,
     borderColor: Colors.border,
   },
   tinyActionDanger: {
-    backgroundColor: "#FDEBEC",
+    backgroundColor: Colors.dangerSurface,
     borderColor: "#F5C2C7",
   },
   tinyActionText: {
@@ -877,7 +874,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: Radius.full,
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.surface,
     alignItems: "center",
     justifyContent: "center",
     marginBottom: Spacing.sm,
@@ -892,7 +889,7 @@ const styles = StyleSheet.create({
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: "rgba(255,255,255,0.72)",
+    backgroundColor: Colors.surface,
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: Spacing.screenPadding,
@@ -940,7 +937,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   secondaryButton: {
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.surface,
     borderWidth: 1,
     borderColor: Colors.border,
   },
@@ -977,4 +974,4 @@ const styles = StyleSheet.create({
     color: Colors.textSecondary,
     textAlign: "center",
   },
-});
+}));

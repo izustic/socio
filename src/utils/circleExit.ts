@@ -1,5 +1,6 @@
 import { Circle } from "@/src/types";
 import { hasMeetupDeadlineElapsed } from "@/src/utils/circleDeadline";
+import { tx } from "@/src/utils/localization";
 
 export const FREE_EXITS_DEFAULT = 2;
 
@@ -21,13 +22,13 @@ export const getCircleExitState = (
   const normalizedFreeExits = Math.max(0, Math.min(FREE_EXITS_DEFAULT, freeExits));
   const isHost = circle.creatorId === userId;
   const deadlineElapsed = hasMeetupDeadlineElapsed(circle, now);
-  const actionLabel = isHost ? "Close Circle" : "Leave Circle";
+  const actionLabel = isHost ? tx("circleExit.close") : tx("circleExit.leave");
 
   if (deadlineElapsed) {
     return {
       isHost,
       label: actionLabel,
-      helperText: "This Circle's time is up. Your free exits are restored.",
+      helperText: tx("circleExit.expired"),
       locked: false,
       deadlineElapsed,
       freeExits: FREE_EXITS_DEFAULT,
@@ -38,9 +39,9 @@ export const getCircleExitState = (
     return {
       isHost,
       label: actionLabel,
-      helperText: `${normalizedFreeExits} free ${
-        normalizedFreeExits === 1 ? "exit" : "exits"
-      } remaining`,
+      helperText: normalizedFreeExits === 1
+        ? tx("circleExit.oneRemaining")
+        : tx("circleExit.remaining", { count: normalizedFreeExits }),
       locked: false,
       deadlineElapsed,
       freeExits: normalizedFreeExits,
@@ -50,8 +51,7 @@ export const getCircleExitState = (
   return {
     isHost,
     label: actionLabel,
-    helperText:
-      "You've used your free exits. You'll be able to leave once this Circle's time is up.",
+    helperText: tx("circleExit.noneRemaining"),
     locked: true,
     deadlineElapsed,
     freeExits: 0,

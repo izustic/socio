@@ -1,11 +1,12 @@
 import OnboardingLayout from '@/src/components/onboarding/OnboardingLayout';
 import { EDUCATION_OPTIONS, GENDER_OPTIONS } from '@/src/constants/onboarding';
-import { Colors, Radius, Spacing, Typography } from '@/src/constants/theme';
+import { createThemedStyles, Colors, Radius, Spacing, Typography } from '@/src/constants/theme';
 import { useOnboarding } from '@/src/context/OnboardingContext';
 import { ChevronDown, Mars, Venus } from 'lucide-react-native';
 import type { LucideIcon } from 'lucide-react-native';
 import { useState } from 'react';
-import { Modal, Pressable, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Modal, Pressable, Text, TouchableOpacity, View } from 'react-native';
+import { optionLabel, tx } from "@/src/utils/localization";
 
 const GENDER_ICONS: Record<(typeof GENDER_OPTIONS)[number], LucideIcon> = {
   Male: Mars,
@@ -18,10 +19,10 @@ export default function ProfileAgeGenderScreen() {
 
   return (
     <OnboardingLayout
-      title="A little about you."
-      subtitle="This helps us find the right people for your Circle."
-      stepNumber="07  PROFILE  DETAILS"
-      primaryLabel="Continue"
+      title={tx("app.auth.profileAgeGender.aLittleAboutYou")}
+      subtitle={tx("app.auth.profileAgeGender.thisHelpsUsFindTheRightPeopleForYour")}
+      stepNumber={tx("onboarding.step.profileDetails")}
+      primaryLabel={tx("app.auth.profileAgeGender.continue")}
       onPrimaryPress={() => {
         setStep('profile-interests');
       }}
@@ -29,7 +30,7 @@ export default function ProfileAgeGenderScreen() {
       onBackPress={() => setStep('profile-photo-name')}
     >
       <View style={styles.section}>
-        <Text style={styles.label}>HOW OLD ARE YOU?</Text>
+        <Text style={styles.label}>{tx("app.auth.profileAgeGender.howOldAreYou")}</Text>
         <View style={styles.stepperRow}>
           <TouchableOpacity
             activeOpacity={0.8}
@@ -50,7 +51,7 @@ export default function ProfileAgeGenderScreen() {
       </View>
 
       <View style={styles.section}>
-        <Text style={styles.label}>GENDER</Text>
+        <Text style={styles.label}>{tx("app.auth.profileAgeGender.gender")}</Text>
         <View style={styles.genderGrid}>
           {GENDER_OPTIONS.map((option) => {
             const selected = draft.gender === option;
@@ -64,7 +65,7 @@ export default function ProfileAgeGenderScreen() {
               >
                 <GenderIcon size={28} color={Colors.textPrimary} strokeWidth={2.2} />
                 <Text style={[styles.genderText, selected && styles.genderTextSelected]}>
-                  {option}
+                  {optionLabel(option)}
                 </Text>
               </TouchableOpacity>
             );
@@ -73,14 +74,14 @@ export default function ProfileAgeGenderScreen() {
       </View>
 
       <View style={styles.section}>
-        <Text style={styles.label}>EDUCATION</Text>
+        <Text style={styles.label}>{tx("app.auth.profileAgeGender.education")}</Text>
         <TouchableOpacity
           activeOpacity={0.82}
           style={styles.selectButton}
           onPress={() => setEducationOpen(true)}
         >
           <Text style={[styles.selectText, !draft.education && styles.selectPlaceholder]}>
-            {draft.education || 'Select education'}
+            {draft.education ? optionLabel(draft.education) : tx("app.auth.profileAgeGender.selectEducation")}
           </Text>
           <ChevronDown size={18} color={Colors.textPrimary} strokeWidth={2.2} />
         </TouchableOpacity>
@@ -94,7 +95,7 @@ export default function ProfileAgeGenderScreen() {
       >
         <Pressable style={styles.modalBackdrop} onPress={() => setEducationOpen(false)}>
           <Pressable style={styles.menu} onPress={(event) => event.stopPropagation()}>
-            <Text style={styles.menuTitle}>Education</Text>
+            <Text style={styles.menuTitle}>{tx("app.auth.profileAgeGender.education2")}</Text>
             {EDUCATION_OPTIONS.map((option) => {
               const selected = draft.education === option;
               return (
@@ -108,7 +109,7 @@ export default function ProfileAgeGenderScreen() {
                   }}
                 >
                   <Text style={[styles.menuItemText, selected && styles.menuItemTextSelected]}>
-                    {option}
+                    {optionLabel(option)}
                   </Text>
                 </TouchableOpacity>
               );
@@ -120,7 +121,7 @@ export default function ProfileAgeGenderScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createThemedStyles((Colors) => ({
   section: {
     gap: Spacing.md,
   },
@@ -138,7 +139,7 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: Radius.full,
-    backgroundColor: '#F4F1E8',
+    backgroundColor: Colors.inputBg,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -157,7 +158,7 @@ const styles = StyleSheet.create({
   },
   genderTile: {
     flexBasis: '47%',
-    backgroundColor: '#F7F4EB',
+    backgroundColor: Colors.inputBg,
     borderRadius: 18,
     paddingVertical: 18,
     paddingHorizontal: 14,
@@ -177,7 +178,7 @@ const styles = StyleSheet.create({
   selectButton: {
     minHeight: 52,
     borderRadius: 16,
-    backgroundColor: '#F7F4EB',
+    backgroundColor: Colors.inputBg,
     paddingHorizontal: 16,
     flexDirection: 'row',
     alignItems: 'center',
@@ -197,7 +198,7 @@ const styles = StyleSheet.create({
     padding: Spacing.screenPadding,
   },
   menu: {
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.surface,
     borderRadius: 24,
     padding: Spacing.md,
     gap: 8,
@@ -212,7 +213,7 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     paddingHorizontal: 14,
     justifyContent: 'center',
-    backgroundColor: '#F7F4EB',
+    backgroundColor: Colors.inputBg,
   },
   menuItemSelected: {
     backgroundColor: Colors.primary,
@@ -224,4 +225,4 @@ const styles = StyleSheet.create({
   menuItemTextSelected: {
     color: Colors.textPrimary,
   },
-});
+}));

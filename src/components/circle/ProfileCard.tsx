@@ -1,11 +1,12 @@
 import React from 'react';
-import { View, Text, StyleSheet, Dimensions } from 'react-native';
+import { View, Text, Dimensions } from 'react-native';
 import { Image } from 'expo-image';
 import { GestureDetector, Gesture } from 'react-native-gesture-handler';
 import Animated, { useAnimatedStyle, useSharedValue, withSpring, runOnJS } from 'react-native-reanimated';
-import { Colors, Radius, Spacing, Typography } from '@/src/constants/theme';
+import { createThemedStyles, Radius, Spacing, Typography } from '@/src/constants/theme';
 import Avatar from '../ui/Avatar';
 import Button from '../ui/Button';
+import { optionLabel, tx } from "@/src/utils/localization";
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 const cardWidth = screenWidth - 40;
@@ -106,15 +107,15 @@ export default function ProfileCard({
             )}
 
             <Animated.View style={[styles.likeLabel, likeOpacity, styles.labelLeft]}>
-              <Text style={styles.likeLabelText}>LIKE</Text>
+              <Text style={styles.likeLabelText}>{tx("circle.ProfileCard.like")}</Text>
             </Animated.View>
 
             <Animated.View style={[styles.likeLabel, passOpacity, styles.labelRight]}>
-              <Text style={[styles.likeLabelText, styles.passLabel]}>PASS</Text>
+              <Text style={[styles.likeLabelText, styles.passLabel]}>{tx("circle.ProfileCard.pass")}</Text>
             </Animated.View>
 
             <Animated.View style={[styles.likeLabel, superLikeOpacity, styles.labelTop]}>
-              <Text style={[styles.likeLabelText, styles.superLikeLabel]}>SUPER</Text>
+              <Text style={[styles.likeLabelText, styles.superLikeLabel]}>{tx("circle.ProfileCard.super")}</Text>
             </Animated.View>
           </View>
 
@@ -133,7 +134,7 @@ export default function ProfileCard({
             <View style={styles.interests}>
               {profile.interests.slice(0, 3).map((interest, index) => (
                 <View key={index} style={styles.interestTag}>
-                  <Text style={styles.interestText}>{interest}</Text>
+                  <Text style={styles.interestText}>{optionLabel(interest)}</Text>
                 </View>
               ))}
             </View>
@@ -143,7 +144,7 @@ export default function ProfileCard({
 
       <View style={styles.buttons}>
         <Button
-          title="Pass"
+          title={tx("circle.ProfileCard.pass2")}
           variant="outline"
           onPress={() => {
             translateX.value = withSpring(-screenWidth * 1.5);
@@ -152,7 +153,7 @@ export default function ProfileCard({
           style={styles.button}
         />
         <Button
-          title="Super Like"
+          title={tx("circle.ProfileCard.superLike")}
           variant="primary"
           onPress={() => {
             translateY.value = withSpring(-screenHeight * 1.5);
@@ -161,7 +162,7 @@ export default function ProfileCard({
           style={styles.button}
         />
         <Button
-          title="Like"
+          title={tx("circle.ProfileCard.like2")}
           variant="primary"
           onPress={() => {
             translateX.value = withSpring(screenWidth * 1.5);
@@ -174,7 +175,7 @@ export default function ProfileCard({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createThemedStyles((Colors) => ({
   container: {
     alignItems: 'center',
   },
@@ -285,4 +286,4 @@ const styles = StyleSheet.create({
   button: {
     minWidth: 80,
   },
-});
+}));

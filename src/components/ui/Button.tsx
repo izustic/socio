@@ -1,8 +1,7 @@
-import { Colors, Radius, Typography } from '@/src/constants/theme';
+import { createThemedStyles, Colors, Radius, Typography } from '@/src/constants/theme';
 import React from 'react';
 import {
   ActivityIndicator,
-  StyleSheet,
   Text,
   TouchableOpacity,
   TouchableOpacityProps,
@@ -32,7 +31,11 @@ export default function Button({
     : variant === 'outline'
       ? styles.outline
       : styles.ghost;
-  const textStyle = variant === 'ghost' ? styles.ghostText : styles.mainText;
+  const textStyle = variant === 'primary'
+    ? styles.primaryText
+    : variant === 'ghost'
+      ? styles.ghostText
+      : styles.outlineText;
 
   return (
     <TouchableOpacity
@@ -48,7 +51,9 @@ export default function Button({
       {...props}
     >
       {loading ? (
-        <ActivityIndicator color={Colors.textPrimary} />
+        <ActivityIndicator
+          color={variant === 'primary' ? Colors.onPrimary : Colors.textPrimary}
+        />
       ) : (
         <Text style={textStyle}>{title}</Text>
       )}
@@ -56,7 +61,7 @@ export default function Button({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createThemedStyles((Colors) => ({
   base: {
     borderRadius: Radius.pill,
     paddingVertical: 16,
@@ -71,13 +76,17 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.primary,
   },
   outline: {
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.surface,
   },
   ghost: {
     backgroundColor: 'transparent',
     paddingVertical: 10,
   },
-  mainText: {
+  primaryText: {
+    ...Typography.button,
+    color: Colors.onPrimary,
+  },
+  outlineText: {
     ...Typography.button,
     color: Colors.textPrimary,
   },
@@ -88,4 +97,4 @@ const styles = StyleSheet.create({
   disabled: {
     opacity: 0.5,
   },
-});
+}));

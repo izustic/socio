@@ -4,16 +4,17 @@ import Input from "@/src/components/ui/Input";
 import {
   env,
   getMissingRequiredEnvVars } from "@/src/config/env";
-import { Colors,
-  Radius,
+import { createThemedStyles, Radius,
   Spacing,
   Typography } from "@/src/constants/theme";
 import { useOnboarding } from "@/src/context/OnboardingContext";
 import { getFirstIncompleteOnboardingStep } from "@/src/constants/onboarding";
 import {
+  requiresEmailOnboardingVerification,
+  sendEmailVerificationCode,
   signInWithEmail,
   signInWithGoogleIdToken,
-  signUpWithEmail,
+  signUpOrSignInWithEmail,
   } from "@/src/services/auth";
 import { getUserProfile } from "@/src/services/user";
 import { showErrorAlert } from "@/src/utils/errorHandling";
@@ -30,7 +31,6 @@ import {
   Platform,
   ScrollView,
   StatusBar,
-  StyleSheet,
   Text,
   TouchableOpacity,
   View,
@@ -42,8 +42,11 @@ import {
   isSuccessResponse,
 } from "@react-native-google-signin/google-signin";
 import type { OnboardingDraft } from "@/src/context/OnboardingContext";
+import { tx } from "@/src/utils/localization";
+import { useTheme } from "@/src/providers/ThemeProvider";
 
 export default function SignUp() {
+  const { colorScheme } = useTheme();
   const { beginOnboarding } = useOnboarding();
   const [showEmailModal, setShowEmailModal] = useState(false);
   const [isSignUp, setIsSignUp] = useState(true);
@@ -65,9 +68,9 @@ export default function SignUp() {
     }
 
     Alert.alert(
-      "App not configured",
-      `This build is missing: ${missing.join(", ")}.\n\n` +
-        "Local dev reads these from .env. EAS builds need the same values set as project environment variables (`eas env:create` or Expo dashboard).",
+      tx("app.auth.welcome.appNotConfigured"),
+      tx("app.auth.welcome.thisBuildIsMissingValue1", { value1: missing.join(", ") }) +
+        tx("app.auth.welcome.localDevReadsTheseFromEnvEasBuildsNeed"),
     );
     return false;
   };
@@ -88,11 +91,11 @@ export default function SignUp() {
   const validateEmail = (email: string) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!email) {
-      setEmailError("Email is required");
+      setEmailError(tx("validation.emailRequired"));
       return false;
     }
     if (!emailRegex.test(email)) {
-      setEmailError("Please enter a valid email");
+      setEmailError(tx("validation.emailInvalid"));
       return false;
     }
     setEmailError("");
@@ -101,11 +104,11 @@ export default function SignUp() {
 
   const validatePassword = (password: string) => {
     if (!password) {
-      setPasswordError("Password is required");
+      setPasswordError(tx("validation.passwordRequired"));
       return false;
     }
     if (password.length < 6) {
-      setPasswordError("Password must be at least 6 characters");
+      setPasswordError(tx("validation.passwordLength"));
       return false;
     }
     setPasswordError("");
@@ -121,7 +124,7 @@ export default function SignUp() {
     async (
       uid: string,
       contactHint: string,
-      seed?: { name?: string; photoURL?: string },
+      seed?: Partial<OnboardingDraft>,
     ) => {
       const existingProfile = await getUserProfile(uid);
       if (existingProfile?.profileComplete) {
@@ -132,6 +135,11 @@ export default function SignUp() {
       const nextDraft: OnboardingDraft = existingProfile
         ? {
             contactHint,
+            emailVerificationRequired:
+              seed?.emailVerificationRequired ?? false,
+            emailVerified: seed?.emailVerified ?? false,
+            emailVerificationCodeSentAt:
+              seed?.emailVerificationCodeSentAt ?? null,
             name: existingProfile.name || seed?.name || "",
             bio: existingProfile.bio || "",
             age: existingProfile.age || 24,
@@ -152,6 +160,11 @@ export default function SignUp() {
           }
         : {
             contactHint,
+            emailVerificationRequired:
+              seed?.emailVerificationRequired ?? false,
+            emailVerified: seed?.emailVerified ?? false,
+            emailVerificationCodeSentAt:
+              seed?.emailVerificationCodeSentAt ?? null,
             name: seed?.name || "",
             bio: "",
             age: 24,
@@ -170,7 +183,7 @@ export default function SignUp() {
 
       beginOnboarding(
         nextDraft,
-        existingProfile ? getFirstIncompleteOnboardingStep(nextDraft) : "otp",
+        getFirstIncompleteOnboardingStep(nextDraft),
       );
     },
     [beginOnboarding],
@@ -179,8 +192,8 @@ export default function SignUp() {
   const handleGoogleSignIn = async () => {
     if (!canUseGoogleSignIn || !googleWebClientId) {
       Alert.alert(
-        "Google Sign In",
-        "Google sign-in is not configured for this build. Set EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID to the web OAuth client ID.",
+        tx("app.auth.welcome.googleSignIn"),
+        tx("app.auth.welcome.googleSignInIsNotConfiguredForThisBuild"),
       );
       return;
     }
@@ -222,8 +235,10 @@ export default function SignUp() {
       );
       await continueIntoOnboarding(
         user.id,
-        user.email || "your Google account",
+        user.email || tx("auth.yourGoogleAccount"),
         {
+          emailVerificationRequired: false,
+          emailVerified: true,
           name: (user.user_metadata?.display_name as string) || "",
           photoURL: (user.user_metadata?.avatar_url as string) || "",
         },
@@ -244,20 +259,20 @@ export default function SignUp() {
 
       if (isDeveloperError) {
         Alert.alert(
-          "Google Sign-In not configured for this build",
-          "EAS builds are signed with a different certificate than local dev. " +
-            "Add the EAS keystore SHA-1 to Google Cloud Console:\n\n" +
-            "1. Run: eas credentials -p android\n" +
-            "2. Open Credentials → Android OAuth client\n" +
-            "3. Create a client for package com.izustic.socio with that SHA-1\n" +
-            "4. Keep EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID as the Web client ID\n\n" +
-            "Changes apply without rebuilding — wait a few minutes, then try again.",
+          tx("app.auth.welcome.googleSignInNotConfiguredForThisBuild"),
+          tx("app.auth.welcome.easBuildsAreSignedWithADifferentCertificateThan") +
+            tx("app.auth.welcome.addTheEasKeystoreSha1ToGoogleCloud") +
+            tx("app.auth.welcome.1RunEasCredentialsPAndroid") +
+            tx("app.auth.welcome.2OpenCredentialsAndroidOauthClient") +
+            tx("app.auth.welcome.3CreateAClientForPackageComIzusticSocio") +
+            tx("app.auth.welcome.4KeepExpoPublicGoogleWebClientIdAs") +
+            tx("app.auth.welcome.changesApplyWithoutRebuildingWaitAFewMinutesThen"),
         );
         return;
       }
 
       console.error("Google sign in error:", error);
-      const errorInfo = showErrorAlert(error, "Google Sign In");
+      const errorInfo = showErrorAlert(error, tx("auth.googleSignIn"));
       Alert.alert(errorInfo.title, errorInfo.message);
     } finally {
       setLoading(false);
@@ -281,24 +296,42 @@ export default function SignUp() {
 
     setLoading(true);
     try {
-      const user = isSignUp
-        ? await signUpWithEmail(email, password)
-        : await signInWithEmail(email, password);
+      const signupResult = isSignUp
+        ? await signUpOrSignInWithEmail(email, password)
+        : null;
+      const user = signupResult?.user ?? await signInWithEmail(email, password);
 
       if (!user) {
         throw new Error("Authentication failed");
       }
 
+      const authenticationMode = signupResult?.mode ?? "signed-in";
+      const requiresEmailVerification =
+        authenticationMode !== "signed-in" ||
+        requiresEmailOnboardingVerification(user);
+
+      if (
+        authenticationMode !== "signed-up" &&
+        requiresEmailVerification
+      ) {
+        await sendEmailVerificationCode(email);
+      }
+
       setShowEmailModal(false);
       setPassword("");
       await continueIntoOnboarding(user.id, email, {
+        emailVerificationRequired: requiresEmailVerification,
+        emailVerified: !requiresEmailVerification,
+        emailVerificationCodeSentAt: requiresEmailVerification
+          ? Date.now()
+          : null,
         name: (user.user_metadata?.display_name as string) || "",
       });
     } catch (error: any) {
       console.error("Email auth error:", error);
       const errorAlert = showErrorAlert(
         error,
-        isSignUp ? "Sign Up" : "Sign In",
+        isSignUp ? tx("auth.signUp") : tx("auth.signIn"),
       );
       Alert.alert(errorAlert.title, errorAlert.message);
     } finally {
@@ -308,20 +341,18 @@ export default function SignUp() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" />
-      <View style={styles.hero}>
-        <View style={styles.logoBadge}>
+      <StatusBar />
+      <View style={[styles.hero, colorScheme === "dark" && styles.heroDark]}>
+        <View style={[styles.logoBadge, colorScheme === "dark" && styles.logoBadgeDark]}>
           <Image
             source={require("../../assets/images/logo-black.png")}
             contentFit="contain"
             style={styles.logo}
           />
         </View>
-        <Text style={styles.title}>One Circle. Real friendships.</Text>
-        <Text style={styles.subtitle}>
-          Form one meaningful friend group through shared interests and
-          real-life meetups.
-        </Text>
+        <Text style={[styles.title, colorScheme === "dark" && styles.titleDark]}>{tx("app.auth.welcome.oneCircleRealFriendships")}</Text>
+        <Text style={[styles.subtitle, colorScheme === "dark" && styles.subtitleDark]}>
+          {tx("app.auth.welcome.formOneMeaningfulFriendGroupThroughSharedInterestsAnd")}</Text>
       </View>
 
       <View style={styles.actions}>
@@ -332,8 +363,8 @@ export default function SignUp() {
             disabled={loading}
             onPress={handleGoogleSignIn}
           >
-            <Text style={styles.socialIcon}>G</Text>
-            <Text style={styles.socialText}>Continue with Google</Text>
+            <Text style={styles.socialIcon}>{tx("app.auth.welcome.g")}</Text>
+            <Text style={styles.socialText}>{tx("app.auth.welcome.continueWithGoogle")}</Text>
             <View style={styles.iconSpacer} />
           </TouchableOpacity>
         ) : null}
@@ -341,13 +372,13 @@ export default function SignUp() {
         {canUseGoogleSignIn ? (
           <View style={styles.dividerRow}>
             <View style={styles.dividerLine} />
-            <Text style={styles.dividerText}>or</Text>
+            <Text style={styles.dividerText}>{tx("app.auth.welcome.or")}</Text>
             <View style={styles.dividerLine} />
           </View>
         ) : null}
 
         <Button
-          title="Sign up with Email"
+          title={tx("app.auth.welcome.signUpWithEmail")}
           variant="ghost"
           onPress={() => {
             setIsSignUp(true);
@@ -363,8 +394,8 @@ export default function SignUp() {
             setShowEmailModal(true);
           }}
         >
-          <Text style={styles.loginText}>Already have an account? </Text>
-          <Text style={styles.loginAccent}>Log in</Text>
+          <Text style={styles.loginText}>{tx("app.auth.welcome.alreadyHaveAnAccount")}</Text>
+          <Text style={styles.loginAccent}>{tx("app.auth.welcome.logIn")}</Text>
         </TouchableOpacity>
 
         <LegalConsentText />
@@ -390,17 +421,17 @@ export default function SignUp() {
               keyboardShouldPersistTaps="handled"
             >
               <Text style={styles.modalTitle}>
-                {isSignUp ? "Create your account" : "Welcome back"}
+                {isSignUp ? tx("app.auth.welcome.createYourAccount") : tx("app.auth.welcome.welcomeBack")}
               </Text>
               <Text style={styles.modalSubtitle}>
                 {isSignUp
-                  ? "We will use this to set up your Circle."
-                  : "Pick up where you left off."}
+                  ? tx("app.auth.welcome.weWillUseThisToSetUpYourCircle")
+                  : tx("app.auth.welcome.pickUpWhereYouLeftOff")}
               </Text>
 
               <View>
                 <Input
-                  placeholder="Email"
+                  placeholder={tx("app.auth.welcome.email")}
                   value={email}
                   onChangeText={(text) => {
                     setEmail(text);
@@ -416,7 +447,7 @@ export default function SignUp() {
 
               <View>
                 <Input
-                  placeholder="Password"
+                  placeholder={tx("app.auth.welcome.password")}
                   value={password}
                   onChangeText={(text) => {
                     setPassword(text);
@@ -433,14 +464,14 @@ export default function SignUp() {
                   onPress={() => setShowPassword((prev) => !prev)}
                 >
                   <Text style={styles.passwordToggleText}>
-                    {showPassword ? "Hide" : "Show"}
+                    {showPassword ? tx("app.auth.welcome.hide") : tx("app.auth.welcome.show")}
                   </Text>
                 </TouchableOpacity>
               </View>
 
               <Button
                 title={
-                  loading ? "Please wait..." : isSignUp ? "Continue" : "Log in"
+                  loading ? tx("app.auth.welcome.pleaseWait") : isSignUp ? tx("app.auth.welcome.continue") : tx("app.auth.welcome.logIn")
                 }
                 onPress={handleEmailAuth}
                 disabled={loading}
@@ -451,8 +482,8 @@ export default function SignUp() {
               <Button
                 title={
                   isSignUp
-                    ? "Already have an account? Log in"
-                    : "Don't have an account? Sign up"
+                    ? tx("app.auth.welcome.alreadyHaveAnAccountLogIn")
+                    : tx("app.auth.welcome.donTHaveAnAccountSignUp")
                 }
                 variant="ghost"
                 onPress={() => setIsSignUp((prev) => !prev)}
@@ -468,26 +499,24 @@ export default function SignUp() {
 function LegalConsentText({ compact = false }: { compact?: boolean }) {
   return (
     <Text style={[styles.terms, compact && styles.termsCompact]}>
-      By continuing, you agree to Socio&apos;s{" "}
+      {tx("app.auth.welcome.byContinuingYouAgreeToSociolS")}{" "}
       <Text
         style={styles.termsLink}
         onPress={() => router.push("/legal/terms")}
       >
-        Terms of Use
-      </Text>
-      {" "}and acknowledge the{" "}
+        {tx("app.auth.welcome.termsOfUse")}</Text>
+      {" "}{tx("app.auth.welcome.andAcknowledgeThe")}{" "}
       <Text
         style={styles.termsLink}
         onPress={() => router.push("/legal/privacy")}
       >
-        Privacy Policy
-      </Text>
+        {tx("app.auth.welcome.privacyPolicy")}</Text>
       .
     </Text>
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createThemedStyles((Colors) => ({
   container: {
     flex: 1,
     backgroundColor: Colors.background,
@@ -503,6 +532,11 @@ const styles = StyleSheet.create({
     minHeight: 320,
     justifyContent: "flex-end",
   },
+  heroDark: {
+    backgroundColor: Colors.primaryLight,
+    borderWidth: 1,
+    borderColor: "#5A4210",
+  },
   logoBadge: {
     width: 56,
     height: 56,
@@ -511,6 +545,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     marginBottom: Spacing.xl,
+  },
+  logoBadgeDark: {
+    backgroundColor: Colors.primary,
   },
   logo: {
     width: 38,
@@ -522,10 +559,16 @@ const styles = StyleSheet.create({
     lineHeight: 42,
     maxWidth: 260,
   },
+  titleDark: {
+    color: Colors.textPrimary,
+  },
   subtitle: {
     ...Typography.body,
     marginTop: Spacing.md,
     maxWidth: 250,
+  },
+  subtitleDark: {
+    color: Colors.textSecondary,
   },
   actions: {
     flex: 1,
@@ -533,7 +576,7 @@ const styles = StyleSheet.create({
     gap: Spacing.md,
   },
   socialButton: {
-    backgroundColor: "#F6F3EC",
+    backgroundColor: Colors.inputBg,
     borderRadius: Radius.pill,
     paddingVertical: 16,
     paddingHorizontal: 18,
@@ -601,9 +644,11 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(17,17,17,0.24)",
   },
   modal: {
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.surface,
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
+    borderTopWidth: 1,
+    borderColor: Colors.border,
     maxHeight: "80%",
   },
   closeButton: {
@@ -648,7 +693,7 @@ const styles = StyleSheet.create({
   },
   errorText: {
     ...Typography.bodySmall,
-    color: "#DB4437",
+    color: Colors.danger,
     marginTop: 4,
   },
-});
+}));

@@ -6,6 +6,7 @@ import type {
   ModerationUserStatus,
   ModerationUserSummary,
 } from "./moderation.types";
+import { translateActiveResource } from "./TranslationService";
 
 export interface ModerationUserRow {
   id: string;
@@ -54,7 +55,7 @@ export const toModerationProfileSnapshot = (
   row: ModerationUserRow,
 ): ModerationProfileSnapshot => ({
   id: String(row.id),
-  displayName: row.display_name || "Unnamed user",
+  displayName: row.display_name || translateActiveResource("moderation.unnamedUser"),
   email: row.email || "",
   photoUrl: row.photo_url || "",
   role: (row.role as ModerationUserRole) || "user",

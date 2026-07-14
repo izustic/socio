@@ -1,7 +1,7 @@
 import { SafeAreaView } from "react-native-safe-area-context";
 import Avatar from "@/src/components/ui/Avatar";
 import Button from "@/src/components/ui/Button";
-import {
+import { createThemedStyles,
   Colors,
   Radius,
   Spacing,
@@ -36,27 +36,21 @@ import {
   RefreshControl,
   ScrollView,
   StatusBar,
-  StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from "react-native";
+import { formatLocalizedDateTime, optionLabel, tx } from "@/src/utils/localization";
 
-const toneStyles: Record<string, { backgroundColor: string; color: string }> = {
-  active: { backgroundColor: "#E9F8ED", color: Colors.success },
-  suspended: { backgroundColor: "#FFF4DD", color: Colors.primaryDark },
-  banned: { backgroundColor: "#FDEBEC", color: Colors.danger },
-  moderator: { backgroundColor: "#EEF2FF", color: "#4F46E5" },
-  admin: { backgroundColor: "#F4E8FF", color: "#7C3AED" },
-};
+const getToneStyles = (): Record<string, { backgroundColor: string; color: string }> => ({
+  active: { backgroundColor: Colors.successSurface, color: Colors.success },
+  suspended: { backgroundColor: Colors.warningSurface, color: Colors.primaryDark },
+  banned: { backgroundColor: Colors.dangerSurface, color: Colors.danger },
+  moderator: { backgroundColor: Colors.infoSurface, color: "#4F46E5" },
+  admin: { backgroundColor: Colors.infoSurface, color: "#7C3AED" },
+});
 
-const formatTimestamp = (value: string) =>
-  new Date(value).toLocaleString(undefined, {
-    month: "short",
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-  });
+const formatTimestamp = formatLocalizedDateTime;
 
 export default function AdminDashboard() {
   const { user, role } = useAuth();
@@ -81,7 +75,7 @@ export default function AdminDashboard() {
       setLogs(nextLogs);
     } catch (nextError) {
       console.error("Error loading admin dashboard:", nextError);
-      setError("We could not load the admin overview right now.");
+      setError(tx("app.admin.dashboard.weCouldNotLoadTheAdminOverviewRightNow"));
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -102,13 +96,12 @@ export default function AdminDashboard() {
   if (!user || role?.role !== "admin") {
     return (
       <SafeAreaView style={styles.container}>
-        <StatusBar barStyle="dark-content" />
+        <StatusBar />
         <View style={styles.centerState}>
           <ShieldCheck size={36} color={Colors.primaryDark} strokeWidth={2} />
-          <Text style={styles.centerTitle}>Admin access only</Text>
+          <Text style={styles.centerTitle}>{tx("app.admin.dashboard.adminAccessOnly")}</Text>
           <Text style={styles.centerText}>
-            This dashboard is reserved for admin accounts.
-          </Text>
+            {tx("app.admin.dashboard.thisDashboardIsReservedForAdminAccounts")}</Text>
         </View>
       </SafeAreaView>
     );
@@ -116,7 +109,7 @@ export default function AdminDashboard() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" />
+      <StatusBar />
       <ScrollView
         contentContainerStyle={styles.content}
         refreshControl={
@@ -134,23 +127,22 @@ export default function AdminDashboard() {
             activeOpacity={0.82}
             style={styles.backButton}
             onPress={() => router.back()}
-            accessibilityLabel="Go back"
+            accessibilityLabel={tx("app.admin.dashboard.goBack")}
           >
             <ChevronLeft size={20} color={Colors.textPrimary} strokeWidth={2.2} />
           </TouchableOpacity>
           <View style={styles.headerText}>
-            <Text style={styles.kicker}>Admin</Text>
-            <Text style={styles.title}>System overview</Text>
+            <Text style={styles.kicker}>{tx("app.admin.dashboard.admin")}</Text>
+            <Text style={styles.title}>{tx("app.admin.dashboard.systemOverview")}</Text>
             <Text style={styles.subtitle}>
-              Keep an eye on account health, moderation volume, and the active queue.
-            </Text>
+              {tx("app.admin.dashboard.keepAnEyeOnAccountHealthModerationVolumeAnd")}</Text>
           </View>
           <View style={styles.headerActions}>
             <TouchableOpacity
               activeOpacity={0.82}
               style={styles.refreshButton}
               onPress={() => router.replace("/(tabs)/home")}
-              accessibilityLabel="Back to Socio"
+              accessibilityLabel={tx("app.admin.dashboard.backToSociol")}
             >
               <Home size={18} color={Colors.textPrimary} strokeWidth={2} />
             </TouchableOpacity>
@@ -158,7 +150,7 @@ export default function AdminDashboard() {
               activeOpacity={0.82}
               style={styles.refreshButton}
               onPress={onRefresh}
-              accessibilityLabel="Refresh admin dashboard"
+              accessibilityLabel={tx("app.admin.dashboard.refreshAdminDashboard")}
             >
               <RefreshCw size={18} color={Colors.textPrimary} strokeWidth={2} />
             </TouchableOpacity>
@@ -168,22 +160,22 @@ export default function AdminDashboard() {
         <View style={styles.summaryGrid}>
           <SummaryCard
             icon={Users}
-            label="Total users"
+            label={tx("app.admin.dashboard.totalUsers")}
             value={overview?.totalUsers ?? 0}
           />
           <SummaryCard
             icon={Shield}
-            label="Admins"
+            label={tx("app.admin.dashboard.admins")}
             value={overview?.admins ?? 0}
           />
           <SummaryCard
             icon={UserCog}
-            label="Moderators"
+            label={tx("app.admin.dashboard.moderators")}
             value={overview?.moderators ?? 0}
           />
           <SummaryCard
             icon={AlertTriangle}
-            label="Pending reports"
+            label={tx("app.admin.dashboard.pendingReports")}
             value={overview?.pendingReports ?? 0}
             tone="warning"
           />
@@ -193,19 +185,19 @@ export default function AdminDashboard() {
 
         <View style={styles.quickActions}>
           <Button
-            title="Open user management"
+            title={tx("app.admin.dashboard.openUserManagement")}
             onPress={() => router.push("/admin/user-management")}
           />
           <Button
-            title="Review reports"
+            title={tx("app.admin.dashboard.reviewReports")}
             variant="outline"
             onPress={() => router.push("/moderator/dashboard")}
           />
         </View>
 
         <SectionTitle
-          title="Flagged accounts"
-          subtitle="Users with the most open reports are surfaced first."
+          title={tx("app.admin.dashboard.flaggedAccounts")}
+          subtitle={tx("app.admin.dashboard.usersWithTheMostOpenReportsAreSurfacedFirst")}
         />
         <View style={styles.list}>
           {loading ? (
@@ -213,8 +205,8 @@ export default function AdminDashboard() {
           ) : users.length === 0 ? (
             <EmptyBlock
               icon={Users}
-              title="No users found"
-              message="Once users sign in, their moderation summary will appear here."
+              title={tx("app.admin.dashboard.noUsersFound")}
+              message={tx("app.admin.dashboard.onceUsersSignInTheirModerationSummaryWillAppear")}
             />
           ) : (
             users.map((account) => (
@@ -233,15 +225,16 @@ export default function AdminDashboard() {
                   <View style={styles.userText}>
                     <Text style={styles.userName}>{account.displayName}</Text>
                     <Text style={styles.userMeta}>
-                      {account.email || "No email"} • {account.reportCount} open report
-                      {account.reportCount === 1 ? "" : "s"}
+                      {account.email || tx("app.admin.dashboard.noEmail")} • {account.reportCount === 1
+                        ? tx("moderation.oneOpenReport")
+                        : tx("moderation.openReportCount", { count: account.reportCount })}
                     </Text>
                   </View>
                   <ChevronRight size={18} color={Colors.textSecondary} strokeWidth={2} />
                 </View>
                 <View style={styles.badgeRow}>
-                  <StatusBadge label={account.role} tone={account.role} />
-                  <StatusBadge label={account.status} tone={account.status} />
+                  <StatusBadge label={optionLabel(account.role)} tone={account.role} />
+                  <StatusBadge label={optionLabel(account.status)} tone={account.status} />
                 </View>
                 {account.latestReportReason ? (
                   <Text style={styles.userReason} numberOfLines={2}>
@@ -254,22 +247,22 @@ export default function AdminDashboard() {
         </View>
 
         <SectionTitle
-          title="Recent actions"
-          subtitle="The audit log shows the last moderation changes."
+          title={tx("app.admin.dashboard.recentActions")}
+          subtitle={tx("app.admin.dashboard.theAuditLogShowsTheLastModerationChanges")}
         />
         <View style={styles.logList}>
           {logs.length === 0 ? (
             <EmptyBlock
               icon={Shield}
-              title="No audit log yet"
-              message="Moderation actions will show up here after the queue is used."
+              title={tx("app.admin.dashboard.noAuditLogYet")}
+              message={tx("app.admin.dashboard.moderationActionsWillShowUpHereAfterTheQueue")}
             />
           ) : (
             logs.map((log) => (
               <View key={log.id} style={styles.logCard}>
                 <Text style={styles.logAction}>{log.action}</Text>
                 <Text style={styles.logMeta}>
-                  {log.moderator?.displayName || "Moderator"} →{" "}
+                  {log.moderator?.displayName || tx("app.admin.dashboard.moderator")} →{" "}
                   {log.targetUser?.displayName || log.targetUserId}
                 </Text>
                 <Text style={styles.logTime}>{formatTimestamp(log.createdAt)}</Text>
@@ -295,7 +288,7 @@ function SummaryCard({
 }) {
   const palette =
     tone === "warning"
-      ? { backgroundColor: "#FFF4DD", color: Colors.primaryDark }
+      ? { backgroundColor: Colors.warningSurface, color: Colors.primaryDark }
       : { backgroundColor: Colors.inputBg, color: Colors.textPrimary };
 
   return (
@@ -310,7 +303,7 @@ function SummaryCard({
 }
 
 function StatusBadge({ label, tone }: { label: string; tone: string }) {
-  const palette = toneStyles[tone] || {
+  const palette = getToneStyles()[tone] || {
     backgroundColor: Colors.inputBg,
     color: Colors.textSecondary,
   };
@@ -341,7 +334,7 @@ function LoadingBlock() {
   return (
     <View style={styles.loadingBlock}>
       <ActivityIndicator color={Colors.primary} />
-      <Text style={styles.loadingText}>Loading admin data...</Text>
+      <Text style={styles.loadingText}>{tx("app.admin.dashboard.loadingAdminData")}</Text>
     </View>
   );
 }
@@ -374,7 +367,7 @@ function Notice({ text }: { text: string }) {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createThemedStyles((Colors) => ({
   container: {
     flex: 1,
     backgroundColor: Colors.background,
@@ -565,7 +558,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: Radius.full,
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.surface,
     alignItems: "center",
     justifyContent: "center",
     marginBottom: Spacing.sm,
@@ -580,7 +573,7 @@ const styles = StyleSheet.create({
   },
   notice: {
     borderRadius: Radius.lg,
-    backgroundColor: "#FFF4DD",
+    backgroundColor: Colors.warningSurface,
     padding: Spacing.md,
     marginBottom: Spacing.lg,
   },
@@ -605,4 +598,4 @@ const styles = StyleSheet.create({
     color: Colors.textSecondary,
     textAlign: "center",
   },
-});
+}));

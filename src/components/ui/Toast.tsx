@@ -1,12 +1,12 @@
-import { Colors, Radius, Spacing, Typography } from '@/src/constants/theme';
+import { createThemedStyles, Radius, Spacing, Typography } from '@/src/constants/theme';
 import React, { useCallback, useEffect, useRef } from 'react';
 import {
     Animated,
     Image,
-    StyleSheet,
     Text,
     View,
 } from 'react-native';
+import { tx } from "@/src/utils/localization";
 
 interface ToastProps {
   visible: boolean;
@@ -77,7 +77,7 @@ export default function Toast({
   if (!visible) return null;
 
   const isMatchStarted = type === 'match_started';
-  const title = isMatchStarted ? 'MATCH STARTED' : 'REQUEST SENT';
+  const title = isMatchStarted ? tx("toast.matchStarted") : tx("toast.requestSent");
   
   return (
     <Animated.View
@@ -119,18 +119,15 @@ export default function Toast({
                   {userName}, {userAge}
                 </Text>
                 <Text style={styles.profileStatus}>
-                  added to shortlist
-                </Text>
+                  {tx("ui.Toast.addedToShortlist")}</Text>
                 <Text style={styles.profileDescription}>
-                  {userName} still needs to swipe right on your Circle to join.
-                </Text>
+                  {userName} {tx("ui.Toast.stillNeedsToSwipeRightOnYourCircleTo")}</Text>
               </>
             ) : (
               <>
                 <Text style={styles.profileName}>{circleName}</Text>
                 <Text style={styles.profileStatus}>
-                  {userName} (host) needs to swipe right on you to lock your spot.
-                </Text>
+                  {userName} {tx("ui.Toast.hostNeedsToSwipeRightOnYouToLock")}</Text>
               </>
             )}
           </View>
@@ -141,7 +138,9 @@ export default function Toast({
           <View style={styles.statusContainer}>
             <Text style={styles.clockIcon}>⏰</Text>
             <Text style={styles.statusText}>
-              {statusText ?? (isMatchStarted ? `Waiting on ${userName}` : 'Waiting on host')}
+              {statusText ?? (isMatchStarted
+                ? tx("toast.waitingOnUser", { userName })
+                : tx("toast.waitingOnHost"))}
             </Text>
           </View>
         </View>
@@ -150,7 +149,7 @@ export default function Toast({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createThemedStyles((Colors) => ({
   container: {
     position: 'absolute',
     top: 60, // Status bar height + padding
@@ -159,7 +158,7 @@ const styles = StyleSheet.create({
     zIndex: 1000,
   },
   toast: {
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.surface,
     borderRadius: Radius.lg,
     padding: Spacing.md,
     shadowColor: 'rgba(0, 0, 0, 0.1)',
@@ -225,7 +224,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 2,
-    borderColor: Colors.white,
+    borderColor: Colors.surface,
   },
   checkmarkText: {
     color: Colors.white,
@@ -269,4 +268,4 @@ const styles = StyleSheet.create({
     color: Colors.textSecondary,
     fontWeight: '500',
   },
-});
+}));

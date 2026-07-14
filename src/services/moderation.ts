@@ -1,4 +1,5 @@
 import { supabase } from "./supabase";
+import { translateActiveResource } from "./TranslationService";
 
 export type ModerationUserRole = "user" | "moderator" | "admin";
 export type ModerationUserStatus = "active" | "suspended" | "banned";
@@ -92,7 +93,7 @@ const toStringArray = (value: unknown): string[] =>
 
 const toUserSummary = (row: any): ModerationProfileSnapshot => ({
   id: String(row.id),
-  displayName: row.display_name || "Unnamed user",
+  displayName: row.display_name || translateActiveResource("moderation.unnamedUser"),
   email: row.email || "",
   photoUrl: row.photo_url || "",
   role: (row.role as ModerationUserRole) || "user",

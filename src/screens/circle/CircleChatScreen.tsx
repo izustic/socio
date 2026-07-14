@@ -4,7 +4,7 @@ import MessageBubble from "@/src/components/chat/MessageBubble";
 import { PollCreator, PollMessage } from "@/src/components/chat/PollComponents";
 
 import type { PollData } from "@/src/components/chat/PollComponents";
-import { Colors, Radius, Spacing, Typography } from "@/src/constants/theme";
+import { createThemedStyles, Colors, Radius, Spacing, Typography } from "@/src/constants/theme";
 import { useAuth } from "@/src/context/AuthContext";
 import { useSwipeTabVisibility } from "@/src/context/SwipeTabVisibilityContext";
 import {
@@ -58,13 +58,13 @@ import {
   Modal,
   Platform,
   StatusBar,
-  StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { formatLocalizedDate, tx } from "@/src/utils/localization";
 
 type PendingAttachment = {
   id: string;
@@ -148,7 +148,7 @@ const rowToMessage = (row: MessageRow): Message => ({
   replyTo: row.reply_to_message_id
     ? {
         messageId: row.reply_to_message_id,
-        senderName: row.reply_to_sender_name ?? "Someone",
+        senderName: row.reply_to_sender_name ?? tx("common.someone"),
         text: row.reply_to_text ?? "",
         mediaType: row.reply_to_media_type ?? null,
       }
@@ -160,11 +160,11 @@ const getReplyText = (message: Message) => {
   if (message.text.trim()) return message.text.trim();
   if (message.mediaType === "image") {
     const count = message.mediaUrls?.length ?? (message.mediaUrl ? 1 : 0);
-    return count > 1 ? `${count} photos` : "Photo";
+    return count > 1 ? tx("chat.photoCount", { count }) : tx("chat.photo");
   }
-  if (message.mediaType === "video") return "Video";
-  if (message.mediaType === "audio") return "Voice message";
-  return "Message";
+  if (message.mediaType === "video") return tx("chat.video");
+  if (message.mediaType === "audio") return tx("chat.voiceMessage");
+  return tx("chat.message");
 };
 
 const getDisplayName = (
@@ -176,11 +176,11 @@ const getDisplayName = (
   if (typeof metadataName === "string" && metadataName.trim()) {
     return metadataName.trim();
   }
-  return email?.split("@")[0] || "Someone";
+  return email?.split("@")[0] || tx("common.someone");
 };
 
 const getMessageSearchText = (message: Message) => {
-  if (message.text.startsWith("__poll__:")) return "Poll";
+  if (message.text.startsWith("__poll__:")) return tx("chat.poll");
   return [message.senderName, message.text, message.replyTo?.text]
     .filter(Boolean)
     .join(" ");
@@ -478,7 +478,7 @@ export default function CircleChatRoute() {
       setReplyTo(null);
     } catch (error) {
       console.error("Error sending message:", error);
-      Alert.alert("Message not sent", "Please try again.");
+      Alert.alert(tx("circle.CircleChatScreen.messageNotSent"), tx("circle.CircleChatScreen.pleaseTryAgain"));
     } finally {
       setSending(false);
     }
@@ -517,7 +517,7 @@ export default function CircleChatRoute() {
       setReplyTo(null);
     } catch (error) {
       console.error("Error creating poll:", error);
-      Alert.alert("Poll not created", "Please try again.");
+      Alert.alert(tx("circle.CircleChatScreen.pollNotCreated"), tx("circle.CircleChatScreen.pleaseTryAgain"));
     } finally {
       setSending(false);
     }
@@ -531,7 +531,7 @@ export default function CircleChatRoute() {
       setPolls((prev) => ({ ...prev, [updatedPoll.id]: updatedPoll }));
     } catch (error) {
       console.error("Error submitting vote:", error);
-      Alert.alert("Vote failed", "Please try again.");
+      Alert.alert(tx("circle.CircleChatScreen.voteFailed"), tx("circle.CircleChatScreen.pleaseTryAgain"));
     }
   };
 
@@ -539,15 +539,15 @@ export default function CircleChatRoute() {
     if (!circle || !user || sending || recordingAudio || pendingAudio) return;
     if (pendingAttachments.length >= 10) {
       Alert.alert(
-        "Limit reached",
-        "Send or remove some images before adding more.",
+        tx("circle.CircleChatScreen.limitReached"),
+        tx("circle.CircleChatScreen.sendOrRemoveSomeImagesBeforeAddingMore"),
       );
       return;
     }
 
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permission.granted) {
-      Alert.alert("Media access needed", "Allow photo access to share media.");
+      Alert.alert(tx("circle.CircleChatScreen.mediaAccessNeeded"), tx("circle.CircleChatScreen.allowPhotoAccessToShareMedia"));
       return;
     }
 
@@ -607,8 +607,8 @@ export default function CircleChatRoute() {
       const permission = await Audio.requestPermissionsAsync();
       if (!permission.granted) {
         Alert.alert(
-          "Microphone needed",
-          "Allow microphone access to record voice messages.",
+          tx("circle.CircleChatScreen.microphoneNeeded"),
+          tx("circle.CircleChatScreen.allowMicrophoneAccessToRecordVoiceMessages"),
         );
         return;
       }
@@ -633,7 +633,7 @@ export default function CircleChatRoute() {
       setRecordingAudio(true);
     } catch (error) {
       console.error("Error starting recording:", error);
-      Alert.alert("Could not record", "Please try again.");
+      Alert.alert(tx("circle.CircleChatScreen.couldNotRecord"), tx("circle.CircleChatScreen.pleaseTryAgain"));
       setRecordingAudio(false);
       recordingRef.current = null;
     }
@@ -665,7 +665,7 @@ export default function CircleChatRoute() {
       );
     } catch (error) {
       console.error("Error stopping recording:", error);
-      Alert.alert("Recording failed", "Please try recording again.");
+      Alert.alert(tx("circle.CircleChatScreen.recordingFailed"), tx("circle.CircleChatScreen.pleaseTryRecordingAgain"));
       setRecordingAudio(false);
       recordingRef.current = null;
     }
@@ -683,8 +683,8 @@ export default function CircleChatRoute() {
 
     if (targetIndex < 0) {
       Alert.alert(
-        "Original message unavailable",
-        "That message is not loaded in this chat.",
+        tx("circle.CircleChatScreen.originalMessageUnavailable"),
+        tx("circle.CircleChatScreen.thatMessageIsNotLoadedInThisChat"),
       );
       return;
     }
@@ -734,12 +734,12 @@ export default function CircleChatRoute() {
 
     setChatMenuVisible(false);
     Alert.alert(
-      "Leave Circle?",
-      `${exitState.helperText}\n\nYou will leave ${circle.name} and lose access to its chat.`,
+      tx("circle.CircleChatScreen.leaveCircle"),
+      tx("circle.CircleChatScreen.value1YouWillLeaveValue2AndLoseAccessTo", { value1: exitState.helperText, value2: circle.name }),
       [
-        { text: "Cancel", style: "cancel" },
+        { text: tx("circle.CircleChatScreen.cancel"), style: "cancel" },
         {
-          text: "Leave",
+          text: tx("circle.CircleChatScreen.leave"),
           style: "destructive",
           onPress: async () => {
             try {
@@ -750,7 +750,7 @@ export default function CircleChatRoute() {
               router.replace("/(tabs)/home");
             } catch (error) {
               console.error("Error leaving circle:", error);
-              Alert.alert("Could not leave Circle", "Please try again.");
+              Alert.alert(tx("circle.CircleChatScreen.couldNotLeaveCircle"), tx("circle.CircleChatScreen.pleaseTryAgain"));
             }
           },
         },
@@ -763,12 +763,12 @@ export default function CircleChatRoute() {
 
     setChatMenuVisible(false);
     Alert.alert(
-      "Close Circle?",
-      `${exitState.helperText}\n\nThis will delete ${circle.name} and remove everyone from the Circle. This cannot be undone.`,
+      tx("circle.CircleChatScreen.closeCircle"),
+      tx("circle.CircleChatScreen.value1ThisWillDeleteValue2AndRemoveEveryoneFrom", { value1: exitState.helperText, value2: circle.name }),
       [
-        { text: "Cancel", style: "cancel" },
+        { text: tx("circle.CircleChatScreen.cancel"), style: "cancel" },
         {
-          text: "Close Circle",
+          text: tx("circle.CircleChatScreen.closeCircle2"),
           style: "destructive",
           onPress: async () => {
             try {
@@ -779,7 +779,7 @@ export default function CircleChatRoute() {
               router.replace("/(tabs)/home");
             } catch (error) {
               console.error("Error closing circle:", error);
-              Alert.alert("Could not close Circle", "Please try again.");
+              Alert.alert(tx("circle.CircleChatScreen.couldNotCloseCircle"), tx("circle.CircleChatScreen.pleaseTryAgain"));
             }
           },
         },
@@ -804,8 +804,8 @@ export default function CircleChatRoute() {
       const permission = await MediaLibrary.requestPermissionsAsync();
       if (!permission.granted) {
         Alert.alert(
-          "Permission needed",
-          "Allow photo access to save this media.",
+          tx("circle.CircleChatScreen.permissionNeeded"),
+          tx("circle.CircleChatScreen.allowPhotoAccessToSaveThisMedia"),
         );
         return;
       }
@@ -818,14 +818,14 @@ export default function CircleChatRoute() {
       );
       await MediaLibrary.saveToLibraryAsync(downloaded.uri);
       Alert.alert(
-        "Saved",
+        tx("circle.CircleChatScreen.saved"),
         openMedia.type === "image"
-          ? "Photo saved to your library."
-          : "Video saved to your library.",
+          ? tx("circle.CircleChatScreen.photoSavedToYourLibrary")
+          : tx("circle.CircleChatScreen.videoSavedToYourLibrary"),
       );
     } catch (error) {
       console.error("Error saving media:", error);
-      Alert.alert("Could not save", "Please try again.");
+      Alert.alert(tx("circle.CircleChatScreen.couldNotSave"), tx("circle.CircleChatScreen.pleaseTryAgain"));
     } finally {
       setSavingMedia(false);
     }
@@ -970,7 +970,7 @@ export default function CircleChatRoute() {
   if (loading) {
     return (
       <SafeAreaView style={styles.container}>
-        <StatusBar barStyle="dark-content" />
+        <StatusBar />
         <View style={styles.centered}>
           <ActivityIndicator size="large" color={Colors.primary} />
         </View>
@@ -981,12 +981,11 @@ export default function CircleChatRoute() {
   if (!circle) {
     return (
       <SafeAreaView style={styles.container}>
-        <StatusBar barStyle="dark-content" />
+        <StatusBar />
         <View style={styles.centered}>
-          <Text style={styles.title}>No active Circle</Text>
+          <Text style={styles.title}>{tx("circle.CircleChatScreen.noActiveCircle")}</Text>
           <Text style={styles.emptyText}>
-            Create or join a Circle to start chatting.
-          </Text>
+            {tx("circle.CircleChatScreen.createOrJoinACircleToStartChatting")}</Text>
         </View>
       </SafeAreaView>
     );
@@ -998,14 +997,14 @@ export default function CircleChatRoute() {
       style={styles.keyboardView}
     >
       <SafeAreaView style={styles.container}>
-        <StatusBar barStyle="dark-content" />
+        <StatusBar />
 
         <View style={styles.header}>
           <TouchableOpacity
             activeOpacity={0.76}
             style={styles.iconButton}
             onPress={() => router.replace("/(tabs)/home")}
-            accessibilityLabel="Back to Circle"
+            accessibilityLabel={tx("circle.CircleChatScreen.backToCircle")}
           >
             <ChevronLeft
               size={24}
@@ -1018,8 +1017,7 @@ export default function CircleChatRoute() {
               {circle.name}
             </Text>
             <Text style={styles.headerSubtitle}>
-              {circle.members.length} members
-            </Text>
+              {circle.members.length} {tx("circle.CircleChatScreen.members")}</Text>
           </View>
           <View style={styles.headerActions}>
             <TouchableOpacity
@@ -1041,7 +1039,7 @@ export default function CircleChatRoute() {
               activeOpacity={0.76}
               style={styles.iconButton}
               onPress={() => setChatMenuVisible(true)}
-              accessibilityLabel="Open chat menu"
+              accessibilityLabel={tx("circle.CircleChatScreen.openChatMenu")}
             >
               <MoreHorizontal
                 size={22}
@@ -1058,10 +1056,10 @@ export default function CircleChatRoute() {
           keyExtractor={(item) => item.id}
           renderItem={renderMessage}
           contentContainerStyle={styles.messagesContent}
-          ListHeaderComponent={<Text style={styles.dayLabel}>Today</Text>}
+          ListHeaderComponent={<Text style={styles.dayLabel}>{tx("circle.CircleChatScreen.today")}</Text>}
           ListEmptyComponent={
             <View style={styles.emptyState}>
-              <Text style={styles.emptyText}>Start the conversation.</Text>
+              <Text style={styles.emptyText}>{tx("circle.CircleChatScreen.startTheConversation")}</Text>
             </View>
           }
           onScrollToIndexFailed={(info) => {
@@ -1086,7 +1084,7 @@ export default function CircleChatRoute() {
 
         <ChatInput
           disabled={sending}
-          placeholder="Message Circle..."
+          placeholder={tx("circle.CircleChatScreen.messageCircle")}
           attachments={pendingAttachments}
           audioPreview={pendingAudio}
           isRecordingAudio={recordingAudio}
@@ -1127,7 +1125,7 @@ export default function CircleChatRoute() {
                 onPress={openConversationSearch}
               >
                 <Search size={20} color={Colors.textPrimary} strokeWidth={2.1} />
-                <Text style={styles.menuText}>Search in conversation</Text>
+                <Text style={styles.menuText}>{tx("circle.CircleChatScreen.searchInConversation")}</Text>
                 <ChevronRight
                   size={18}
                   color={Colors.textSecondary}
@@ -1141,7 +1139,7 @@ export default function CircleChatRoute() {
                 onPress={openCircleInfo}
               >
                 <Info size={20} color={Colors.textPrimary} strokeWidth={2.1} />
-                <Text style={styles.menuText}>Circle info</Text>
+                <Text style={styles.menuText}>{tx("circle.CircleChatScreen.circleInfo")}</Text>
                 <ChevronRight
                   size={18}
                   color={Colors.textSecondary}
@@ -1207,7 +1205,7 @@ export default function CircleChatRoute() {
           }}
         >
           <SafeAreaView style={styles.searchContainer}>
-            <StatusBar barStyle="dark-content" />
+            <StatusBar />
             <View style={styles.searchHeader}>
               <TouchableOpacity
                 activeOpacity={0.76}
@@ -1216,7 +1214,7 @@ export default function CircleChatRoute() {
                   setSearchVisible(false);
                   setSearchQuery("");
                 }}
-                accessibilityLabel="Close search"
+                accessibilityLabel={tx("circle.CircleChatScreen.closeSearch")}
               >
                 <ChevronLeft
                   size={24}
@@ -1233,7 +1231,7 @@ export default function CircleChatRoute() {
                 <TextInput
                   value={searchQuery}
                   onChangeText={setSearchQuery}
-                  placeholder="Search conversation"
+                  placeholder={tx("circle.CircleChatScreen.searchConversation")}
                   placeholderTextColor={Colors.textDisabled}
                   autoFocus
                   style={styles.searchInput}
@@ -1250,13 +1248,13 @@ export default function CircleChatRoute() {
               ListHeaderComponent={
                 <Text style={styles.searchCount}>
                   {searchQuery.trim()
-                    ? `${searchResults.length} result${searchResults.length === 1 ? "" : "s"}`
-                    : "Recent messages"}
+                    ? tx("circle.CircleChatScreen.value1ResultValue2", { value1: searchResults.length, value2: searchResults.length === 1 ? "" : "s" })
+                    : tx("circle.CircleChatScreen.recentMessages")}
                 </Text>
               }
               ListEmptyComponent={
                 <View style={styles.emptyState}>
-                  <Text style={styles.emptyText}>No messages found.</Text>
+                  <Text style={styles.emptyText}>{tx("circle.CircleChatScreen.noMessagesFound")}</Text>
                 </View>
               }
               renderItem={({ item }) => (
@@ -1267,14 +1265,14 @@ export default function CircleChatRoute() {
                 >
                   <View style={styles.searchResultCopy}>
                     <Text numberOfLines={1} style={styles.searchResultSender}>
-                      {item.senderId === user?.id ? "You" : item.senderName}
+                      {item.senderId === user?.id ? tx("circle.CircleChatScreen.you") : item.senderName}
                     </Text>
                     <Text numberOfLines={2} style={styles.searchResultText}>
                       {getReplyText(item)}
                     </Text>
                   </View>
                   <Text style={styles.searchResultDate}>
-                    {item.timestamp.toLocaleDateString(undefined, {
+                    {formatLocalizedDate(item.timestamp, {
                       month: "short",
                       day: "numeric",
                     })}
@@ -1298,7 +1296,7 @@ export default function CircleChatRoute() {
           >
             <View style={styles.attachmentSheetContainer}>
               <View style={styles.attachmentSheetHandle} />
-              <Text style={styles.attachmentSheetTitle}>Add to message</Text>
+              <Text style={styles.attachmentSheetTitle}>{tx("circle.CircleChatScreen.addToMessage")}</Text>
               <TouchableOpacity
                 activeOpacity={0.76}
                 style={styles.attachmentOption}
@@ -1311,7 +1309,7 @@ export default function CircleChatRoute() {
                     strokeWidth={2.2}
                   />
                 </View>
-                <Text style={styles.attachmentOptionText}>Gallery</Text>
+                <Text style={styles.attachmentOptionText}>{tx("circle.CircleChatScreen.gallery")}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 activeOpacity={0.76}
@@ -1325,7 +1323,7 @@ export default function CircleChatRoute() {
                     strokeWidth={2.2}
                   />
                 </View>
-                <Text style={styles.attachmentOptionText}>Poll</Text>
+                <Text style={styles.attachmentOptionText}>{tx("circle.CircleChatScreen.poll")}</Text>
               </TouchableOpacity>
             </View>
           </TouchableOpacity>
@@ -1344,7 +1342,7 @@ export default function CircleChatRoute() {
                 activeOpacity={0.76}
                 style={styles.viewerButton}
                 onPress={() => setOpenMedia(null)}
-                accessibilityLabel="Close media viewer"
+                accessibilityLabel={tx("circle.CircleChatScreen.closeMediaViewer")}
               >
                 <X size={24} color={Colors.white} strokeWidth={2.3} />
               </TouchableOpacity>
@@ -1357,7 +1355,7 @@ export default function CircleChatRoute() {
                 ]}
                 onPress={handleSaveOpenMedia}
                 disabled={savingMedia}
-                accessibilityLabel="Save media"
+                accessibilityLabel={tx("circle.CircleChatScreen.saveMedia")}
               >
                 {savingMedia ? (
                   <ActivityIndicator size="small" color={Colors.white} />
@@ -1397,7 +1395,7 @@ export default function CircleChatRoute() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createThemedStyles((Colors) => ({
   keyboardView: {
     flex: 1,
     backgroundColor: Colors.background,
@@ -1468,7 +1466,7 @@ const styles = StyleSheet.create({
   },
   menuOverlay: {
     flex: 1,
-    backgroundColor: "rgba(255, 255, 255, 0.7)",
+    backgroundColor: "rgba(0, 0, 0, 0.16)",
     alignItems: "flex-end",
     paddingTop: 84,
     paddingRight: Spacing.screenPadding,
@@ -1480,6 +1478,11 @@ const styles = StyleSheet.create({
     borderColor: Colors.divider,
     backgroundColor: Colors.surface,
     overflow: "hidden",
+    elevation: 8,
+    shadowColor: "#000000",
+    shadowOpacity: 0.14,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 6 },
   },
   menuItem: {
     minHeight: 56,
@@ -1671,4 +1674,4 @@ const styles = StyleSheet.create({
     width: "100%",
     height: "100%",
   },
-});
+}));

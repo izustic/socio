@@ -1,6 +1,6 @@
 import Avatar from "@/src/components/ui/Avatar";
 import Button from "@/src/components/ui/Button";
-import { Colors, Radius, Spacing, Typography } from "@/src/constants/theme";
+import { createThemedStyles, Colors, Radius, Spacing, Typography } from "@/src/constants/theme";
 import { useAuth } from "@/src/context/AuthContext";
 import { useSwipeTabVisibility } from "@/src/context/SwipeTabVisibilityContext";
 import {
@@ -20,13 +20,14 @@ import type { DimensionValue } from "react-native";
 import {
   ActivityIndicator,
   Alert,
+  ScrollView,
   StatusBar,
-  StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { tx } from "@/src/utils/localization";
 
 const arrangeMembers = (
   memberIds: string[],
@@ -170,14 +171,14 @@ export default function CircleProgressScreen() {
     if (!circle || !user || !exitState || exitState.locked || exiting) return;
 
     Alert.alert(
-      exitState.isHost ? "Close Circle?" : "Leave Circle?",
+      exitState.isHost ? tx("circle.CircleProgressScreen.closeCircle") : tx("circle.CircleProgressScreen.leaveCircle"),
       exitState.isHost
-        ? `${exitState.helperText}\n\nThis will delete ${circle.name} and remove everyone from the Circle. This cannot be undone.`
-        : `${exitState.helperText}\n\nYou will leave ${circle.name}.`,
+        ? tx("circle.CircleProgressScreen.value1ThisWillDeleteValue2AndRemoveEveryoneFrom", { value1: exitState.helperText, value2: circle.name })
+        : tx("circle.CircleProgressScreen.value1YouWillLeaveValue2", { value1: exitState.helperText, value2: circle.name }),
       [
-        { text: "Cancel", style: "cancel" },
+        { text: tx("circle.CircleProgressScreen.cancel"), style: "cancel" },
         {
-          text: exitState.isHost ? "Close Circle" : "Leave",
+          text: exitState.isHost ? tx("circle.CircleProgressScreen.closeCircle2") : tx("circle.CircleProgressScreen.leave"),
           style: "destructive",
           onPress: async () => {
             setExiting(true);
@@ -193,7 +194,7 @@ export default function CircleProgressScreen() {
               router.replace("/(tabs)/home");
             } catch (error) {
               console.error("Error exiting circle:", error);
-              Alert.alert("Could not update Circle", "Please try again.");
+              Alert.alert(tx("circle.CircleProgressScreen.couldNotUpdateCircle"), tx("circle.CircleProgressScreen.pleaseTryAgain"));
             } finally {
               setExiting(false);
             }
@@ -206,7 +207,7 @@ export default function CircleProgressScreen() {
   if (loading) {
     return (
       <SafeAreaView style={styles.container}>
-        <StatusBar barStyle="dark-content" />
+        <StatusBar />
         <View style={styles.centered}>
           <ActivityIndicator size="large" color={Colors.primary} />
         </View>
@@ -217,12 +218,12 @@ export default function CircleProgressScreen() {
   if (!circle) {
     return (
       <SafeAreaView style={styles.container}>
-        <StatusBar barStyle="dark-content" />
+        <StatusBar />
         <View style={styles.centered}>
-          <Text style={styles.title}>No active Circle</Text>
-          <Text style={styles.subtitle}>Create or join a Circle to get started.</Text>
+          <Text style={styles.title}>{tx("circle.CircleProgressScreen.noActiveCircle")}</Text>
+          <Text style={styles.subtitle}>{tx("circle.CircleProgressScreen.createOrJoinACircleToGetStarted")}</Text>
           <View style={styles.footerButton}>
-            <Button title="Find a Circle" onPress={() => router.replace("/(tabs)/home")} />
+            <Button title={tx("circle.CircleProgressScreen.findACircle")} onPress={() => router.replace("/(tabs)/home")} />
           </View>
         </View>
       </SafeAreaView>
@@ -231,12 +232,16 @@ export default function CircleProgressScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" />
+      <StatusBar />
 
-      <View style={styles.content}>
+      <ScrollView
+        style={styles.content}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
         <View>
           <Text style={styles.title}>{circle.name}</Text>
-          <Text style={styles.subtitle}>Your circle is forming</Text>
+          <Text style={styles.subtitle}>{tx("circle.CircleProgressScreen.yourCircleIsForming")}</Text>
         </View>
 
         <View style={styles.membersRow}>
@@ -251,7 +256,7 @@ export default function CircleProgressScreen() {
                   placeholder={!member?.photoURL}
                 />
                 <Text numberOfLines={1} style={styles.memberName}>
-                  {member?.name?.split(" ")[0] || "Open"}
+                  {member?.name?.split(" ")[0] || tx("circle.CircleProgressScreen.open")}
                 </Text>
               </View>
             );
@@ -260,7 +265,7 @@ export default function CircleProgressScreen() {
 
         <View style={styles.progressCard}>
           <View style={styles.progressHeader}>
-            <Text style={styles.progressLabel}>Circle progress</Text>
+            <Text style={styles.progressLabel}>{tx("circle.CircleProgressScreen.circleProgress")}</Text>
             <Text style={styles.progressCount}>
               {membersCount} / {circle.size}
             </Text>
@@ -270,25 +275,25 @@ export default function CircleProgressScreen() {
           </View>
           <Text style={styles.progressText}>
             {isReadOnlyComplete
-              ? "All members accepted. Your Circle is complete."
-              : `Waiting for ${spotsRemaining} more to accept your invite`}
+              ? tx("circle.CircleProgressScreen.allMembersAcceptedYourCircleIsComplete")
+              : tx("circle.CircleProgressScreen.waitingForValue1MoreToAcceptYourInvite", { value1: spotsRemaining })}
           </Text>
         </View>
 
         <View style={styles.goalCard}>
-          <Text style={styles.goalLabel}>MEETUP GOAL</Text>
-          <Text style={styles.goalTitle}>{circle.meetupGoal || "Coffee meetup"}</Text>
+          <Text style={styles.goalLabel}>{tx("circle.CircleProgressScreen.meetupGoal")}</Text>
+          <Text style={styles.goalTitle}>{circle.meetupGoal || tx("circle.CircleProgressScreen.coffeeMeetup")}</Text>
           <Text style={styles.goalTimeframe}>
-            {circle.meetupTimeframe || "Within 3 days"}
+            {circle.meetupTimeframe || tx("circle.CircleProgressScreen.within3Days")}
           </Text>
         </View>
-      </View>
+      </ScrollView>
 
       {(showContinueSwiping || isReadOnlyComplete || exitState) && (
         <View style={styles.footer}>
           {(showContinueSwiping || isReadOnlyComplete) && (
             <Button
-              title={isReadOnlyComplete ? "Back to Circle" : "Continue swiping"}
+              title={isReadOnlyComplete ? tx("circle.CircleProgressScreen.backToCircle") : tx("circle.CircleProgressScreen.continueSwiping")}
               onPress={() =>
                 isReadOnlyComplete
                   ? router.push("/(tabs)/home?circleView=complete")
@@ -307,7 +312,7 @@ export default function CircleProgressScreen() {
               onPress={confirmExitCircle}
             >
               <Text style={styles.exitButtonText}>
-                {exiting ? "Working..." : exitState.label}
+                {exiting ? tx("circle.CircleProgressScreen.working") : exitState.label}
               </Text>
               <Text style={styles.exitHelper}>{exitState.helperText}</Text>
             </TouchableOpacity>
@@ -318,7 +323,7 @@ export default function CircleProgressScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createThemedStyles((Colors) => ({
   container: {
     flex: 1,
     backgroundColor: Colors.background,
@@ -331,7 +336,10 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
+  },
+  scrollContent: {
     gap: Spacing.lg,
+    paddingBottom: Spacing.lg,
   },
   title: {
     ...Typography.h2,
@@ -358,7 +366,7 @@ const styles = StyleSheet.create({
     maxWidth: 64,
   },
   progressCard: {
-    backgroundColor: "#FFF8EA",
+    backgroundColor: Colors.primaryLight,
     borderRadius: Radius.lg,
     padding: Spacing.md,
     gap: Spacing.md,
@@ -377,7 +385,7 @@ const styles = StyleSheet.create({
   },
   progressTrack: {
     height: 10,
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.surface,
     borderRadius: Radius.pill,
     overflow: "hidden",
   },
@@ -435,4 +443,4 @@ const styles = StyleSheet.create({
     width: "100%",
     marginTop: Spacing.lg,
   },
-});
+}));

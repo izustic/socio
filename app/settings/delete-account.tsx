@@ -1,5 +1,5 @@
 import { SafeAreaView } from "react-native-safe-area-context";
-import {
+import { createThemedStyles,
   Colors,
   Radius,
   Spacing,
@@ -31,31 +31,31 @@ import {
   Platform,
   ScrollView,
   StatusBar,
-  StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
+import { tx } from "@/src/utils/localization";
 
 type DeleteStage = "warning" | "confirm" | "deleting" | "farewell";
 
 const lossRows = [
   {
     Icon: Users,
-    text: "Your active Circle and its members",
+    textKey: "accountDeletion.activeCircle",
   },
   {
     Icon: MessageCircle,
-    text: "All your chats and shared moments",
+    textKey: "accountDeletion.chats",
   },
   {
     Icon: ImageIcon,
-    text: "Profile, photos and verification",
+    textKey: "accountDeletion.profile",
   },
   {
     Icon: Heart,
-    text: "Every match and connection",
+    textKey: "accountDeletion.matches",
   },
 ];
 
@@ -120,13 +120,13 @@ export default function DeleteAccountScreen() {
       });
       await refreshProfile();
       Alert.alert(
-        "Profile paused",
-        "You are hidden from Circle swipes and your profile is private.",
-        [{ text: "OK", onPress: () => router.back() }],
+        tx("app.settings.deleteAccount.profilePaused"),
+        tx("app.settings.deleteAccount.youAreHiddenFromCircleSwipesAndYourProfile"),
+        [{ text: tx("app.settings.deleteAccount.ok"), onPress: () => router.back() }],
       );
     } catch (error) {
       console.error("Error pausing profile:", error);
-      Alert.alert("Could not pause profile", "Please try again.");
+      Alert.alert(tx("app.settings.deleteAccount.couldNotPauseProfile"), tx("app.settings.deleteAccount.pleaseTryAgain"));
     } finally {
       setPausing(false);
     }
@@ -134,7 +134,7 @@ export default function DeleteAccountScreen() {
 
   const handleDeleteForever = async () => {
     if (!canDelete) {
-      setErrorText("Type DELETE exactly to continue.");
+      setErrorText(tx("app.settings.deleteAccount.typeDeleteExactlyToContinue"));
       return;
     }
 
@@ -151,7 +151,7 @@ export default function DeleteAccountScreen() {
       }).start(() => setStage("farewell"));
     } catch (error) {
       const message =
-        error instanceof Error ? error.message : "Please try again.";
+        error instanceof Error ? error.message : tx("common.retry");
       setErrorText(message);
       setStage("confirm");
     }
@@ -165,23 +165,21 @@ export default function DeleteAccountScreen() {
   if (stage === "farewell") {
     return (
       <SafeAreaView style={styles.container}>
-        <StatusBar barStyle="dark-content" />
+        <StatusBar />
         <View style={styles.farewellWrap}>
           <View style={styles.farewellCard}>
             <View style={styles.farewellIcon}>
               <Heart size={28} color={Colors.textPrimary} strokeWidth={2.1} />
             </View>
-            <Text style={styles.farewellTitle}>Your account is gone</Text>
+            <Text style={styles.farewellTitle}>{tx("app.settings.deleteAccount.yourAccountIsGone")}</Text>
             <Text style={styles.farewellBody}>
-              Thanks for spending time with Socio. The door&apos;s open whenever
-              you&apos;d like to come back.
-            </Text>
+              {tx("app.settings.deleteAccount.thanksForSpendingTimeWithSociolTheDoorS")}</Text>
             <TouchableOpacity
               activeOpacity={0.82}
               style={styles.blackButton}
               onPress={() => router.replace("/(auth)/welcome")}
             >
-              <Text style={styles.blackButtonText}>Close</Text>
+              <Text style={styles.blackButtonText}>{tx("app.settings.deleteAccount.close")}</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -192,16 +190,15 @@ export default function DeleteAccountScreen() {
   if (stage === "deleting") {
     return (
       <SafeAreaView style={styles.container}>
-        <StatusBar barStyle="dark-content" />
+        <StatusBar />
         <View style={styles.farewellWrap}>
           <View style={styles.deletingCard}>
             <Animated.View style={[styles.deletingIcon, spinStyle]}>
               <Trash2 size={26} color={Colors.danger} strokeWidth={2.1} />
             </Animated.View>
-            <Text style={styles.deletingTitle}>Closing your account...</Text>
+            <Text style={styles.deletingTitle}>{tx("app.settings.deleteAccount.closingYourAccount")}</Text>
             <Text style={styles.deletingBody}>
-              Removing profile, chats and matches.
-            </Text>
+              {tx("app.settings.deleteAccount.removingProfileChatsAndMatches")}</Text>
             <View style={styles.progressTrack}>
               <Animated.View
                 style={[styles.progressFill, { width: progressWidth }]}
@@ -215,7 +212,7 @@ export default function DeleteAccountScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" />
+      <StatusBar />
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : undefined}
         style={styles.keyboard}
@@ -232,7 +229,7 @@ export default function DeleteAccountScreen() {
               strokeWidth={2.3}
             />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Delete account</Text>
+          <Text style={styles.headerTitle}>{tx("app.settings.deleteAccount.deleteAccount")}</Text>
         </View>
 
         {stage === "warning" ? (
@@ -243,18 +240,16 @@ export default function DeleteAccountScreen() {
             <View style={styles.heroIcon}>
               <Trash2 size={32} color={Colors.danger} strokeWidth={2.1} />
             </View>
-            <Text style={styles.title}>We&apos;ll miss you</Text>
+            <Text style={styles.title}>{tx("app.settings.deleteAccount.weLlMissYou")}</Text>
             <Text style={styles.subtitle}>
-              Deleting your account is permanent. There&apos;s no way to bring it
-              back.
-            </Text>
+              {tx("app.settings.deleteAccount.deletingYourAccountIsPermanentThereSNoWay")}</Text>
 
             <View style={styles.lossCard}>
-              <Text style={styles.lossLabel}>You&apos;ll lose</Text>
-              {lossRows.map(({ Icon, text }) => (
-                <View key={text} style={styles.lossRow}>
+              <Text style={styles.lossLabel}>{tx("app.settings.deleteAccount.youLlLose")}</Text>
+              {lossRows.map(({ Icon, textKey }) => (
+                <View key={textKey} style={styles.lossRow}>
                   <Icon size={18} color={Colors.danger} strokeWidth={2.1} />
-                  <Text style={styles.lossText}>{text}</Text>
+                  <Text style={styles.lossText}>{tx(textKey)}</Text>
                 </View>
               ))}
             </View>
@@ -266,10 +261,9 @@ export default function DeleteAccountScreen() {
                 strokeWidth={2.1}
               />
               <Text style={styles.pauseText}>
-                Just need a break? You can{" "}
-                <Text style={styles.pauseStrong}>pause your profile instead</Text>{" "}
-                and your Circle stays put.
-              </Text>
+                {tx("app.settings.deleteAccount.justNeedABreakYouCan")}{" "}
+                <Text style={styles.pauseStrong}>{tx("app.settings.deleteAccount.pauseYourProfileInstead")}</Text>{" "}
+                {tx("app.settings.deleteAccount.andYourCircleStaysPut")}</Text>
             </View>
 
             <View style={styles.footerActions}>
@@ -283,8 +277,7 @@ export default function DeleteAccountScreen() {
                   <ActivityIndicator size="small" color={Colors.textPrimary} />
                 ) : (
                   <Text style={styles.secondaryButtonText}>
-                    Pause my profile instead
-                  </Text>
+                    {tx("app.settings.deleteAccount.pauseMyProfileInstead")}</Text>
                 )}
               </TouchableOpacity>
               <TouchableOpacity
@@ -292,7 +285,7 @@ export default function DeleteAccountScreen() {
                 style={styles.dangerButton}
                 onPress={() => setStage("confirm")}
               >
-                <Text style={styles.dangerButtonText}>Continue to delete</Text>
+                <Text style={styles.dangerButtonText}>{tx("app.settings.deleteAccount.continueToDelete")}</Text>
               </TouchableOpacity>
             </View>
           </ScrollView>
@@ -307,11 +300,10 @@ export default function DeleteAccountScreen() {
                     strokeWidth={2.1}
                   />
                 </View>
-                <Text style={styles.confirmTitle}>Type DELETE to confirm</Text>
+                <Text style={styles.confirmTitle}>{tx("app.settings.deleteAccount.typeDeleteToConfirm")}</Text>
               </View>
               <Text style={styles.confirmBody}>
-                This action is permanent. Your Circle will be notified.
-              </Text>
+                {tx("app.settings.deleteAccount.thisActionIsPermanentYourCircleWillBeNotified")}</Text>
               <TextInput
                 value={confirmation}
                 onChangeText={(text) => {
@@ -320,7 +312,7 @@ export default function DeleteAccountScreen() {
                 }}
                 autoFocus
                 autoCapitalize="characters"
-                placeholder="DELETE"
+                placeholder={tx("app.settings.deleteAccount.delete")}
                 placeholderTextColor="#8C8888"
                 style={styles.confirmInput}
               />
@@ -331,7 +323,7 @@ export default function DeleteAccountScreen() {
                   style={styles.confirmCancel}
                   onPress={() => setStage("warning")}
                 >
-                  <Text style={styles.confirmCancelText}>Cancel</Text>
+                  <Text style={styles.confirmCancelText}>{tx("app.settings.deleteAccount.cancel")}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   activeOpacity={0.82}
@@ -341,7 +333,7 @@ export default function DeleteAccountScreen() {
                   ]}
                   onPress={handleDeleteForever}
                 >
-                  <Text style={styles.confirmDeleteText}>Delete forever</Text>
+                  <Text style={styles.confirmDeleteText}>{tx("app.settings.deleteAccount.deleteForever")}</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -352,7 +344,7 @@ export default function DeleteAccountScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createThemedStyles((Colors) => ({
   container: {
     flex: 1,
     backgroundColor: Colors.background,
@@ -390,7 +382,7 @@ const styles = StyleSheet.create({
     width: 74,
     height: 74,
     borderRadius: 37,
-    backgroundColor: "#FFE8E8",
+    backgroundColor: Colors.dangerSurface,
     alignItems: "center",
     justifyContent: "center",
     marginTop: Spacing.lg,
@@ -436,7 +428,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     gap: Spacing.md,
     borderRadius: Radius.lg,
-    backgroundColor: "#FFF1EA",
+    backgroundColor: Colors.warningSurface,
     padding: Spacing.lg,
     marginTop: Spacing.lg,
   },
@@ -591,7 +583,7 @@ const styles = StyleSheet.create({
     width: "100%",
     height: 6,
     borderRadius: Radius.full,
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.surface,
     marginTop: Spacing.lg,
     overflow: "hidden",
   },
@@ -610,7 +602,7 @@ const styles = StyleSheet.create({
     width: 58,
     height: 58,
     borderRadius: 29,
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.surface,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -641,4 +633,4 @@ const styles = StyleSheet.create({
     ...Typography.button,
     color: Colors.white,
   },
-});
+}));

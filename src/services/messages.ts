@@ -7,6 +7,7 @@ import {
   rowToMessage,
 } from "./messages.helpers";
 import { createNotifications } from "./notifications";
+import { translateResource } from "./TranslationService";
 import { supabase } from "./supabase";
 
 const notifyCircleMembersOfMessage = async (
@@ -28,22 +29,29 @@ const notifyCircleMembersOfMessage = async (
       .map((memberId) => String(memberId))
       .filter((memberId) => memberId !== senderId);
 
+    const body = getMessageNotificationBody(
+      senderName,
+      message.text,
+      message.mediaType ?? undefined,
+      message.pollId ?? undefined,
+    );
+
     await createNotifications(
       recipients,
       "message",
-      senderName,
-      getMessageNotificationBody(
-        senderName,
-        message.text,
-        message.mediaType ?? undefined,
-        message.pollId ?? undefined,
-      ),
+      translateResource("en", "notification.message.title", { senderName }),
+      translateResource("en", "notification.message.body", { message: body }),
       {
         action: "open_chat",
         circleId,
         circleName: circle?.name,
         messageId: message.id,
         senderId,
+        i18n: {
+          titleKey: "notification.message.title",
+          bodyKey: "notification.message.body",
+          params: { senderName, message: body },
+        },
       },
     );
   } catch (error) {

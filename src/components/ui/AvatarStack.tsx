@@ -1,6 +1,6 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
-import { Colors, Typography } from '@/src/constants/theme';
+import { View, Text } from 'react-native';
+import { createThemedStyles, Typography } from '@/src/constants/theme';
 import Avatar from './Avatar';
 
 interface AvatarStackProps {
@@ -64,7 +64,7 @@ export default function AvatarStack({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createThemedStyles((Colors) => ({
   container: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -90,4 +90,4 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     fontSize: 10,
   },
-});
+}));

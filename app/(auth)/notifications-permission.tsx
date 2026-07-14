@@ -1,9 +1,10 @@
 import OnboardingLayout from '@/src/components/onboarding/OnboardingLayout';
-import { Colors, Spacing, Typography } from '@/src/constants/theme';
+import { createThemedStyles, Spacing, Typography } from '@/src/constants/theme';
 import { useOnboarding } from '@/src/context/OnboardingContext';
 import { requestNotificationPermissionStatus } from '@/src/services/notificationPermission';
 import { useState } from 'react';
-import { Alert, Linking, StyleSheet, Text, View } from 'react-native';
+import { Alert, Linking, Text, View } from 'react-native';
+import { tx } from "@/src/utils/localization";
 
 export default function NotificationsPermissionScreen() {
   const { mergeDraft, setStep } = useOnboarding();
@@ -26,16 +27,16 @@ export default function NotificationsPermissionScreen() {
       if (permission.status !== 'granted') {
         if (!permission.canAskAgain) {
           Alert.alert(
-            'Notifications are blocked',
-            'Notification permission was already denied for Socio. Open your device settings to allow notifications, or continue without them for now.',
+            tx("app.auth.notificationsPermission.notificationsAreBlocked"),
+            tx("app.auth.notificationsPermission.notificationPermissionWasAlreadyDeniedForSociolOpenYour"),
             [
               {
-                text: 'Continue without them',
+                text: tx("app.auth.notificationsPermission.continueWithoutThem"),
                 style: 'cancel',
                 onPress: () => continueToIntro(false),
               },
               {
-                text: 'Open Settings',
+                text: tx("app.auth.notificationsPermission.openSettings"),
                 onPress: () => Linking.openSettings(),
               },
             ]
@@ -44,8 +45,8 @@ export default function NotificationsPermissionScreen() {
         }
 
         Alert.alert(
-          'Notifications turned off',
-          'You can keep going for now, but you may miss updates when your Circle grows or it is time to meet.'
+          tx("app.auth.notificationsPermission.notificationsTurnedOff"),
+          tx("app.auth.notificationsPermission.youCanKeepGoingForNowButYouMay")
         );
         continueToIntro(false);
         return;
@@ -59,14 +60,14 @@ export default function NotificationsPermissionScreen() {
 
   return (
     <OnboardingLayout
-      title={"Don't miss a beat"}
-      subtitle={"We'll let you know when your Circle grows, someone accepts, or it's time to meet."}
-      stepNumber="04  NOTIFICATIONS PERMISSION"
-      primaryLabel="Allow Notifications"
+      title={tx("app.auth.notificationsPermission.donTMissABeat")}
+      subtitle={tx("app.auth.notificationsPermission.weLlLetYouKnowWhenYourCircleGrows")}
+      stepNumber={tx("onboarding.step.notifications")}
+      primaryLabel={tx("app.auth.notificationsPermission.allowNotifications")}
       onPrimaryPress={handleAllowNotifications}
       primaryLoading={isRequestingPermission}
       primaryDisabled={isRequestingPermission}
-      secondaryLabel="Not now"
+      secondaryLabel={tx("app.auth.notificationsPermission.notNow")}
       onSecondaryPress={() => {
         if (isRequestingPermission) return;
         continueToIntro(false);
@@ -80,16 +81,16 @@ export default function NotificationsPermissionScreen() {
       <View style={styles.card}>
         <Text style={styles.cardIcon}>🔔</Text>
         <View style={styles.cardBubble}>
-          <Text style={styles.cardTitle}>Someone joined your Circle!</Text>
-          <Text style={styles.cardBody}>Time to say hey.</Text>
+          <Text style={styles.cardTitle}>{tx("app.auth.notificationsPermission.someoneJoinedYourCircle")}</Text>
+          <Text style={styles.cardBody}>{tx("app.auth.notificationsPermission.timeToSayHey")}</Text>
         </View>
       </View>
-      <Text style={styles.note}>You can change this in your phone settings later.</Text>
+      <Text style={styles.note}>{tx("app.auth.notificationsPermission.youCanChangeThisInYourPhoneSettingsLater")}</Text>
     </OnboardingLayout>
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createThemedStyles((Colors) => ({
   card: {
     alignItems: 'center',
     justifyContent: 'center',
@@ -119,4 +120,4 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     color: Colors.textSecondary,
   },
-});
+}));

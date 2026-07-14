@@ -3,7 +3,7 @@ import AlertModal from "@/src/components/ui/AlertModal";
 import Button from "@/src/components/ui/Button";
 import Chip from "@/src/components/ui/Chip";
 import Toast from "@/src/components/ui/Toast";
-import {
+import { createThemedStyles,
   Colors,
   Radius,
   Spacing,
@@ -45,6 +45,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { tx } from "@/src/utils/localization";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
@@ -239,8 +240,8 @@ export default function SwipeCirclesScreen({
         hasLoadedOnceRef.current = true;
       } catch (error: any) {
         showAlert(
-          "Unable to load circles",
-          error?.message || "Please try again.",
+          tx("circle.SwipeCirclesScreen.unableToLoadCircles"),
+          error?.message || tx("circle.SwipeCirclesScreen.pleaseTryAgain"),
         );
       } finally {
         if (!silent) {
@@ -312,14 +313,12 @@ export default function SwipeCirclesScreen({
         endJoinBrowsing();
         await refreshSwipeTabVisibility({ silent: true });
         showAlert(
-          `You've been added to ${swipedCircle.name}`,
-          `${swipedCircle.name} now includes you as a member.`,
+          tx("circle.SwipeCirclesScreen.youVeBeenAddedToValue1", { value1: swipedCircle.name }),
+          tx("circle.SwipeCirclesScreen.value1NowIncludesYouAsAMember", { value1: swipedCircle.name }),
           {
-            primaryLabel: "View Circle",
+            primaryLabel: tx("circle.SwipeCirclesScreen.viewCircle"),
             imageUri: swipedCircle.imageUrl,
-            detail: `${swipedCircle.meetupGoal || "Meetup"} · ${
-              swipedCircle.meetupTimeframe || "Timeframe coming soon"
-            }`,
+            detail: tx("circle.SwipeCirclesScreen.value1Value2", { value1: swipedCircle.meetupGoal || tx("circleSwipe.meetup"), value2: swipedCircle.meetupTimeframe || tx("circleSwipe.timeframeComingSoon") }),
             onConfirm: () => {
               replaceAfterInteractions("/(tabs)/home?circleView=progress");
             },
@@ -331,13 +330,13 @@ export default function SwipeCirclesScreen({
       if (liked) {
         setToastData({
           circleName: swipedCircle.name,
-          userName: profile?.name || "You",
+          userName: profile?.name || tx("common.you"),
         });
         setShowToast(true);
       }
     } catch (error: any) {
       setCurrentIndex(previousIndex);
-      showAlert("Swipe failed", error?.message || "Please try again.");
+      showAlert(tx("circle.SwipeCirclesScreen.swipeFailed"), error?.message || tx("circle.SwipeCirclesScreen.pleaseTryAgain"));
     } finally {
       setSwiping(false);
     }
@@ -346,10 +345,10 @@ export default function SwipeCirclesScreen({
   if (loading) {
     return (
       <SafeAreaView style={styles.container}>
-        <StatusBar barStyle="dark-content" />
+        <StatusBar />
         <View style={styles.centerContent}>
           <ActivityIndicator size="large" color={Colors.primaryDark} />
-          <Text style={styles.emptySubtitle}>Finding Circles near you...</Text>
+          <Text style={styles.emptySubtitle}>{tx("circle.SwipeCirclesScreen.findingCirclesNearYou")}</Text>
         </View>
       </SafeAreaView>
     );
@@ -358,12 +357,11 @@ export default function SwipeCirclesScreen({
   if (!user) {
     return (
       <SafeAreaView style={styles.container}>
-        <StatusBar barStyle="dark-content" />
+        <StatusBar />
         <View style={styles.centerContent}>
-          <Text style={styles.emptyTitle}>Sign in required</Text>
+          <Text style={styles.emptyTitle}>{tx("circle.SwipeCirclesScreen.signInRequired")}</Text>
           <Text style={styles.emptySubtitle}>
-            Please sign in to swipe on Circles.
-          </Text>
+            {tx("circle.SwipeCirclesScreen.pleaseSignInToSwipeOnCircles")}</Text>
         </View>
       </SafeAreaView>
     );
@@ -373,24 +371,22 @@ export default function SwipeCirclesScreen({
   if (!currentCircle) {
     return (
       <SafeAreaView style={styles.container}>
-        <StatusBar barStyle="dark-content" />
+        <StatusBar />
 
         <View style={styles.caughtUpCard}>
           <View style={styles.caughtUpIconWrap}>
             <Text style={styles.caughtUpIcon}>🔍</Text>
           </View>
-          <Text style={styles.caughtUpTitle}>No Circles found</Text>
+          <Text style={styles.caughtUpTitle}>{tx("circle.SwipeCirclesScreen.noCirclesFound")}</Text>
           <Text style={styles.caughtUpCopy}>
-            No Circles match your preferences right now. Try adjusting your
-            filters or check back later.
-          </Text>
+            {tx("circle.SwipeCirclesScreen.noCirclesMatchYourPreferencesRightNowTryAdjusting")}</Text>
           <View style={styles.caughtUpButtons}>
             <Button
-              title="Adjust filters"
+              title={tx("circle.SwipeCirclesScreen.adjustFilters")}
               onPress={() => router.push("/circle/join-preferences")}
             />
             <Button
-              title="Create a Circle"
+              title={tx("circle.SwipeCirclesScreen.createACircle")}
               variant="outline"
               onPress={() => {
                 endJoinBrowsing();
@@ -400,15 +396,14 @@ export default function SwipeCirclesScreen({
           </View>
         </View>
         <Text style={styles.footerHint}>
-          We&apos;ll notify you when new Circles are created near you
-        </Text>
+          {tx("circle.SwipeCirclesScreen.weLlNotifyYouWhenNewCirclesAreCreated")}</Text>
       </SafeAreaView>
     );
   }
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" />
+      <StatusBar />
 
       {/* Onboarding Guide Overlay */}
       {/* {showGuide && (
@@ -427,7 +422,7 @@ export default function SwipeCirclesScreen({
       )} */}
 
       <View style={styles.topBar}>
-        <Text style={styles.topTitle}>Find a Circle</Text>
+        <Text style={styles.topTitle}>{tx("circle.SwipeCirclesScreen.findACircle")}</Text>
         <View style={styles.badge}>
           {/* <Text style={styles.badgeText}>
             {circles.length - currentIndex} left
@@ -463,15 +458,14 @@ export default function SwipeCirclesScreen({
         <View style={styles.spotsBadge}>
           <Users size={13} color={Colors.textPrimary} />
           <Text style={styles.spotsBadgeText}>
-            {currentCircle.members.length} / {currentCircle.size} spots
-          </Text>
+            {currentCircle.members.length} / {currentCircle.size} {tx("circle.SwipeCirclesScreen.spots")}</Text>
         </View>
         {/* Top-right: SKIP label */}
         {showOverlayButtons && (
           <Animated.View
             style={[styles.skipLabel, { opacity: overlayOpacity }]}
           >
-            <Text style={styles.skipLabelText}>SKIP ✕</Text>
+            <Text style={styles.skipLabelText}>{tx("circle.SwipeCirclesScreen.skip")}</Text>
           </Animated.View>
         )}
         {/* Top-left: JOIN label (bottom-left of top area) */}
@@ -479,7 +473,7 @@ export default function SwipeCirclesScreen({
           <Animated.View
             style={[styles.joinLabel, { opacity: overlayOpacity }]}
           >
-            <Text style={styles.joinLabelText}>JOIN ✓</Text>
+            <Text style={styles.joinLabelText}>{tx("circle.SwipeCirclesScreen.join")}</Text>
           </Animated.View>
         )}
 
@@ -492,11 +486,12 @@ export default function SwipeCirclesScreen({
           <View style={styles.overlayMeta}>
             <MapPin size={13} color="rgba(255,255,255,0.85)" />
             <Text style={styles.overlayMetaText}>
-              {currentCircle.distance?.toFixed(1)} km away
-            </Text>
+              {tx("circle.SwipeCirclesScreen.distanceFilterPaused")}</Text>
             <Text style={styles.overlayMetaText}>
-              · Ages {currentCircle.filters.ageRange[0]}-
-              {currentCircle.filters.ageRange[1]}
+              {tx("circleSwipe.ageRange", {
+                min: currentCircle.filters.ageRange[0],
+                max: currentCircle.filters.ageRange[1],
+              })}
             </Text>
           </View>
           <Text style={styles.overlayBio}>{currentCircle.meetupGoal}</Text>
@@ -514,21 +509,23 @@ export default function SwipeCirclesScreen({
                 {/* Show remaining count if there are more than 3 members */}
                 {memberProfiles.length > 3 && (
                   <Text style={styles.overlayHostText}>
-                    +{memberProfiles.length - 3} Hosted by{" "}
-                    {hostProfile?.name || "Unknown"}
+                    {tx("circleSwipe.moreHostedBy", {
+                      count: memberProfiles.length - 3,
+                      name: hostProfile?.name || tx("circle.SwipeCirclesScreen.unknown"),
+                    })}
                   </Text>
                 )}
                 {/* If there are 3 or fewer members, just show host name */}
                 {memberProfiles.length <= 3 && (
                   <Text style={styles.overlayHostText}>
-                    Hosted by {hostProfile?.name || "Unknown"}
+                    {tx("circleSwipe.hostedBy", { name: hostProfile?.name || tx("circle.SwipeCirclesScreen.unknown") })}
                   </Text>
                 )}
               </>
             ) : (
               /* If no members yet, just show host name */
               <Text style={styles.overlayHostText}>
-                Hosted by {hostProfile?.name || "Unknown"}
+                {tx("circleSwipe.hostedBy", { name: hostProfile?.name || tx("circle.SwipeCirclesScreen.unknown") })}
               </Text>
             )}
           </View>
@@ -584,13 +581,13 @@ export default function SwipeCirclesScreen({
             Ages {currentCircle.filters.ageRange[0]}-{currentCircle.filters.ageRange[1]}
           </Text>
           <Text style={styles.bio}>
-            {currentCircle.meetupGoal || "Looking to make new friends."}
+            {currentCircle.meetupGoal || tx("circleSwipe.defaultGoal")}
           </Text>
           <View style={styles.chipsRow}>
             {(currentCircle.filters.interests || [])
               .slice(0, 3)
               .map((interest, idx) => (
-                <Chip key={`${interest}-${idx}`} label={interest} />
+                <Chip key={`${interest}-${idx}`} label={optionLabel(interest)} />
               ))}
           </View>
           
@@ -629,7 +626,7 @@ export default function SwipeCirclesScreen({
         type="request_sent"
         circleName={toastData?.circleName}
         userName={toastData?.userName}
-        statusText="Waiting for the host to review your profile"
+        statusText={tx("circle.SwipeCirclesScreen.waitingForTheHostToReviewYourProfile")}
         onDismiss={() => setShowToast(false)}
       />
 
@@ -648,7 +645,7 @@ export default function SwipeCirclesScreen({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createThemedStyles((Colors) => ({
   container: {
     flex: 1,
     backgroundColor: Colors.background,
@@ -704,7 +701,7 @@ const styles = StyleSheet.create({
   //   flex: 1,
   //   borderRadius: 24,
   //   overflow: "hidden",
-  //   backgroundColor: Colors.white,
+  //   backgroundColor: Colors.surface,
   // },
   photoPlaceholder: {
     height: "55%",
@@ -838,7 +835,7 @@ const styles = StyleSheet.create({
     zIndex: 200,
   },
   matchCard: {
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.surface,
     padding: Spacing.xl,
     borderRadius: Radius.xl,
     alignItems: "center",
@@ -942,7 +939,7 @@ const styles = StyleSheet.create({
   //   height: 24,
   //   borderRadius: Radius.full,
   //   borderWidth: 2,
-  //   borderColor: Colors.white,
+  //   borderColor: Colors.surface,
   // },
   moreMembers: {
     ...Typography.bodySmall,
@@ -957,7 +954,7 @@ const styles = StyleSheet.create({
     flex: 1,
     borderRadius: 24,
     overflow: "hidden",
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.surface,
     position: "relative",
   },
   cardImage: {
@@ -1008,7 +1005,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     backgroundColor: Colors.primaryLight,
     borderWidth: 2,
-    borderColor: Colors.white,
+    borderColor: Colors.surface,
     marginLeft: -6,
   },
   spotsBadge: {
@@ -1058,4 +1055,4 @@ const styles = StyleSheet.create({
     color: Colors.textSecondary,
     fontWeight: "700",
   },
-});
+}));

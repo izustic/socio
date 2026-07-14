@@ -1,6 +1,6 @@
-import { Colors, Radius } from '@/src/constants/theme';
+import { createThemedStyles, Colors, Radius } from '@/src/constants/theme';
 import React, { useState } from 'react';
-import { StyleSheet, TextInput, TextInputProps, View } from 'react-native';
+import { TextInput, TextInputProps, View } from 'react-native';
 
 export default function Input(props: TextInputProps) {
   const [focused, setFocused] = useState(false);
@@ -25,7 +25,7 @@ export default function Input(props: TextInputProps) {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = createThemedStyles((Colors) => ({
   wrapper: {
     width: '100%',
   },
@@ -46,4 +46,4 @@ const styles = StyleSheet.create({
   accentLineFocused: {
     backgroundColor: Colors.primary,
   },
-});
+}));

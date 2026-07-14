@@ -1,4 +1,5 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { supabase } from "./supabase";
 
 export type MeetupCategory = "All" | "Food" | "Games" | "Sports" | "Music" | "Outdoors";
 export type MeetupPlanStep = "time" | "experience" | "review" | "scheduled";
@@ -99,6 +100,22 @@ export const createInitialMeetupPlan = (): MeetupPlan => ({
 });
 
 export const loadMeetupPlan = async (circleId: string): Promise<MeetupPlan> => {
+  const { data, error } = await supabase
+    .from("circle_meetup_plans")
+    .select("plan")
+    .eq("circle_id", circleId)
+    .maybeSingle();
+
+  if (!error && data?.plan) {
+    const sharedPlan = data.plan as MeetupPlan;
+    await AsyncStorage.setItem(keyForCircle(circleId), JSON.stringify(sharedPlan));
+    return sharedPlan;
+  }
+
+  if (error && error.code !== "42P01" && error.code !== "PGRST205") {
+    console.warn("Could not load shared meetup plan:", error);
+  }
+
   const stored = await AsyncStorage.getItem(keyForCircle(circleId));
   if (!stored) return createInitialMeetupPlan();
   try {
@@ -109,8 +126,68 @@ export const loadMeetupPlan = async (circleId: string): Promise<MeetupPlan> => {
 };
 
 export const saveMeetupPlan = async (circleId: string, plan: MeetupPlan) => {
+  const savedPlan = { ...plan, updatedAt: new Date().toISOString() };
   await AsyncStorage.setItem(
     keyForCircle(circleId),
-    JSON.stringify({ ...plan, updatedAt: new Date().toISOString() }),
+    JSON.stringify(savedPlan),
   );
+
+  const { error } = await supabase.from("circle_meetup_plans").upsert(
+    {
+      circle_id: circleId,
+      plan: savedPlan,
+      updated_at: savedPlan.updatedAt,
+    },
+    { onConflict: "circle_id" },
+  );
+
+  if (error && error.code !== "42P01" && error.code !== "PGRST205") {
+    console.warn("Could not save shared meetup plan:", error);
+  }
+};
+
+export const hasMeetupPlanningStarted = (plan: MeetupPlan) =>
+  Boolean(
+    plan.selectedTimeId ||
+    plan.selectedExperienceId ||
+    plan.confirmedMemberIds.length ||
+    plan.step !== "time",
+  );
+
+/** Returns the first planning stage this member still needs to complete. */
+export const getMeetupStepForMember = (
+  plan: MeetupPlan,
+  memberId: string,
+  memberCount: number,
+): MeetupPlanStep => {
+  if (plan.step === "scheduled") return "scheduled";
+
+  const selectedTime = plan.timeOptions.find(
+    (option) => option.id === plan.selectedTimeId,
+  );
+  const memberVotedForTime = Boolean(selectedTime?.votes.includes(memberId));
+  const timeVoteComplete = Boolean(
+    selectedTime && selectedTime.votes.length >= memberCount,
+  );
+  if (!selectedTime || !memberVotedForTime || !timeVoteComplete) return "time";
+
+  const selectedExperience = plan.experiences.find(
+    (experience) => experience.id === plan.selectedExperienceId,
+  );
+  const memberVotedForExperience = Boolean(
+    selectedExperience?.votes.includes(memberId),
+  );
+  const experienceVoteComplete = Boolean(
+    selectedExperience && selectedExperience.votes.length >= memberCount,
+  );
+  if (
+    !selectedExperience ||
+    !memberVotedForExperience ||
+    !experienceVoteComplete
+  ) {
+    return "experience";
+  }
+
+  if (!plan.confirmedMemberIds.includes(memberId)) return "review";
+  return "scheduled";
 };

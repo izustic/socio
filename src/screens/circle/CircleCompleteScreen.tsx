@@ -11,12 +11,17 @@ import {
   resetCircleFreeExitsIfExpired,
 } from "@/src/services/circle";
 import { getUsersByIds, SwipeCandidate } from "@/src/services/swipe";
+import {
+  hasMeetupPlanningStarted,
+  loadMeetupPlan,
+  type MeetupPlan,
+} from "@/src/services/meetupPlanning";
 import { Circle } from "@/src/types";
 import { getCircleMeetupDeadline, getCountdownParts } from "@/src/utils/circleDeadline";
 import { getCircleExitState } from "@/src/utils/circleExit";
-import { router, useLocalSearchParams } from "expo-router";
+import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { MoreHorizontal } from "lucide-react-native";
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -49,6 +54,7 @@ export default function CircleCompleteScreen() {
   const [loading, setLoading] = useState(true);
   const [exiting, setExiting] = useState(false);
   const [moreMenuVisible, setMoreMenuVisible] = useState(false);
+  const [meetupPlan, setMeetupPlan] = useState<MeetupPlan | null>(null);
   const [now, setNow] = useState(Date.now());
 
   useEffect(() => {
@@ -95,6 +101,28 @@ export default function CircleCompleteScreen() {
       active = false;
     };
   }, [circle]);
+
+  useFocusEffect(
+    useCallback(() => {
+      let active = true;
+      if (!circle) {
+        setMeetupPlan(null);
+        return () => { active = false; };
+      }
+
+      void loadMeetupPlan(circle.id).then((storedPlan) => {
+        if (active) setMeetupPlan(storedPlan);
+      });
+
+      return () => { active = false; };
+    }, [circle]),
+  );
+
+  const meetupButtonTitle = meetupPlan?.step === "scheduled"
+    ? "View meetup"
+    : meetupPlan && hasMeetupPlanningStarted(meetupPlan)
+      ? "Continue meetup setup"
+      : "Plan a meetup";
 
   useEffect(() => {
     if (!circle) return;
@@ -288,7 +316,7 @@ export default function CircleCompleteScreen() {
 
       <View style={styles.footer}>
         <Button
-          title="Plan a meetup"
+          title={meetupButtonTitle}
           onPress={() =>
             router.push({
               pathname: "/circle/plan",

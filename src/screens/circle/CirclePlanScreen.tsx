@@ -8,6 +8,7 @@ import {
   MeetupExperience,
   MeetupPlan,
   createInitialMeetupPlan,
+  getMeetupStepForMember,
   loadMeetupPlan,
   saveMeetupPlan,
 } from "@/src/services/meetupPlanning";
@@ -102,7 +103,14 @@ export default function CirclePlanScreen() {
         if (!active) return;
         const byId = new Map(profiles.map((profile) => [profile.uid, profile]));
         setMembers(found.members.map((id) => byId.get(id)).filter(Boolean) as SwipeCandidate[]);
-        setPlan(storedPlan);
+        setPlan({
+          ...storedPlan,
+          step: getMeetupStepForMember(
+            storedPlan,
+            user.id,
+            found.members.length,
+          ),
+        });
       }
       setLoading(false);
     };

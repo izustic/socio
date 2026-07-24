@@ -364,7 +364,14 @@ export default function SignUp() {
             onPress={handleGoogleSignIn}
           >
             <Text style={styles.socialIcon}>{tx("app.auth.welcome.g")}</Text>
-            <Text style={styles.socialText}>{tx("app.auth.welcome.continueWithGoogle")}</Text>
+            <Text
+              style={[
+                styles.socialText,
+                colorScheme === "dark" && styles.socialTextDark,
+              ]}
+            >
+              {tx("app.auth.welcome.continueWithGoogle")}
+            </Text>
             <View style={styles.iconSpacer} />
           </TouchableOpacity>
         ) : null}
@@ -394,7 +401,7 @@ export default function SignUp() {
             setShowEmailModal(true);
           }}
         >
-          <Text style={styles.loginText}>{tx("app.auth.welcome.alreadyHaveAnAccount")}</Text>
+          <Text style={styles.loginText}>{tx("app.auth.welcome.alreadyHaveAnAccount")} </Text>
           <Text style={styles.loginAccent}>{tx("app.auth.welcome.logIn")}</Text>
         </TouchableOpacity>
 
@@ -594,6 +601,9 @@ const styles = createThemedStyles((Colors) => ({
     ...Typography.button,
     flex: 1,
     textAlign: "center",
+  },
+  socialTextDark: {
+    color: "#FFFFFF",
   },
   iconSpacer: {
     width: 20,

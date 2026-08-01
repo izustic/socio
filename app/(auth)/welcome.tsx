@@ -44,6 +44,8 @@ import {
 import type { OnboardingDraft } from "@/src/context/OnboardingContext";
 import { tx } from "@/src/utils/localization";
 import { useTheme } from "@/src/providers/ThemeProvider";
+import { Mail } from "lucide-react-native";
+import Svg, { Path } from "react-native-svg";
 
 export default function SignUp() {
   const { colorScheme } = useTheme();
@@ -363,7 +365,7 @@ export default function SignUp() {
             disabled={loading}
             onPress={handleGoogleSignIn}
           >
-            <Text style={styles.socialIcon}>{tx("app.auth.welcome.g")}</Text>
+            <GoogleIcon />
             <Text
               style={[
                 styles.socialText,
@@ -384,14 +386,19 @@ export default function SignUp() {
           </View>
         ) : null}
 
-        <Button
-          title={tx("app.auth.welcome.signUpWithEmail")}
-          variant="ghost"
+        <TouchableOpacity
+          activeOpacity={0.8}
+          style={styles.emailButton}
           onPress={() => {
             setIsSignUp(true);
             setShowEmailModal(true);
           }}
-        />
+        >
+          <Mail color={styles.emailButtonText.color} size={20} strokeWidth={1.8} />
+          <Text style={styles.emailButtonText}>
+            {tx("app.auth.welcome.signUpWithEmail")}
+          </Text>
+        </TouchableOpacity>
 
         <TouchableOpacity
           activeOpacity={0.8}
@@ -503,6 +510,29 @@ export default function SignUp() {
   );
 }
 
+function GoogleIcon() {
+  return (
+    <Svg width={20} height={20} viewBox="0 0 18 18" accessibilityLabel="Google">
+      <Path
+        fill="#4285F4"
+        d="M17.64 9.205c0-.638-.057-1.252-.164-1.841H9v3.482h4.844a4.14 4.14 0 0 1-1.797 2.715v2.258h2.909c1.702-1.567 2.684-3.874 2.684-6.614Z"
+      />
+      <Path
+        fill="#34A853"
+        d="M9 18c2.43 0 4.468-.806 5.956-2.181l-2.909-2.258c-.806.54-1.835.859-3.047.859-2.344 0-4.328-1.585-5.037-3.714H.956v2.332A8.998 8.998 0 0 0 9 18Z"
+      />
+      <Path
+        fill="#FBBC05"
+        d="M3.963 10.706A5.41 5.41 0 0 1 3.682 9c0-.592.102-1.168.281-1.706V4.962H.956A8.997 8.997 0 0 0 0 9c0 1.452.347 2.827.956 4.038l3.007-2.332Z"
+      />
+      <Path
+        fill="#EA4335"
+        d="M9 3.58c1.321 0 2.507.454 3.441 1.346l2.581-2.581C13.464.892 11.426 0 9 0A8.998 8.998 0 0 0 .956 4.962l3.007 2.332C4.672 5.165 6.656 3.58 9 3.58Z"
+      />
+    </Svg>
+  );
+}
+
 function LegalConsentText({ compact = false }: { compact?: boolean }) {
   return (
     <Text style={[styles.terms, compact && styles.termsCompact]}>
@@ -580,22 +610,18 @@ const styles = createThemedStyles((Colors) => ({
   actions: {
     flex: 1,
     justifyContent: "center",
-    gap: Spacing.md,
+    gap: Spacing.lg,
   },
   socialButton: {
-    backgroundColor: Colors.inputBg,
+    minHeight: 52,
+    backgroundColor: "transparent",
+    borderWidth: 1,
+    borderColor: Colors.border,
     borderRadius: Radius.pill,
-    paddingVertical: 16,
+    paddingVertical: 14,
     paddingHorizontal: 18,
     flexDirection: "row",
     alignItems: "center",
-  },
-  socialIcon: {
-    width: 20,
-    textAlign: "center",
-    fontSize: 16,
-    fontWeight: "800",
-    color: "#DB4437",
   },
   socialText: {
     ...Typography.button,
@@ -621,6 +647,22 @@ const styles = createThemedStyles((Colors) => ({
   dividerText: {
     ...Typography.bodySmall,
     color: Colors.textSecondary,
+  },
+  emailButton: {
+    minHeight: 52,
+    borderWidth: 1,
+    borderColor: Colors.primaryDark,
+    borderRadius: Radius.pill,
+    paddingVertical: 14,
+    paddingHorizontal: 24,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 10,
+  },
+  emailButtonText: {
+    ...Typography.button,
+    color: Colors.primaryDark,
   },
   loginRow: {
     flexDirection: "row",

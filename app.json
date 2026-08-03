@@ -48,6 +48,10 @@
         "android.permission.WRITE_EXTERNAL_STORAGE"
       ]
     },
+    "androidStatusBar": {
+      "backgroundColor": "#ffffff",
+      "barStyle": "dark-content"
+    },
     "web": {
       "bundler": "metro",
       "output": "static",

@@ -1,5 +1,5 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
-import { Appearance, StatusBar, useColorScheme } from "react-native";
+import { Appearance, Platform, StatusBar, useColorScheme } from "react-native";
 import {
   semanticColors,
   setActiveColorScheme,
@@ -46,7 +46,10 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <ThemeContext.Provider value={value}>
-      <StatusBar barStyle={colorScheme === "dark" ? "light-content" : "dark-content"} />
+      <StatusBar
+        barStyle={colorScheme === "dark" ? "light-content" : "dark-content"}
+        backgroundColor={Platform.OS === "android" ? colors.background : undefined}
+      />
       <React.Fragment key={colorScheme}>{children}</React.Fragment>
     </ThemeContext.Provider>
   );

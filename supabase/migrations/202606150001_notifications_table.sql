@@ -66,4 +66,9 @@ begin
   end if;
 end $$;
 
+-- Explicit Data API privileges; row access remains controlled by RLS.
+-- Client inserts go through create_app_notification; Edge Functions insert directly.
+grant select, update, delete on public.notifications to authenticated;
+grant select, insert, delete on public.notifications to service_role;
+
 notify pgrst, 'reload schema';

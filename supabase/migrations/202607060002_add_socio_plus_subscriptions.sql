@@ -58,4 +58,9 @@ before update on public.socio_plus_subscriptions
 for each row
 execute function public.touch_updated_at();
 
+-- Explicit Data API privileges; row access remains controlled by RLS.
+grant select on public.socio_plus_subscriptions to authenticated;
+-- Only the subscription verification Edge Function writes entitlement records.
+grant select, insert, update on public.socio_plus_subscriptions to service_role;
+
 notify pgrst, 'reload schema';

@@ -132,5 +132,6 @@ using (
 );
 
 grant select, update on public.community_events to authenticated;
-grant insert on public.community_event_reports to authenticated;
+-- SELECT supports the existing moderator review policy.
+grant select, insert on public.community_event_reports to authenticated;
 notify pgrst, 'reload schema';

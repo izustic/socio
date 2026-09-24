@@ -90,4 +90,8 @@ begin
   end if;
 end $$;
 
+-- Explicit Data API privileges; row access remains controlled by RLS.
+grant select, insert, delete on public.blocked_users to authenticated;
+grant select, delete on public.blocked_users to service_role;
+
 notify pgrst, 'reload schema';

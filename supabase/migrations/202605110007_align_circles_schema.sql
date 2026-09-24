@@ -24,4 +24,8 @@ add column if not exists meetup_goal text,
 add column if not exists status text default 'forming',
 add column if not exists created_at timestamp default now();
 
+-- Explicit Data API privileges; row access remains controlled by RLS.
+grant select, insert, update on public.circles to authenticated;
+grant select, update, delete on public.circles to service_role;
+
 notify pgrst, 'reload schema';

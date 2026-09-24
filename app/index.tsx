@@ -8,12 +8,11 @@ import { useOnboarding } from '@/src/context/OnboardingContext';
 import { useRole } from '@/src/hooks/useRole';
 import { requiresEmailOnboardingVerification } from '@/src/services/auth';
 import { Redirect } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 
 const PENDING_EMAIL_VERIFICATION_MAX_AGE_MS = 10 * 60 * 1000;
 
 export default function SplashScreen() {
-  const [showSplash, setShowSplash] = useState(true);
   const { user, profile, loading, staleAuthSessionCleared } = useAuth();
   const {
     currentStep,
@@ -25,24 +24,16 @@ export default function SplashScreen() {
   const { loading: roleLoading, isBanned, isSuspended } = useRole();
 
   useEffect(() => {
-    // Show splash for minimum duration, then redirect based on auth state
-    const timer = setTimeout(() => {
-      setShowSplash(false);
-    }, 3500); // 3.5 seconds minimum splash screen
-
-    return () => clearTimeout(timer);
-  }, []);
-
-  useEffect(() => {
     if (!staleAuthSessionCleared) return;
     resetOnboarding().catch((error) => {
       console.error('Failed to reset stale onboarding state:', error);
     });
   }, [resetOnboarding, staleAuthSessionCleared]);
 
-  // While showing splash or loading auth/role state
-  if (showSplash || loading || onboardingLoading || roleLoading) {
-    return <LottieSplashScreen minDurationMs={3500} />;
+  // The root layout owns the one timed splash. Keep the same visual visible only
+  // if startup data is still loading after that animation has completed.
+  if (loading || onboardingLoading || roleLoading) {
+    return <LottieSplashScreen minDurationMs={0} />;
   }
 
   if (staleAuthSessionCleared) {

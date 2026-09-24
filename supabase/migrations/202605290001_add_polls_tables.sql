@@ -117,4 +117,11 @@ CREATE POLICY "Users delete own poll votes" ON public.poll_votes
     )
   );
 
+-- Explicit Data API privileges; row access remains controlled by RLS.
+grant select, insert, update on public.polls to authenticated;
+grant select, insert on public.poll_options to authenticated;
+grant select, insert, delete on public.poll_votes to authenticated;
+-- Account deletion removes polls (cascading to options/votes) and a user's votes.
+grant select, delete on public.polls, public.poll_votes to service_role;
+
 notify pgrst, 'reload schema';
